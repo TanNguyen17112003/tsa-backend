@@ -1,5 +1,12 @@
 import express from 'express';
-import { getSamples, getSample, createSample, updateSample, deleteSample } from '../controllers/sample.controller';
+import {
+  getSamples,
+  getSample,
+  createSample,
+  updateSample,
+  deleteSample
+} from '../controllers/sample.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
 
 const sampleRouter = express.Router();
 
@@ -14,7 +21,7 @@ const sampleRouter = express.Router();
  *       200:
  *         description: Success
  */
-sampleRouter.get('', getSamples);
+sampleRouter.get('', authMiddleware, getSamples);
 
 /**
  * @openapi
@@ -35,7 +42,7 @@ sampleRouter.get('', getSamples);
  *       404:
  *         description: Sample not found
  */
-sampleRouter.get('/:id', getSample);
+sampleRouter.get('/:id', authMiddleware, getSample);
 
 /**
  * @openapi
@@ -64,7 +71,7 @@ sampleRouter.get('/:id', getSample);
  *       201:
  *         description: Created
  */
-sampleRouter.post('', createSample);
+sampleRouter.post('', authMiddleware, createSample);
 
 /**
  * @openapi
@@ -101,7 +108,7 @@ sampleRouter.post('', createSample);
  *       404:
  *         description: Sample not found
  */
-sampleRouter.put('/:id', updateSample);
+sampleRouter.put('/:id', authMiddleware, updateSample);
 
 /**
  * @openapi
@@ -122,6 +129,6 @@ sampleRouter.put('/:id', updateSample);
  *       404:
  *         description: Sample not found
  */
-sampleRouter.delete('/:id', deleteSample);
+sampleRouter.delete('/:id', authMiddleware, deleteSample);
 
 export default sampleRouter;
