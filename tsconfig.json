@@ -1,28 +1,28 @@
 {
-    "compilerOptions": {
-        "target": "es2016",
-        "module": "commonjs",
-        "outDir": "dist",
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
-        "resolveJsonModule": true,
-        "moduleResolution": "node",
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-        "strict": true,
-        "skipLibCheck": true,
-        "paths": {
-            "@controllers": ["./src/controllers"],
-            "@hooks": ["./src/hooks"],
-            "@middlewares": ["./src/middlewares"],
-            "@services": ["./src/services"],
-            "@types": ["./src/types"],
-            "@utils": ["./src/utils"],
-            "@repositories": ["./src/repositories"],
-            "@configs": ["./src/configs"]
-        }
-    },
-    "include": ["/**/*.ts", "*.ts", "/**/**/*.ts"],
-    "exclude": ["node_modules"],
-    "files": ["./src/types/express/index.d.ts"]
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "outDir": "dist",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@controllers": ["./src/controllers"],
+      "@hooks": ["./src/hooks"],
+      "@middlewares": ["./src/middlewares"],
+      "@services": ["./src/services"],
+      "@types": ["./src/types"],
+      "@utils": ["./src/utils"],
+      "@repositories": ["./src/repositories"],
+      "@configs": ["./src/configs"]
+    }
+  },
+  "include": ["src", "**/*.ts", "*.ts", "**/**/*.ts"],
+  "exclude": ["node_modules"],
+  "files": ["./src/types/express/index.d.ts"]
 }
