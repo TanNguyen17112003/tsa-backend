@@ -3,7 +3,7 @@ dotenv.config();
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { connectDB } from './config/db';
+import { connectDB } from './configs/db';
 import AppError from './helpers/appError';
 import router from './routes';
 import setupSwagger from './swagger';
@@ -38,6 +38,6 @@ const startServer = async () => {
     });
 };
 
-startServer()
+startServer();
 
 export default app;

@@ -10,7 +10,17 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "strict": true,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "paths": {
+            "@controllers": ["./src/controllers"],
+            "@hooks": ["./src/hooks"],
+            "@middlewares": ["./src/middlewares"],
+            "@services": ["./src/services"],
+            "@types": ["./src/types"],
+            "@utils": ["./src/utils"],
+            "@repositories": ["./src/repositories"],
+            "@configs": ["./src/configs"]
+        }
     },
     "include": ["/**/*.ts", "*.ts", "/**/**/*.ts"],
     "exclude": ["node_modules"],

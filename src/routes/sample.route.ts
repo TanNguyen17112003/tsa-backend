@@ -1,28 +1,28 @@
 import express from 'express';
 import { getSamples, getSample, createSample, updateSample, deleteSample } from '../controllers/sample.controller';
 
-const modelRouter = express.Router();
+const sampleRouter = express.Router();
 
 /**
  * @openapi
- * /api/models:
+ * /api/samples:
  *   get:
  *     tags:
  *     - Sample
- *     summary: Get all models
+ *     summary: Get all samples
  *     responses:
  *       200:
  *         description: Success
  */
-modelRouter.get('', getSamples);
+sampleRouter.get('', getSamples);
 
 /**
  * @openapi
- * /api/models/{id}:
+ * /api/samples/{id}:
  *   get:
  *     tags:
  *     - Sample
- *     summary: Get model by ID
+ *     summary: Get sample by ID
  *     parameters:
  *       - name: id
  *         in: path
@@ -35,15 +35,15 @@ modelRouter.get('', getSamples);
  *       404:
  *         description: Sample not found
  */
-modelRouter.get('/:id', getSample);
+sampleRouter.get('/:id', getSample);
 
 /**
  * @openapi
- * /api/models:
+ * /api/samples:
  *   post:
  *     tags:
  *     - Sample
- *     summary: Create a new model
+ *     summary: Create a new sample
  *     requestBody:
  *       required: true
  *       content:
@@ -64,15 +64,15 @@ modelRouter.get('/:id', getSample);
  *       201:
  *         description: Created
  */
-modelRouter.post('', createSample);
+sampleRouter.post('', createSample);
 
 /**
  * @openapi
- * /api/models/{id}:
+ * /api/samples/{id}:
  *   put:
  *     tags:
  *     - Sample
- *     summary: Update a model
+ *     summary: Update a sample
  *     parameters:
  *       - name: id
  *         in: path
@@ -101,15 +101,15 @@ modelRouter.post('', createSample);
  *       404:
  *         description: Sample not found
  */
-modelRouter.put('/:id', updateSample);
+sampleRouter.put('/:id', updateSample);
 
 /**
  * @openapi
- * /api/models/{id}:
+ * /api/samples/{id}:
  *   delete:
  *     tags:
  *     - Sample
- *     summary: Delete a model
+ *     summary: Delete a sample
  *     parameters:
  *       - name: id
  *         in: path
@@ -122,6 +122,6 @@ modelRouter.put('/:id', updateSample);
  *       404:
  *         description: Sample not found
  */
-modelRouter.delete('/:id', deleteSample);
+sampleRouter.delete('/:id', deleteSample);
 
-export default modelRouter;
+export default sampleRouter;

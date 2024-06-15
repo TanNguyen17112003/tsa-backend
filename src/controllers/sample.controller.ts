@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
-import { Sample } from '../models/sample';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
 export const getSamples = async (req: Request, res: Response) => {
     try {
-        const samples = await Sample.find().populate('type');
+        const samples = await prisma.sample.findMany();
         res.status(200).json(samples);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
@@ -12,7 +13,9 @@ export const getSamples = async (req: Request, res: Response) => {
 
 export const getSample = async (req: Request, res: Response) => {
     try {
-        const sample = await Sample.findById(req.params.id).populate('type');
+        const sample = await prisma.sample.findUnique({
+            where: { id: req.params.id }
+        });
         if (!sample) {
             return res.status(404).json({ message: 'Sample not found' });
         }
@@ -25,26 +28,21 @@ export const getSample = async (req: Request, res: Response) => {
 export const createSample = async (req: Request, res: Response) => {
     const { name, version, status, type } = req.body;
     try {
-        const newSample = new Sample({ name, version, status, type });
-        await newSample.save();
+        const newSample = await prisma.sample.create({
+            data: { name, version, status, type }
+        });
         res.status(201).json(newSample);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
     }
 };
-
 export const updateSample = async (req: Request, res: Response) => {
     const { name, version, status, type } = req.body;
     try {
-        const sample = await Sample.findById(req.params.id);
-        if (!sample) {
-            return res.status(404).json({ message: 'Sample not found' });
-        }
-        sample.name = name || sample.name;
-        sample.version = version || sample.version;
-        sample.status = status || sample.status;
-        sample.type = type || sample.type;
-        await sample.save();
+        const sample = await prisma.sample.update({
+            where: { id: req.params.id },
+            data: { name, version, status, type }
+        });
         res.status(200).json(sample);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
@@ -53,10 +51,9 @@ export const updateSample = async (req: Request, res: Response) => {
 
 export const deleteSample = async (req: Request, res: Response) => {
     try {
-        const sample = await Sample.findByIdAndDelete(req.params.id);
-        if (!sample) {
-            return res.status(404).json({ message: 'Sample not found' });
-        }
+        await prisma.sample.delete({
+            where: { id: req.params.id }
+        });
         res.status(200).json({ message: 'Sample deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });

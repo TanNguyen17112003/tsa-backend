@@ -1,0 +1,4 @@
+{
+    "directory": ["./src/controllers", "./src/configs", "./src/hooks", "./src/repositories", "./src/utils", "./src/services", "./src/middlewares", "./src/types"],
+    "delete": true
+}
