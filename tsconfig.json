@@ -22,7 +22,7 @@
       "@configs": ["./src/configs"]
     }
   },
-  "include": ["src", "**/*.ts", "*.ts", "**/**/*.ts"],
+  "include": ["src", "**/*.ts", "*.ts", "**/**/*.ts", "*.js"],
   "exclude": ["node_modules"],
   "files": ["./src/types/express/index.d.ts"]
 }
