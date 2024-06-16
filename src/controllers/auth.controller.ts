@@ -2,8 +2,12 @@ import { PrismaClient } from '@prisma/client';
 import { NextFunction, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
+import otpGenerator from 'otp-generator';
+import { config } from 'dotenv';
 
 const prisma = new PrismaClient();
+config();
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   const { email, firstName, lastName, password, role, status } = req.body;
@@ -81,7 +85,6 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      console.log('chovy');
       return res.status(400).json({ message: 'Invalid password' });
     }
     const hashedPassword = await bcrypt.hash(newPassword, 12);
@@ -90,6 +93,72 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
       data: { password: hashedPassword }
     });
     res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.log(error);
+    next();
+  }
+};
+
+export const sendOtp = async (req: Request, res: Response, next: NextFunction) => {
+  const { email } = req.body;
+  try {
+    console.log({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      user: process.env.SMTP_GMAIL,
+      pass: process.env.SMTP_PASSWORD
+    });
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid email' });
+    }
+    const otp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false });
+    const transporter: nodemailer.Transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT),
+      secure: false,
+      auth: {
+        user: process.env.SMTP_GMAIL,
+        pass: process.env.SMTP_PASSWORD
+      }
+    });
+    const mailOptions = {
+      from: '"Transport Support Application (TSA) <tsa@no-reply>"',
+      to: email,
+      subject: 'TSA verification link',
+      html: `<p>Enter this OTP to verify your tsa account: ${otp}</p>`
+    };
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log(error);
+        return res.status(400).json({ message: 'Failed to send OTP' });
+      }
+      if (info) {
+        console.log(info);
+      }
+      res.status(200).json({ message: 'OTP sent successfully', otp });
+    });
+  } catch (error) {
+    console.log(error);
+    next();
+  }
+};
+
+export const verifyOTP = async (req: Request, res: Response, next: NextFunction) => {
+  const { email, otp } = req.body;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid email' });
+    }
+    if (otp !== process.env.OTP) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+    res.status(200).json({ message: 'OTP verified successfully' });
   } catch (error) {
     console.log(error);
     next();

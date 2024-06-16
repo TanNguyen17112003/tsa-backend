@@ -1,5 +1,13 @@
 import { Router } from 'express';
-import { register, login, changeInformation, resetPassword } from '../controllers/auth.controller';
+import {
+  register,
+  login,
+  changeInformation,
+  resetPassword,
+  sendOtp
+} from '../controllers/auth.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
+
 const authRouter = Router();
 
 /**
@@ -139,5 +147,31 @@ authRouter.put('/change-information/:id', changeInformation);
  *         description: Invalid credentials
  */
 authRouter.put('/reset-password', resetPassword);
+
+/**
+ * @openapi
+ * /api/auth/send-otp:
+ *   post:
+ *     tags:
+ *     - Auth
+ *     summary: Send OTP to user email
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: OTP sent successfully
+ *       400:
+ *         description: Invalid email
+ */
+authRouter.post('/send-otp', authMiddleware, sendOtp);
 
 export default authRouter;
