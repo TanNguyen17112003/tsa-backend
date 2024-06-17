@@ -6,7 +6,6 @@ interface ExtendedRequest extends Request {
   user?: UserType;
 }
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  console.log(req.header('Authorization'));
   const token = req.headers.authorization?.replace('Bearer ', '');
 
   if (!token) {

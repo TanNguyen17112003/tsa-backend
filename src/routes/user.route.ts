@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getUsers, getUser, updateUser, deleteUser } from '@controllers';
-import { authMiddleware } from '@middlewares';
+import { authMiddleware, userAutoLog } from '@middlewares';
 
 const userRouter = Router();
 
@@ -15,7 +15,7 @@ const userRouter = Router();
  *       200:
  *         description: A list of users
  */
-userRouter.get('', authMiddleware, getUsers);
+userRouter.get('', authMiddleware, userAutoLog, getUsers);
 
 /**
  * @openapi
@@ -35,7 +35,7 @@ userRouter.get('', authMiddleware, getUsers);
  *       200:
  *         description: A user object
  */
-userRouter.get('/:id', authMiddleware, getUser);
+userRouter.get('/:id', authMiddleware, userAutoLog, getUser);
 
 /**
  * @openapi
@@ -70,7 +70,7 @@ userRouter.get('/:id', authMiddleware, getUser);
  *       200:
  *         description: User updated successfully
  */
-userRouter.put('/:id', authMiddleware, updateUser);
+userRouter.put('/:id', authMiddleware, userAutoLog, updateUser);
 
 /**
  * @openapi
@@ -90,6 +90,6 @@ userRouter.put('/:id', authMiddleware, updateUser);
  *       200:
  *         description: User deleted successfully
  */
-userRouter.delete('/:id', authMiddleware, deleteUser);
+userRouter.delete('/:id', authMiddleware, userAutoLog, deleteUser);
 
 export { userRouter };

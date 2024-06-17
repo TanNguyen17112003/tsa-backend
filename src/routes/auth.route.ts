@@ -1,6 +1,13 @@
 import { Router } from 'express';
-import { register, login, changeInformation, resetPassword, sendOtp } from '@controllers';
-import { authMiddleware } from '@middlewares';
+import {
+  register,
+  login,
+  changeInformation,
+  resetPassword,
+  sendOtp,
+  verifyOTP
+} from '@controllers';
+import { authMiddleware, authAutoLog } from '@middlewares';
 
 const authRouter = Router();
 
@@ -23,7 +30,6 @@ const authRouter = Router();
  *               - lastName
  *               - password
  *               - role
- *               - status
  *             properties:
  *               email:
  *                 type: string
@@ -35,15 +41,13 @@ const authRouter = Router();
  *                 type: string
  *               role:
  *                 type: string
- *               status:
- *                 type: number
  *     responses:
  *       201:
  *         description: User created successfully
  *       400:
  *         description: User already exists
  */
-authRouter.post('/register', register);
+authRouter.post('/register', authAutoLog, register);
 
 /**
  * @openapi
@@ -72,7 +76,7 @@ authRouter.post('/register', register);
  *       400:
  *         description: Invalid credentials
  */
-authRouter.post('/login', login);
+authRouter.post('/login', authAutoLog, login);
 
 /**
  * @openapi
@@ -108,7 +112,7 @@ authRouter.post('/login', login);
  *         description: User not found
  */
 
-authRouter.put('/change-information/:id', changeInformation);
+authRouter.put('/change-information/:id', authMiddleware, authAutoLog, changeInformation);
 
 /**
  * @openapi
@@ -140,15 +144,42 @@ authRouter.put('/change-information/:id', changeInformation);
  *       400:
  *         description: Invalid credentials
  */
-authRouter.put('/reset-password', resetPassword);
+authRouter.put('/reset-password', authMiddleware, authAutoLog, resetPassword);
 
 /**
  * @openapi
- * /api/auth/send-otp:
+ * /api/auth/send-otp/{id}:
  *   post:
  *     tags:
  *     - Auth
- *     summary: Send OTP to user email
+ *     summary: Send OTP to user
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: OTP sent successfully
+ *       400:
+ *         description: Invalid email
+ */
+authRouter.post('/send-otp/:id', authMiddleware, authAutoLog, sendOtp);
+
+/**
+ * @openapi
+ * /api/auth/verify-otp/{id}:
+ *   post:
+ *     tags:
+ *     - Auth
+ *     summary: Verify OTP
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
  *     requestBody:
  *       required: true
  *       content:
@@ -156,16 +187,16 @@ authRouter.put('/reset-password', resetPassword);
  *           schema:
  *             type: object
  *             required:
- *               - email
+ *               - otp
  *             properties:
- *               email:
+ *               otp:
  *                 type: string
  *     responses:
  *       200:
- *         description: OTP sent successfully
+ *         description: OTP verified successfully
  *       400:
- *         description: Invalid email
+ *         description: Invalid OTP
  */
-authRouter.post('/send-otp', authMiddleware, sendOtp);
+authRouter.post('/verify-otp/:id', authMiddleware, authAutoLog, verifyOTP);
 
 export { authRouter };

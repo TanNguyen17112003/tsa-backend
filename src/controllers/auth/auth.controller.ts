@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 config();
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
-  const { email, firstName, lastName, password, role, verificationEmail } = req.body;
+  const { email, firstName, lastName, password, role } = req.body;
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -23,8 +23,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         firstName,
         lastName,
         password: hashedPassword,
-        role,
-        verificationEmail
+        role
       }
     });
     if (role.toString() === 'CUSTOMER') {
@@ -119,21 +118,29 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
 };
 
 export const sendOtp = async (req: Request, res: Response, next: NextFunction) => {
-  const { email } = req.body;
   try {
-    console.log({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      user: process.env.SMTP_GMAIL,
-      pass: process.env.SMTP_PASSWORD
-    });
+    const userId = req.params.id;
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { id: userId }
     });
     if (!user) {
-      return res.status(400).json({ message: 'Invalid email' });
+      return res.status(400).json({ message: 'Cannot find user' });
     }
+
+    await prisma.verificationEmail.deleteMany({
+      where: {
+        userId
+      }
+    });
+    // Create a new OTP
     const otp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false });
+    // Create a new data in verificationEmail table for current user
+    await prisma.verificationEmail.create({
+      data: {
+        userId,
+        otp
+      }
+    });
     const transporter: nodemailer.Transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT),
@@ -145,13 +152,12 @@ export const sendOtp = async (req: Request, res: Response, next: NextFunction) =
     });
     const mailOptions = {
       from: '"Transport Support Application (TSA) <tsa@no-reply>"',
-      to: email,
+      to: user.email,
       subject: 'TSA verification link',
-      html: `<p>Enter this OTP to verify your tsa account: ${otp}</p>`
+      html: `<p>Enter this OTP to verify your tsa account: <div style="font-weight:bold">${otp}</div></p>`
     };
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.log(error);
         return res.status(400).json({ message: 'Failed to send OTP' });
       }
       if (info) {
@@ -160,26 +166,49 @@ export const sendOtp = async (req: Request, res: Response, next: NextFunction) =
       res.status(200).json({ message: 'OTP sent successfully', otp });
     });
   } catch (error) {
-    console.log(error);
+    throw error;
     next();
   }
 };
 
 export const verifyOTP = async (req: Request, res: Response, next: NextFunction) => {
-  const { email, otp } = req.body;
+  const userId = req.params.id;
+  const { otp } = req.body;
   try {
-    const user = await prisma.user.findUnique({
-      where: { email }
+    const verifcationEmail = await prisma.verificationEmail.findFirst({
+      select: {
+        expiresAt: true
+      },
+      where: {
+        userId,
+        otp
+      }
     });
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid email' });
+    if (!verifcationEmail) {
+      return res.status(400).json({ message: 'invalid OTP' });
     }
-    if (otp !== process.env.OTP) {
-      return res.status(400).json({ message: 'Invalid OTP' });
+    if (verifcationEmail.expiresAt.getTime() < Date.now()) {
+      await prisma.verificationEmail.delete({
+        where: {
+          userId
+        }
+      });
+      return res.status(400).json({ message: 'OTP expired' });
     }
+    await prisma.verificationEmail.delete({
+      where: {
+        userId
+      }
+    });
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        verified: true
+      }
+    });
     res.status(200).json({ message: 'OTP verified successfully' });
   } catch (error) {
-    console.log(error);
+    throw error;
     next();
   }
 };
