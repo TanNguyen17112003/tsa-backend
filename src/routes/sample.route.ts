@@ -1,12 +1,6 @@
 import express from 'express';
-import {
-  getSamples,
-  getSample,
-  createSample,
-  updateSample,
-  deleteSample
-} from '../controllers/api/sample.controller';
-import { authMiddleware } from '../middlewares/auth.middleware';
+import { getSamples, getSample, createSample, updateSample, deleteSample } from '@controllers';
+import { authMiddleware } from '@middlewares';
 
 const sampleRouter = express.Router();
 

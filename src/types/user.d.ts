@@ -7,9 +7,4 @@ export interface UserType {
   verifcationEmail?: string;
 }
 
-enum UserRole {
-  CUSTOMER,
-  SHIPPER,
-  STAFF,
-  ADMIN
-}
+type UserRole = 'ADMIN' | 'SHIPPER' | 'STAFF' | 'CUSTOMER';
