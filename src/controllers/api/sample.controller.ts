@@ -12,7 +12,6 @@ const getSamples = async (req: Request, res: Response) => {
 
 const getSample = async (req: Request, res: Response) => {
   try {
-    console.log('Chovy');
     const sample = await prisma.sample.findUnique({
       where: { id: req.params.id }
     });
