@@ -5,7 +5,7 @@ import {
   changeInformation,
   resetPassword,
   sendOtp
-} from '../controllers/auth.controller';
+} from '../controllers/auth/auth.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
 const authRouter = Router();
@@ -174,4 +174,4 @@ authRouter.put('/reset-password', resetPassword);
  */
 authRouter.post('/send-otp', authMiddleware, sendOtp);
 
-export default authRouter;
+export { authRouter };

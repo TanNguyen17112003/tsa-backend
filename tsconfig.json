@@ -19,7 +19,8 @@
       "@types": ["./src/types"],
       "@utils": ["./src/utils"],
       "@repositories": ["./src/repositories"],
-      "@configs": ["./src/configs"]
+      "@configs": ["./src/configs"],
+      "@routes": ["./src/routes"]
     }
   },
   "include": ["src", "**/*.ts", "*.ts", "**/**/*.ts", "*.js"],

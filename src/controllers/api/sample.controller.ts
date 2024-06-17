@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
-export const getSamples = async (req: Request, res: Response) => {
+const getSamples = async (req: Request, res: Response) => {
   try {
     const samples = await prisma.sample.findMany();
     res.status(200).json(samples);
@@ -11,7 +11,7 @@ export const getSamples = async (req: Request, res: Response) => {
   }
 };
 
-export const getSample = async (req: Request, res: Response) => {
+const getSample = async (req: Request, res: Response) => {
   try {
     const sample = await prisma.sample.findUnique({
       where: { id: req.params.id }
@@ -25,7 +25,7 @@ export const getSample = async (req: Request, res: Response) => {
   }
 };
 
-export const createSample = async (req: Request, res: Response) => {
+const createSample = async (req: Request, res: Response) => {
   const { name, version, status, type } = req.body;
   try {
     const newSample = await prisma.sample.create({
@@ -36,7 +36,7 @@ export const createSample = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error', error });
   }
 };
-export const updateSample = async (req: Request, res: Response) => {
+const updateSample = async (req: Request, res: Response) => {
   const { name, version, status, type } = req.body;
   try {
     const sample = await prisma.sample.update({
@@ -49,7 +49,7 @@ export const updateSample = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteSample = async (req: Request, res: Response) => {
+const deleteSample = async (req: Request, res: Response) => {
   try {
     await prisma.sample.delete({
       where: { id: req.params.id }
@@ -59,3 +59,5 @@ export const deleteSample = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error', error });
   }
 };
+
+export { getSamples, getSample, createSample, updateSample, deleteSample };

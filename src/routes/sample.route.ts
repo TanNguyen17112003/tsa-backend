@@ -5,7 +5,7 @@ import {
   createSample,
   updateSample,
   deleteSample
-} from '../controllers/sample.controller';
+} from '../controllers/api/sample.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
 const sampleRouter = express.Router();
@@ -131,4 +131,4 @@ sampleRouter.put('/:id', authMiddleware, updateSample);
  */
 sampleRouter.delete('/:id', authMiddleware, deleteSample);
 
-export default sampleRouter;
+export { sampleRouter };

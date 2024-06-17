@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 config();
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
-  const { email, firstName, lastName, password, role, status } = req.body;
+  const { email, firstName, lastName, password, role, verificationEmail } = req.body;
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -24,9 +24,28 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         lastName,
         password: hashedPassword,
         role,
-        status
+        verificationEmail
       }
     });
+    if (role.toString() === 'CUSTOMER') {
+      await prisma.customer.create({
+        data: {
+          customerId: newUser.id
+        }
+      });
+    } else if (role.toString() === 'SHIPPER') {
+      await prisma.shipper.create({
+        data: {
+          shipperId: newUser.id
+        }
+      });
+    } else {
+      await prisma.staff.create({
+        data: {
+          staffId: newUser.id
+        }
+      });
+    }
     res.status(201).json({ message: 'User created successfully', user: newUser });
   } catch (error) {
     console.log(error);
