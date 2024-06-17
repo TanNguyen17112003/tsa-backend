@@ -58,3 +58,4 @@ test/**/*.js.map
 
 # certs
 *.crt
+.vercel

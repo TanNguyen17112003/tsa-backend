@@ -9,19 +9,22 @@ on:
   push:
     branches:
       - master
+  pull_request:
+    branches:
+      - master
 jobs:
-  Deploy-development:
+  develop:
     runs-on: ubuntu-latest
     steps:
       #INSTALL NODEJS & NPM ON VERCEL
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install Node.js
         uses: actions/setup-node@v3
 
       - name: Install npm
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '16'
           registry-url: 'https://registry.npmjs.org/'
       #INSTALL DEPENDENCIES
       - name: Install dependencies
@@ -29,12 +32,21 @@ jobs:
       #INSTALL VERCEL CLI IN SERVER.
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
-      #SET ENVIRONMENT IN VERCEL. 
-      #CREATE ENVIRONMENT IN VERCEL & BUILD IN VERCEL.
-      # GITHUB.COM > SETTINGS > SECRETS AND VARIABLES > ACTIONS > ENVRIONEMENT SECRETS.
+     
+  build:
+    name: Build
+    needs: [develop]
+    runs-on: ubuntu-latest
+    steps:
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=development --token=${{ secrets.VERCEL_TOKEN }}
       - name: Build Project Artifacts
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-      - name: Deploy Project Artifacts to Vercel  
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+  deploy:
+    name: Deploy
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel --prod --token=${{ secrets.VERCEL_TOKEN }} 
