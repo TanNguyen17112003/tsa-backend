@@ -4,8 +4,8 @@
     "description": "",
     "main": "src/index.ts",
     "scripts": {
-        "start": "yarn barrels && nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
-        "dev": "yarn barrels && nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
+        "start": "yarn barrels && nodemon --exec ts-node -r tsconfig-paths/register src/index.ts",
+        "dev": "yarn barrels && nodemon --exec ts-node -r tsconfig-paths/register src/index.ts",
         "build": "tsc",
         "barrels": "barrelsby --config .barrelsby.json -q",
         "format": "prettier '**/*.{tsx,ts,js,json,md,yml,yaml}' --write",
@@ -14,7 +14,8 @@
         "db:reset": "npx prisma migrate reset --force",
         "db:deploy": "npx prisma migrate deploy",
         "db:generate": "npx prisma generate",
-        "prepare": "husky install"
+        "prepare": "husky install",
+        "postinstall": "prisma generate"
     },
     "author": "",
     "license": "ISC",
