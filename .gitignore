@@ -1,7 +1,6 @@
 ### Node template
 .DS_Store
 # Logs
-*.log
 npm-debug.log*
 
 # Runtime data
@@ -28,7 +27,7 @@ build/Release
 # https://docs.npmjs.com/misc/faq#should-i-check-my-node-modules-folder-into-git
 node_modules
 .npmrc
-*.log
+
 
 # Typings
 typings/
