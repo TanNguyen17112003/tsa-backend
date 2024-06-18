@@ -6,7 +6,6 @@
     "scripts": {
         "start": "yarn barrels && nodemon --exec ts-node -r tsconfig-paths/register src/index.ts",
         "dev": "yarn barrels && nodemon --exec ts-node -r tsconfig-paths/register src/index.ts",
-        "build": "tsc",
         "barrels": "barrelsby --config .barrelsby.json -q",
         "format": "prettier '**/*.{tsx,ts,js,json,md,yml,yaml}' --write",
         "lint": "eslint '**/*.{tsx,ts,js}' --fix",
