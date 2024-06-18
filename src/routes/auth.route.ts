@@ -8,7 +8,7 @@ import {
   verifyOTP
 } from '../controllers/auth/auth.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
-import { authAutoLog } from '../middlewares/autoLog.middleware';
+// import { authAutoLog } from '../middlewares/autoLog.middleware';
 
 const authRouter = Router();
 
@@ -48,7 +48,7 @@ const authRouter = Router();
  *       400:
  *         description: User already exists
  */
-authRouter.post('/register', authAutoLog, register);
+authRouter.post('/register', register);
 
 /**
  * @openapi
@@ -77,7 +77,7 @@ authRouter.post('/register', authAutoLog, register);
  *       400:
  *         description: Invalid credentials
  */
-authRouter.post('/login', authAutoLog, login);
+authRouter.post('/login', login);
 
 /**
  * @openapi
@@ -113,7 +113,7 @@ authRouter.post('/login', authAutoLog, login);
  *         description: User not found
  */
 
-authRouter.put('/change-information/:id', authMiddleware, authAutoLog, changeInformation);
+authRouter.put('/change-information/:id', authMiddleware, changeInformation);
 
 /**
  * @openapi
@@ -145,7 +145,7 @@ authRouter.put('/change-information/:id', authMiddleware, authAutoLog, changeInf
  *       400:
  *         description: Invalid credentials
  */
-authRouter.put('/reset-password', authMiddleware, authAutoLog, resetPassword);
+authRouter.put('/reset-password', authMiddleware, resetPassword);
 
 /**
  * @openapi
@@ -166,7 +166,7 @@ authRouter.put('/reset-password', authMiddleware, authAutoLog, resetPassword);
  *       400:
  *         description: Invalid email
  */
-authRouter.post('/send-otp/:id', authMiddleware, authAutoLog, sendOtp);
+authRouter.post('/send-otp/:id', authMiddleware, sendOtp);
 
 /**
  * @openapi
@@ -198,6 +198,6 @@ authRouter.post('/send-otp/:id', authMiddleware, authAutoLog, sendOtp);
  *       400:
  *         description: Invalid OTP
  */
-authRouter.post('/verify-otp/:id', authMiddleware, authAutoLog, verifyOTP);
+authRouter.post('/verify-otp/:id', authMiddleware, verifyOTP);
 
 export { authRouter };

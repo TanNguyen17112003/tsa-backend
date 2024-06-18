@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getUsers, getUser, updateUser, deleteUser } from '../controllers/api/user.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
-import { userAutoLog } from '../middlewares/autoLog.middleware';
+// import { userAutoLog } from '../middlewares/autoLog.middleware';
 
 const userRouter = Router();
 
@@ -16,7 +16,7 @@ const userRouter = Router();
  *       200:
  *         description: A list of users
  */
-userRouter.get('', authMiddleware, userAutoLog, getUsers);
+userRouter.get('', authMiddleware, getUsers);
 
 /**
  * @openapi
@@ -36,7 +36,7 @@ userRouter.get('', authMiddleware, userAutoLog, getUsers);
  *       200:
  *         description: A user object
  */
-userRouter.get('/:id', authMiddleware, userAutoLog, getUser);
+userRouter.get('/:id', authMiddleware, getUser);
 
 /**
  * @openapi
@@ -71,7 +71,7 @@ userRouter.get('/:id', authMiddleware, userAutoLog, getUser);
  *       200:
  *         description: User updated successfully
  */
-userRouter.put('/:id', authMiddleware, userAutoLog, updateUser);
+userRouter.put('/:id', authMiddleware, updateUser);
 
 /**
  * @openapi
@@ -91,6 +91,6 @@ userRouter.put('/:id', authMiddleware, userAutoLog, updateUser);
  *       200:
  *         description: User deleted successfully
  */
-userRouter.delete('/:id', authMiddleware, userAutoLog, deleteUser);
+userRouter.delete('/:id', authMiddleware, deleteUser);
 
 export { userRouter };
