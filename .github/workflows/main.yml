@@ -52,4 +52,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy Project Artifacts to Vercel
-        run: vercel --prod
+        run: vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
