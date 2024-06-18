@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '@repositories';
+import { prisma } from '../../repositories/prisma';
 
 const getUsers = async (req: Request, res: Response) => {
   try {

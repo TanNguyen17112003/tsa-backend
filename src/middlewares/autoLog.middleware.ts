@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { authLogger, userLogger } from '@utils';
+import { authLogger, userLogger } from '../utils/logger';
 
 function authAutoLog(req: Request, res: Response, next: NextFunction) {
   const originalJson = res.json;

@@ -4,8 +4,8 @@
     "description": "",
     "main": "src/index.ts",
     "scripts": {
-        "start": "nodemon --exec ts-node -r tsconfig-paths/register src/index.ts",
-        "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/index.ts",
+        "start": "nodemon src/index.ts",
+        "dev": "nodemon --watch src/index.ts",
         "barrels": "barrelsby --config .barrelsby.json -q",
         "format": "prettier '**/*.{tsx,ts,js,json,md,yml,yaml}' --write",
         "lint": "eslint '**/*.{tsx,ts,js}' --fix",

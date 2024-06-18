@@ -6,8 +6,9 @@ import {
   resetPassword,
   sendOtp,
   verifyOTP
-} from '@controllers';
-import { authMiddleware, authAutoLog } from '@middlewares';
+} from '../controllers/auth/auth.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
+import { authAutoLog } from '../middlewares/autoLog.middleware';
 
 const authRouter = Router();
 

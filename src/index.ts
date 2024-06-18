@@ -3,9 +3,9 @@ dotenv.config();
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { connectDB } from '@configs';
+import { connectDB } from './configs/db';
 import AppError from './helpers/appError';
-import { commonRouter as router } from '@routes';
+import { commonRouter as router } from './routes/common.route';
 import setupSwagger from './swagger';
 
 const app = express();

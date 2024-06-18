@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { getUsers, getUser, updateUser, deleteUser } from '@controllers';
-import { authMiddleware, userAutoLog } from '@middlewares';
+import { getUsers, getUser, updateUser, deleteUser } from '../controllers/api/user.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
+import { userAutoLog } from '../middlewares/autoLog.middleware';
 
 const userRouter = Router();
 

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserType } from '../types/user';
 import jwt from 'jsonwebtoken';
-import { prisma } from '@repositories';
+import { prisma } from '../repositories/prisma';
 interface ExtendedRequest extends Request {
   user?: UserType;
 }
