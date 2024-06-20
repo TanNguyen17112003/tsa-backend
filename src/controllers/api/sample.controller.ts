@@ -6,7 +6,7 @@ const getSamples = async (req: Request, res: Response) => {
     const samples = await prisma.sample.findMany();
     res.status(200).json(samples);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    res.status(500).json({ message: 'Server error test', error });
   }
 };
 
