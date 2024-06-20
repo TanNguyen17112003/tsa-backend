@@ -3,4 +3,4 @@
  */
 
 export * from './auth.middleware';
-// export * from './autoLog.middleware';
+export * from './autoLog.middleware';
