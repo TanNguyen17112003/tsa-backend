@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { NextFunction, Request, Response } from 'express';
+import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
@@ -9,7 +9,7 @@ import { config } from 'dotenv';
 const prisma = new PrismaClient();
 config();
 
-export const register = async (req: Request, res: Response, next: NextFunction) => {
+export const register = async (req: Request, res: Response) => {
   const { email, firstName, lastName, password, role } = req.body;
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -47,12 +47,11 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     }
     res.status(201).json({ message: 'User created successfully', user: newUser });
   } catch (error) {
-    console.log(error);
-    next();
+    throw error;
   }
 };
 
-export const login = async (req: Request, res: Response, next: NextFunction) => {
+export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
   try {
     const user = await prisma.user.findUnique({ where: { email } });
@@ -70,12 +69,11 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     );
     res.status(200).json({ token });
   } catch (error) {
-    console.log(error);
-    next();
+    throw error;
   }
 };
 
-export const changeInformation = async (req: Request, res: Response, next: NextFunction) => {
+export const changeInformation = async (req: Request, res: Response) => {
   const { firstName, lastName } = req.body;
   try {
     const user = await prisma.user.update({
@@ -87,12 +85,11 @@ export const changeInformation = async (req: Request, res: Response, next: NextF
     });
     res.status(200).json({ message: 'User updated successfully', user });
   } catch (error) {
-    console.log(error);
-    next();
+    throw error;
   }
 };
 
-export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+export const resetPassword = async (req: Request, res: Response) => {
   const { email, password, newPassword } = req.body;
   try {
     const user = await prisma.user.findUnique({
@@ -112,12 +109,11 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
     });
     res.status(200).json({ message: 'Password updated successfully' });
   } catch (error) {
-    console.log(error);
-    next();
+    throw error;
   }
 };
 
-export const sendOtp = async (req: Request, res: Response, next: NextFunction) => {
+export const sendOtp = async (req: Request, res: Response) => {
   try {
     const userId = req.params.id;
     const user = await prisma.user.findUnique({
@@ -167,11 +163,10 @@ export const sendOtp = async (req: Request, res: Response, next: NextFunction) =
     });
   } catch (error) {
     throw error;
-    next();
   }
 };
 
-export const verifyOTP = async (req: Request, res: Response, next: NextFunction) => {
+export const verifyOTP = async (req: Request, res: Response) => {
   const userId = req.params.id;
   const { otp } = req.body;
   try {
@@ -209,6 +204,5 @@ export const verifyOTP = async (req: Request, res: Response, next: NextFunction)
     res.status(200).json({ message: 'OTP verified successfully' });
   } catch (error) {
     throw error;
-    next();
   }
 };

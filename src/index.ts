@@ -1,10 +1,9 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { connectDB } from './configs/db';
-import AppError from './helpers/appError';
 import { commonRouter as router } from './routes/common.route';
 import setupSwagger from './swagger';
 
@@ -25,10 +24,6 @@ app.use('/api', router);
 
 // Swagger
 setupSwagger(app);
-
-app.all('*', (req: Request, res: Response, next: NextFunction) => {
-  next(new AppError(`The URL ${req.originalUrl} does not exist`, 404));
-});
 
 // Start server
 const startServer = async () => {
