@@ -16,7 +16,7 @@ app.use(
     credentials: true
   })
 );
-app.use(express.json());
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 // Routes
@@ -34,5 +34,3 @@ const startServer = async () => {
 };
 
 startServer();
-
-export default app;

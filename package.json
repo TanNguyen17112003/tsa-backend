@@ -4,7 +4,8 @@
     "description": "",
     "main": "src/index.ts",
     "scripts": {
-        "start": "yarn barrels && nodemon --exec ts-node -r tsconfig-paths/register src/index.ts",
+        "build": "tsc --project tsconfig.compile.json",
+        "start": "yarn barrels && ts-node src/index.ts",
         "dev": "yarn barrels && nodemon --exec ts-node -r tsconfig-paths/register src/index.ts",
         "barrels": "barrelsby --config .barrelsby.json -q",
         "format": "prettier '**/*.{tsx,ts,js,json,md,yml,yaml}' --write",
@@ -19,7 +20,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "@prisma/client": "^5.15.0",
+        "@prisma/client": "^5.15.1",
         "@types/bcryptjs": "^2.4.6",
         "@types/cors": "^2.8.17",
         "@types/jsonwebtoken": "^9.0.6",
@@ -27,6 +28,7 @@
         "@types/otp-generator": "^4.0.2",
         "@types/swagger-jsdoc": "^6.0.4",
         "@types/swagger-ui-express": "^4.1.6",
+        "barrelsby": "^2.8.1",
         "bcryptjs": "^2.4.3",
         "chalk": "^4.1.2",
         "cors": "^2.8.5",
@@ -40,12 +42,11 @@
         "nodemon": "^3.1.0",
         "npm": "^10.8.0",
         "otp-generator": "^4.0.1",
-        "prisma": "^5.15.0",
+        "prisma": "^5.15.1",
         "swagger-jsdoc": "^6.2.8",
-        "swagger-ui-express": "^5.0.0",
-        "tsconfig-paths": "^4.2.0",
+        "swagger-ui-express": "4.6.3",
         "ts-node": "^10.9.2",
-        "barrelsby": "^2.8.1"
+        "tsconfig-paths": "^4.2.0"
     },
     "devDependencies": {
         "@commitlint/cli": "^19.3.0",
@@ -61,5 +62,6 @@
         "prettier": "3.3.2",
         "typescript": "^5.4.5",
         "winston": "^3.13.0"
-    }
+    },
+    "type": "commonjs"
 }
