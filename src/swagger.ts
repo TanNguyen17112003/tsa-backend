@@ -25,12 +25,11 @@ const options = {
       }
     ]
   },
-
-  apis: ['src/routes/*.ts']
+  apis: ['dist/routes/*.js']
 };
 
 const swaggerSpec = swaggerJsdoc(options);
-const CSS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css';
+const CSS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.6.2/swagger-ui.min.css';
 
 const setupSwagger = (app: Express) => {
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { customCssUrl: CSS_URL }));

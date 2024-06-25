@@ -19,11 +19,12 @@ app.use(
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
+// Swagger
+setupSwagger(app);
 // Routes
 app.use('/api', router);
 
 // Swagger
-setupSwagger(app);
 
 // Start server
 const startServer = async () => {

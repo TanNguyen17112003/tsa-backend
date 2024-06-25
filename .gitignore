@@ -48,7 +48,7 @@ test/**/*.js.map
 
 # Project
 /public
-/dist
+
 
 # env
 .env*
