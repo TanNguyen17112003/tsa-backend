@@ -7,7 +7,7 @@ const auth_middleware_1 = require("../middlewares/auth.middleware");
 const authRouter = (0, express_1.Router)();
 exports.authRouter = authRouter;
 /**
- * @openapi
+ * @swagger
  * /api/auth/register:
  *   post:
  *     tags:
@@ -44,7 +44,7 @@ exports.authRouter = authRouter;
  */
 authRouter.post('/register', auth_controller_1.register);
 /**
- * @openapi
+ * @swagger
  * /api/auth/login:
  *   post:
  *     tags:
@@ -72,7 +72,7 @@ authRouter.post('/register', auth_controller_1.register);
  */
 authRouter.post('/login', auth_controller_1.login);
 /**
- * @openapi
+ * @swagger
  * /api/auth/change-information/{id}:
  *   put:
  *     tags:
@@ -106,7 +106,7 @@ authRouter.post('/login', auth_controller_1.login);
  */
 authRouter.put('/change-information/:id', auth_middleware_1.authMiddleware, auth_controller_1.changeInformation);
 /**
- * @openapi
+ * @swagger
  * /api/auth/reset-password:
  *   put:
  *     tags:
@@ -137,7 +137,7 @@ authRouter.put('/change-information/:id', auth_middleware_1.authMiddleware, auth
  */
 authRouter.put('/reset-password', auth_middleware_1.authMiddleware, auth_controller_1.resetPassword);
 /**
- * @openapi
+ * @swagger
  * /api/auth/send-otp/{id}:
  *   post:
  *     tags:
@@ -157,7 +157,7 @@ authRouter.put('/reset-password', auth_middleware_1.authMiddleware, auth_control
  */
 authRouter.post('/send-otp/:id', auth_middleware_1.authMiddleware, auth_controller_1.sendOtp);
 /**
- * @openapi
+ * @swagger
  * /api/auth/verify-otp/{id}:
  *   post:
  *     tags:

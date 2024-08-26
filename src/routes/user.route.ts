@@ -5,20 +5,20 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 const userRouter = Router();
 
 /**
- * @openapi
- * /api/users:
- *   get:
- *     tags:
- *     - User
- *     summary: Get all users
- *     responses:
- *       200:
- *         description: A list of users
+ * @swagger
+ *  /api/users:
+ *    get:
+ *      tags:
+ *      - User
+ *      summary: Get all users
+ *      responses:
+ *        200:
+ *          description: A list of users
  */
 userRouter.get('', getUsers);
 
 /**
- * @openapi
+ * @swagger
  * /api/users/{id}:
  *   get:
  *     tags:
@@ -38,7 +38,7 @@ userRouter.get('', getUsers);
 userRouter.get('/:id', authMiddleware, getUser);
 
 /**
- * @openapi
+ * @swagger
  * /api/users/{id}:
  *   put:
  *     tags:
@@ -73,7 +73,7 @@ userRouter.get('/:id', authMiddleware, getUser);
 userRouter.put('/:id', authMiddleware, updateUser);
 
 /**
- * @openapi
+ * @swagger
  * /api/users/{id}:
  *   delete:
  *     tags:

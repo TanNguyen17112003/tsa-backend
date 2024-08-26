@@ -7,19 +7,19 @@ const auth_middleware_1 = require("../middlewares/auth.middleware");
 const userRouter = (0, express_1.Router)();
 exports.userRouter = userRouter;
 /**
- * @openapi
- * /api/users:
- *   get:
- *     tags:
- *     - User
- *     summary: Get all users
- *     responses:
- *       200:
- *         description: A list of users
+ * @swagger
+ *  /api/users:
+ *    get:
+ *      tags:
+ *      - User
+ *      summary: Get all users
+ *      responses:
+ *        200:
+ *          description: A list of users
  */
 userRouter.get('', user_controller_1.getUsers);
 /**
- * @openapi
+ * @swagger
  * /api/users/{id}:
  *   get:
  *     tags:
@@ -38,7 +38,7 @@ userRouter.get('', user_controller_1.getUsers);
  */
 userRouter.get('/:id', auth_middleware_1.authMiddleware, user_controller_1.getUser);
 /**
- * @openapi
+ * @swagger
  * /api/users/{id}:
  *   put:
  *     tags:
@@ -72,7 +72,7 @@ userRouter.get('/:id', auth_middleware_1.authMiddleware, user_controller_1.getUs
  */
 userRouter.put('/:id', auth_middleware_1.authMiddleware, user_controller_1.updateUser);
 /**
- * @openapi
+ * @swagger
  * /api/users/{id}:
  *   delete:
  *     tags:

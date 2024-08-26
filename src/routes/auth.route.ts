@@ -12,7 +12,7 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 const authRouter = Router();
 
 /**
- * @openapi
+ * @swagger
  * /api/auth/register:
  *   post:
  *     tags:
@@ -50,7 +50,7 @@ const authRouter = Router();
 authRouter.post('/register', register);
 
 /**
- * @openapi
+ * @swagger
  * /api/auth/login:
  *   post:
  *     tags:
@@ -79,7 +79,7 @@ authRouter.post('/register', register);
 authRouter.post('/login', login);
 
 /**
- * @openapi
+ * @swagger
  * /api/auth/change-information/{id}:
  *   put:
  *     tags:
@@ -115,7 +115,7 @@ authRouter.post('/login', login);
 authRouter.put('/change-information/:id', authMiddleware, changeInformation);
 
 /**
- * @openapi
+ * @swagger
  * /api/auth/reset-password:
  *   put:
  *     tags:
@@ -147,7 +147,7 @@ authRouter.put('/change-information/:id', authMiddleware, changeInformation);
 authRouter.put('/reset-password', authMiddleware, resetPassword);
 
 /**
- * @openapi
+ * @swagger
  * /api/auth/send-otp/{id}:
  *   post:
  *     tags:
@@ -168,7 +168,7 @@ authRouter.put('/reset-password', authMiddleware, resetPassword);
 authRouter.post('/send-otp/:id', authMiddleware, sendOtp);
 
 /**
- * @openapi
+ * @swagger
  * /api/auth/verify-otp/{id}:
  *   post:
  *     tags:

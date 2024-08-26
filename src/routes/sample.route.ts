@@ -11,7 +11,7 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 const sampleRouter = express.Router();
 
 /**
- * @openapi
+ * @swagger
  * /api/samples:
  *   get:
  *     tags:
@@ -24,7 +24,7 @@ const sampleRouter = express.Router();
 sampleRouter.get('', authMiddleware, getSamples);
 
 /**
- * @openapi
+ * @swagger
  * /api/samples/{id}:
  *   get:
  *     tags:
@@ -45,7 +45,7 @@ sampleRouter.get('', authMiddleware, getSamples);
 sampleRouter.get('/:id', authMiddleware, getSample);
 
 /**
- * @openapi
+ * @swagger
  * /api/samples:
  *   post:
  *     tags:
@@ -74,7 +74,7 @@ sampleRouter.get('/:id', authMiddleware, getSample);
 sampleRouter.post('', authMiddleware, createSample);
 
 /**
- * @openapi
+ * @swagger
  * /api/samples/{id}:
  *   put:
  *     tags:
@@ -111,7 +111,7 @@ sampleRouter.post('', authMiddleware, createSample);
 sampleRouter.put('/:id', authMiddleware, updateSample);
 
 /**
- * @openapi
+ * @swagger
  * /api/samples/{id}:
  *   delete:
  *     tags:

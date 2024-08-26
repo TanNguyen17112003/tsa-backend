@@ -13,7 +13,8 @@
   },
   "env": {
     "node": true, // indicate that the code will run in a Node.js environment.
-    "es6": true // indicate that ES6 (ECMAScript 2015) features are supported.
+    "es6": true,
+    "jest": true // indicate that ES6 (ECMAScript 2015) features are supported.
   },
   "rules": {
     "@typescript-eslint/no-inferrable-types": 0, // turn off the rule that flags unnecessary type declarations in TypeScript.
