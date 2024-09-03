@@ -12,10 +12,7 @@ import { UserService } from 'src/services/user.service';
 @Module({
   imports: [
     PrismaModule,
-    ConfigModule.forRoot({
-      envFilePath: '.env',
-      isGlobal: true,
-    }),
+    ConfigModule.forRoot({ isGlobal: true }),
     JwtModule.register({
       secret: process.env.secret,
       signOptions: { expiresIn: '1d' },
