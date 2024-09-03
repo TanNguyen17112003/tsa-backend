@@ -1,13 +1,7 @@
-import {
-  Injectable,
-  Body,
-  Param,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { Sample } from '../models/sample.model';
-import { User } from 'src/models/user.model';
+import { Body, Injectable, NotFoundException, Param } from '@nestjs/common';
+// import { User } from 'src/models/user.model';
 import { CreateSampleDto } from 'src/dto/sample.dto';
+import { Sample } from 'src/models/sample.model';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -17,15 +11,15 @@ export class SampleService {
   async create(@Body() body: CreateSampleDto): Promise<Sample> {
     const newSample = await this.prismaService.sample.create({
       data: {
-        content: body.content
-      }
+        content: body.content,
+      },
     });
     return newSample;
   }
 
   async getAll(): Promise<Sample[]> {
     const samples = await this.prismaService.sample.findMany();
-    return samples
+    return samples;
   }
   async getById(@Param('id') id: string): Promise<Sample> {
     const sample = await this.prismaService.sample.findUnique({
@@ -39,11 +33,7 @@ export class SampleService {
     return sample;
   }
 
-
-  async update(
-    @Param('id') id: string,
-    @Body() body: CreateSampleDto,
-  ): Promise<Sample> {
+  async update(@Param('id') id: string, @Body() body: CreateSampleDto): Promise<Sample> {
     const sample = await this.prismaService.sample.findUnique({
       where: { id },
     });

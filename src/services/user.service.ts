@@ -1,9 +1,9 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { SignInDto, SignUpDto, UpdatePasswordDto } from 'src/dto/user.dto';
 import { User } from 'src/models/user.model';
-import { SignInDto, UpdateNameDto, UpdatePasswordDto, SignUpDto } from 'src/dto/user.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class UserService {
@@ -21,9 +21,14 @@ export class UserService {
 
     const salt = await bcrypt.genSalt();
     const hash = await bcrypt.hash(user.password, salt);
-    const reqBody = { firstName: user.firstName, lastName: user.lastName, email: user.email, password: hash };
+    const reqBody = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      password: hash,
+    };
     const savedUser = await this.prismaService.user.create({
-      data: reqBody
+      data: reqBody,
     });
 
     const payload = { email: user.email };
@@ -53,7 +58,10 @@ export class UserService {
       throw new Error('User or request not found');
     }
 
-    const comparison = await bcrypt.compare(updatePasswordDto.currentPassword, currentUser.password);
+    const comparison = await bcrypt.compare(
+      updatePasswordDto.currentPassword,
+      currentUser.password
+    );
     if (!comparison) {
       throw new Error('Incorrect current password');
     }
