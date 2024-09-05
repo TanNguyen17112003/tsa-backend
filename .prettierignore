@@ -1,6 +1,3 @@
 dist
 node_modules
-package*.json
 *.lock
-*.yml
-*.md

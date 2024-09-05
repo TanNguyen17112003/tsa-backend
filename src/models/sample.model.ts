@@ -4,9 +4,9 @@ export class Sample {
   @ApiProperty({
     example: 'Content of sample',
     description: 'Content of sample v2',
-    required: true
+    required: true,
   })
   content: string;
 
- // This will store the ID of the User
+  // This will store the ID of the User
 }
