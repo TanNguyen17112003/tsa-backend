@@ -14,12 +14,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Sample {
-  id        String   @id @default(cuid())
-  content   String   @db.VarChar(255)
-  createdAt DateTime @default(dbgenerated("now()"))
-}
-
 model User {
   id                String             @id @default(cuid())
   email             String             @unique @db.VarChar(50)
@@ -28,7 +22,6 @@ model User {
   password          String             @db.VarChar(255)
   role              UserRole           @default(CUSTOMER)
   customer          Customer?
-  shipper           Shipper?
   staff             Staff?
   admin             Admin?
   verified          Boolean            @default(false)
@@ -42,15 +35,11 @@ model Customer {
 }
 
 model Staff {
-  staffId String  @id @unique
-  user    User    @relation(fields: [staffId], references: [id])
-  orders  Order[]
-}
-
-model Shipper {
-  shipperId String  @id @unique
-  user      User    @relation(fields: [shipperId], references: [id])
-  orders    Order[]
+  staffId    String      @id @unique
+  user       User        @relation(fields: [staffId], references: [id])
+  deliveries Delivery[]
+  orders     Order[]
+  status     StaffStatus @default(AVAILABLE)
 }
 
 model Admin {
@@ -67,28 +56,44 @@ model VerificationEmail {
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  customerId  String
-  status      OrderStatus @default(PENDING)
-  customer    Customer    @relation(fields: [customerId], references: [customerId])
-  shipperId   String? // This is for when the order is initialy created by customer but not yet found a proper shipper
-  shipper     Shipper?    @relation(fields: [shipperId], references: [shipperId])
-  staffId     String? // This is for the order is accepted from both sides: customer and shipper but no staff gets it.
-  staff       Staff?      @relation(fields: [staffId], references: [staffId])
-  createdAt   DateTime    @default(dbgenerated("now()"))
-  deliveredAt DateTime?
-  cancelledAt DateTime?
-  rejectedAt  DateTime?
-  acceptedAt  DateTime?
-  shippingFee Float
-  address     String      @db.VarChar(255)
+  id            String      @id @default(cuid())
+  customerId    String
+  status        OrderStatus @default(PENDING)
+  customer      Customer    @relation(fields: [customerId], references: [customerId])
+  staffId       String? // staff that approve the order at station
+  staff         Staff?      @relation(fields: [staffId], references: [staffId])
+  createdAt     String      @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
+  deliveredAt   String?     @db.VarChar(255)
+  cancelledAt   String?     @db.VarChar(255)
+  rejectedAt    String?     @db.VarChar(255)
+  acceptedAt    String?     @db.VarChar(255)
+  shippingFee   Float
+  address       String      @db.VarChar(255) // ex: KTX Khu B, ĐHQG TP.HCM 
+  room          String?     @db.VarChar(20) // ex: 101
+  building      String?     @db.VarChar(20) // ex: A
+  delivery      Delivery?   @relation(fields: [deliveryId], references: [deliveryId])
+  deliveryId    String?
+  verified      Boolean     @default(false)
+  ordinalNumber Int         @db.SmallInt //  Thứ tự của đơn hàng trong 1 chuyến giao hàng
+}
+
+model Delivery {
+  deliveryId String         @id @default(cuid())
+  createdAt  String         @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
+  acceptedAt String?        @db.VarChar(255)
+  deliveryAt String?        @db.VarChar(255)
+  limitTime  String         @db.VarChar(255)
+  delayTime  String?        @db.VarChar(255)
+  status     DeliveryStatus @default(PENDING)
+  orders     Order[]
+  shipperId  String?        @db.VarChar(255) // Staft who takes responsible for the delivery
+  staff      Staff?         @relation(fields: [shipperId], references: [staffId])
 }
 
 enum UserRole {
   ADMIN
   CUSTOMER
   STAFF
-  SHIPPER
 }
 
 enum OrderStatus {
@@ -98,4 +103,15 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
   IN_TRANSPORT
+}
+
+enum DeliveryStatus {
+  PENDING
+  ACCEPTED
+  SUCCESS
+}
+
+enum StaffStatus {
+  AVAILABLE
+  BUSY
 }
