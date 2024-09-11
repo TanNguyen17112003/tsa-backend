@@ -9,12 +9,10 @@ export class User {
   lastName: string;
   @ApiProperty({ example: '123@gmail.com', description: 'Email of user', required: true })
   email: string;
-  @ApiProperty({ example: '123456', description: 'Password of user', required: true })
-  password: string;
   @ApiProperty({
-    example: '2021-01-01T00:00:00.000Z',
-    description: 'Created date of user',
+    example: '1726015631',
+    description: 'Unix timestamp of when the user was created',
     required: true,
   })
-  createdAt: Date;
+  createdAt: string;
 }

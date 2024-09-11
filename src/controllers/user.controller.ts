@@ -50,7 +50,7 @@ export class UserController {
     } catch (error) {
       return response.status(HttpStatus.UNAUTHORIZED).json({
         status: 'error',
-        message: 'Incorrect username or password',
+        message: 'Mật khẩu hoặc email không đúng',
       });
     }
   }
@@ -69,7 +69,7 @@ export class UserController {
       await this.userService.updatePassword(request.user, updatePasswordDto);
 
       return response.status(HttpStatus.OK).json({
-        message: 'Password updated successfully',
+        message: 'Cập nhật mật khẩu thành công',
       });
     } catch (error) {
       return response.status(HttpStatus.BAD_REQUEST).json({

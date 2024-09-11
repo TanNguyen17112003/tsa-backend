@@ -25,6 +25,7 @@ model User {
   firstName         String             @db.VarChar(50)
   lastName          String             @db.VarChar(50)
   role              UserRole           @default(CUSTOMER)
+  createdAt         String             @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
   customer          Customer?
   staff             Staff?
   admin             Admin?
