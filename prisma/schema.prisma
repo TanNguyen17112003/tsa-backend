@@ -49,17 +49,18 @@ model AuthProvider {
 }
 
 model Customer {
-  customerId String  @id @unique
-  user       User    @relation(fields: [customerId], references: [id])
+  customerId String     @id @unique
+  user       User       @relation(fields: [customerId], references: [id])
   orders     Order[]
+  status     UserStatus @default(OFFLINE)
 }
 
 model Staff {
-  staffId    String      @id @unique
-  user       User        @relation(fields: [staffId], references: [id])
+  staffId    String     @id @unique
+  user       User       @relation(fields: [staffId], references: [id])
   deliveries Delivery[]
   orders     Order[]
-  status     StaffStatus @default(AVAILABLE)
+  status     UserStatus @default(OFFLINE)
 }
 
 model Admin {
@@ -142,9 +143,10 @@ enum DeliveryStatus {
   SUCCESS
 }
 
-enum StaffStatus {
+enum UserStatus {
   AVAILABLE
   BUSY
+  OFFLINE
 }
 
 enum ReportStatus {
