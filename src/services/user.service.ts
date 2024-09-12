@@ -2,9 +2,9 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import moment from 'moment';
+import { PrismaService } from 'src/common/prisma/prisma.service';
 import { SignInDto, SignUpDto, UpdatePasswordDto } from 'src/dto/user.dto';
 import { User } from 'src/models/user.model';
-import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class UserService {
@@ -24,11 +24,12 @@ export class UserService {
 
     const salt = await bcrypt.genSalt();
     const hash = await bcrypt.hash(user.password, salt);
-    const createdAt = moment().format('X');
+    const createdAt = moment().unix().toString();
     const savedUser = await this.prismaService.user.create({
       data: {
         firstName: user.firstName,
         lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
         createdAt,
       },
     });
@@ -36,18 +37,14 @@ export class UserService {
       data: {
         email: user.email,
         password: hash,
-        user: {
-          connect: {
-            id: savedUser.id,
-          },
-        },
+        uid: savedUser.id,
       },
     });
-    const payload = { email: user.email };
+    const payload = { email: user.email, role: savedUser.role, id: savedUser.id };
     const token = jwt.sign(payload);
 
     return {
-      info: { ...savedUser, _id: savedUser.id, createdAt, email: savedCredentials.email },
+      info: { ...savedUser, email: savedCredentials.email },
       token,
     };
   }
@@ -58,7 +55,6 @@ export class UserService {
   ): Promise<{
     token: string;
     name: string;
-    role: string;
   }> {
     const foundCredentials = await this.prismaService.credentials.findUnique({
       where: { email: user.email },
@@ -73,17 +69,16 @@ export class UserService {
     const foundUser = await this.prismaService.user.findUnique({
       where: { id: foundCredentials.uid },
     });
-    const payload = { email: user.email };
+    const payload = { email: user.email, role: foundUser.role, id: foundUser.id };
     return {
       token: jwt.sign(payload),
       name: foundUser.firstName + foundUser.lastName,
-      role: foundUser.role,
     };
   }
 
   async updatePassword(user: User, updatePasswordDto: UpdatePasswordDto): Promise<void> {
     const currentCredential = await this.prismaService.credentials.findUnique({
-      where: { uid: user._id },
+      where: { uid: user.id },
     });
     if (!currentCredential) {
       throw new Error('Người dùng không tồn tại');
@@ -100,7 +95,7 @@ export class UserService {
     const salt = await bcrypt.genSalt();
     const hash = await bcrypt.hash(updatePasswordDto.newPassword, salt);
     await this.prismaService.credentials.update({
-      where: { uid: user._id },
+      where: { uid: user.id },
       data: { password: hash },
     });
   }

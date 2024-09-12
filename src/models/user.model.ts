@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class User {
   @ApiProperty({ example: '123456789', description: 'Id of user', required: true })
-  _id: string;
+  id: string;
   @ApiProperty({ example: 'Nguyen', description: 'First name of user', required: true })
   firstName: string;
   @ApiProperty({ example: 'A', description: 'Last name of users', required: true })
@@ -15,4 +15,6 @@ export class User {
     required: true,
   })
   createdAt: string;
+  @ApiProperty({ example: '123456', description: 'Phone number of user', required: true })
+  phoneNumber: string;
 }

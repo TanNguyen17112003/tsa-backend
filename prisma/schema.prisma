@@ -24,9 +24,10 @@ model User {
   id                String             @id @default(cuid())
   firstName         String             @db.VarChar(50)
   lastName          String             @db.VarChar(50)
-  role              UserRole           @default(CUSTOMER)
+  phoneNumber       String             @unique @db.VarChar(15)
+  role              UserRole           @default(STUDENT)
   createdAt         String             @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
-  customer          Customer?
+  student           Student?
   staff             Staff?
   admin             Admin?
   verified          Boolean            @default(false)
@@ -48,11 +49,11 @@ model AuthProvider {
   type AuthProviderType
 }
 
-model Customer {
-  customerId String     @id @unique
-  user       User       @relation(fields: [customerId], references: [id])
-  orders     Order[]
-  status     UserStatus @default(OFFLINE)
+model Student {
+  studentId String     @id @unique
+  user      User       @relation(fields: [studentId], references: [id])
+  orders    Order[]
+  status    UserStatus @default(OFFLINE)
 }
 
 model Staff {
@@ -78,9 +79,9 @@ model VerificationEmail {
 
 model Order {
   id            String      @id @default(cuid())
-  customerId    String
   status        OrderStatus @default(PENDING)
-  customer      Customer    @relation(fields: [customerId], references: [customerId])
+  studentId     String?
+  student       Student?    @relation(fields: [studentId], references: [studentId])
   staffId       String? // staff that approve the order at station
   staff         Staff?      @relation(fields: [staffId], references: [staffId])
   createdAt     String      @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
@@ -88,15 +89,16 @@ model Order {
   cancelledAt   String?     @db.VarChar(255)
   rejectedAt    String?     @db.VarChar(255)
   acceptedAt    String?     @db.VarChar(255)
-  shippingFee   Float
+  shippingFee   Float?
   address       String      @db.VarChar(255) // ex: KTX Khu B, ĐHQG TP.HCM 
   room          String?     @db.VarChar(20) // ex: 101
   building      String?     @db.VarChar(20) // ex: A
   delivery      Delivery?   @relation(fields: [deliveryId], references: [deliveryId])
   deliveryId    String?
-  verified      Boolean     @default(false)
-  ordinalNumber Int         @db.SmallInt //  Thứ tự của đơn hàng trong 1 chuyến giao hàng
+  checkCode     String      @db.VarChar(255)
+  ordinalNumber Int?        @db.SmallInt //  Thứ tự của đơn hàng trong 1 chuyến giao hàng
   report        Report[]
+  weight        Float?
 }
 
 model Delivery {
@@ -124,7 +126,7 @@ model Report {
 
 enum UserRole {
   ADMIN
-  CUSTOMER
+  STUDENT
   STAFF
 }
 
