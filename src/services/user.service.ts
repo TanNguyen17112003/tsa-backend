@@ -1,14 +1,17 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import moment from 'moment';
+import { DateService } from 'src/common/date/date.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { SignInDto, SignUpDto, UpdatePasswordDto } from 'src/dto/user.dto';
 import { User } from 'src/models/user.model';
 
 @Injectable()
 export class UserService {
-  constructor(private prismaService: PrismaService) {}
+  constructor(
+    private prismaService: PrismaService,
+    private dateService: DateService
+  ) {}
 
   async signup(user: SignUpDto, jwt: JwtService): Promise<{ info: User; token: string }> {
     if (!user.firstName || !user.lastName || !user.email || !user.password) {
@@ -19,12 +22,12 @@ export class UserService {
       where: { email: user.email },
     });
     if (existingUser) {
-      throw new HttpException('Email is already in use', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Email đã được sử dụng để đăng ký', HttpStatus.BAD_REQUEST);
     }
 
     const salt = await bcrypt.genSalt();
     const hash = await bcrypt.hash(user.password, salt);
-    const createdAt = moment().unix().toString();
+    const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
     const savedUser = await this.prismaService.user.create({
       data: {
         firstName: user.firstName,

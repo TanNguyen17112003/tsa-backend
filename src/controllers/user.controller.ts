@@ -11,8 +11,8 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from 'src/common/auth/auth.guard';
 import { SignInDto, SignUpDto, UpdatePasswordDto } from 'src/dto/user.dto';
-import { AuthGuard } from 'src/guards/auth.guard';
 import { UserService } from 'src/services/user.service';
 
 @ApiTags('Authentication')
@@ -33,7 +33,7 @@ export class UserController {
         userInfo,
       });
     } catch (error) {
-      return response.status(HttpStatus.BAD_REQUEST).json({
+      return response.status(error.getStatus()).json({
         status: 'error',
         message: error.message,
       });
@@ -48,9 +48,9 @@ export class UserController {
       const token = await this.userService.signin(user, this.jwtService);
       return response.status(HttpStatus.OK).json(token);
     } catch (error) {
-      return response.status(HttpStatus.UNAUTHORIZED).json({
+      return response.status(error.getStatus()).json({
         status: 'error',
-        message: 'Mật khẩu hoặc email không đúng',
+        message: error.message,
       });
     }
   }

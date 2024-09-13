@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { DateModule } from 'src/common/date/date.module';
-import { DateService } from 'src/common/date/date.service';
 import { PrismaModule } from 'src/common/prisma/prisma.module';
 import { AppController } from 'src/controllers/app.controller';
 import { OrdersController } from 'src/controllers/orders.controller';
@@ -17,12 +16,12 @@ import { UserService } from 'src/services/user.service';
     PrismaModule,
     ConfigModule.forRoot({ isGlobal: true }),
     JwtModule.register({
-      secret: process.env.secret,
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1d' },
     }),
     DateModule,
   ],
   controllers: [AppController, UserController, SampleController, OrdersController],
-  providers: [AppService, UserService, SampleService, DateService],
+  providers: [AppService, UserService, SampleService],
 })
 export class AppModule {}

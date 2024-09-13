@@ -12,8 +12,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from 'src/common/auth/auth.guard';
 import { CreateSampleDto } from 'src/dto/sample.dto';
-import { AuthGuard } from 'src/guards/auth.guard';
 import { SampleService } from 'src/services/sample.service';
 
 @ApiBearerAuth('JWT-auth')

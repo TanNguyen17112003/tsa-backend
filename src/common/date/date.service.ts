@@ -1,17 +1,21 @@
-import { Injectable } from '@nestjs/common';
-import moment from 'moment';
+import { Inject, Injectable } from '@nestjs/common';
+import * as moment from 'moment';
 
 @Injectable()
 export class DateService {
+  constructor(
+    @Inject('MomentWrapper')
+    private moment: (inp?: moment.MomentInput, strict?: boolean) => moment.Moment
+  ) {}
   getCurrentDate(): string {
-    return moment().format('YYYY-MM-DD');
+    return this.moment().format('YYYY-MM-DD');
   }
   getCurrentUnixTimestamp(): number {
-    return moment().unix();
+    return this.moment().unix();
   }
   getDaysBetweenDates(date1: string, date2: string): number {
-    const start = moment(date1);
-    const end = moment(date2);
+    const start = this.moment(date1);
+    const end = this.moment(date2);
     return end.diff(start, 'days');
   }
 }
