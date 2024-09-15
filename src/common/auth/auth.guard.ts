@@ -15,8 +15,14 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
 
-    await this.authenticateUser(req);
-
+    const isAuthen = await this.authenticateUser(req);
+    if (!isAuthen) {
+      throw new UnauthorizedException('Phiên đăng nhập không hợp lệ.');
+    }
+    const isAuthorized = await this.authorizeUser(req, context);
+    if (!isAuthorized) {
+      throw new UnauthorizedException('Không có quyền truy cập.');
+    }
     return this.authorizeUser(req, context);
   }
 
@@ -29,47 +35,46 @@ export class AuthGuard implements CanActivate {
       const user = await this.jwtService.verify(token);
       req['user'] = user;
     } catch (err) {
-      console.error('Xác thực người dùng thất bại:', err);
+      return false;
     }
     return true;
   }
 
   private async authorizeUser(req: any, context: ExecutionContext): Promise<boolean> {
-    const userRoles = await this.getUserRoles(req.user.uid);
-    req.user.roles = userRoles;
-
+    // const userRoles = await this.getUserRoles(req.user.id);
+    // req.user.roles = userRoles;
+    const userRole = req.user.role;
     const requiredRoles = this.getMetadata<Role[]>('roles', context);
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
 
-    return requiredRoles.some((role) => userRoles.includes(role));
+    return requiredRoles.some((role) => userRole.includes(role));
   }
 
   private getMetadata<T>(key: string, context: ExecutionContext): T {
     return this.reflector.getAllAndOverride<T>(key, [context.getHandler(), context.getClass()]);
   }
 
-  private async getUserRoles(uid: string): Promise<Role[]> {
-    const roles: Role[] = [];
+  // private async getUserRoles(uid: string): Promise<Role[]> {
+  //   const roles: Role[] = [];
+  //   const [admin, staff, student] = await Promise.all([
+  //     this.prisma.admin.findUnique({
+  //       where: {
+  //         adminId: uid,
+  //       },
+  //     }),
+  //     this.prisma.student.findUnique({
+  //       where: {
+  //         studentId: uid,
+  //       },
+  //     }),
+  //     this.prisma.staff.findUnique({ where: { staffId: uid } }),
+  //   ]);
+  //   admin && roles.push('ADMIN');
+  //   staff && roles.push('STAFF');
+  //   student && roles.push('STUDENT');
 
-    const [admin, staff, student] = await Promise.all([
-      this.prisma.admin.findUnique({
-        where: {
-          adminId: uid,
-        },
-      }),
-      this.prisma.student.findUnique({
-        where: {
-          studentId: uid,
-        },
-      }),
-      this.prisma.staff.findUnique({ where: { staffId: uid } }),
-    ]);
-    admin && roles.push('ADMIN');
-    staff && roles.push('STAFF');
-    student && roles.push('STUDENT');
-
-    return roles;
-  }
+  //   return roles;
+  // }
 }

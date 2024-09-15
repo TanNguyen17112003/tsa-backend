@@ -8,7 +8,7 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   @IsOptional()
   studentId: string;
   @IsOptional()
-  staffId: string;
+  adminId: string;
   createdAt: string;
   @IsOptional()
   deliveredAt: string;
@@ -31,4 +31,10 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   checkCode: string;
   @IsOptional()
   weight: number;
+  @IsOptional()
+  rejectReason: string;
+  @IsOptional()
+  cancelReason: string;
+  @IsOptional()
+  shipperId: string;
 }

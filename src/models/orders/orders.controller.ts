@@ -5,35 +5,46 @@ import { checkRowLevelPermission } from 'src/common/auth/util';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { GetUserType } from 'src/common/types';
 
-import { CreateOrder } from '../models/orders/dtos/create.dto';
-import { OrderQueryDto } from '../models/orders/dtos/query.dto';
-import { UpdateOrder } from '../models/orders/dtos/update.dto';
-import { OrderEntity } from '../models/orders/entity/order.entity';
+import { CreateOrder } from './dtos/create.dto';
+import { OrderQueryDto } from './dtos/query.dto';
+import { UpdateOrder } from './dtos/update.dto';
+import { OrderEntity } from './entity/order.entity';
 
 @ApiTags('orders')
 @Controller('api/orders')
 export class OrdersController {
   constructor(private readonly prisma: PrismaService) {}
 
-  @AllowAuthenticated()
+  @AllowAuthenticated('ADMIN', 'STUDENT')
   @ApiBearerAuth()
   @ApiCreatedResponse({ type: OrderEntity })
   @Post()
   create(@Body() createOrderDto: CreateOrder, @GetUser() user: GetUserType) {
-    checkRowLevelPermission(user, createOrderDto.studentId);
+    checkRowLevelPermission(user, createOrderDto.studentId || createOrderDto.adminId);
     return this.prisma.order.create({ data: createOrderDto });
   }
 
+  @AllowAuthenticated('ADMIN', 'STUDENT')
+  @ApiBearerAuth()
   @ApiOkResponse({ type: [OrderEntity] })
   @Get()
-  findAll(@Query() { skip, take, order, sortBy }: OrderQueryDto) {
+  findAll(@Query() { skip, take, order, sortBy }: OrderQueryDto, @GetUser() user: GetUserType) {
+    checkRowLevelPermission(user, user.id);
     return this.prisma.order.findMany({
       ...(skip ? { skip: +skip } : null),
       ...(take ? { take: +take } : null),
       ...(sortBy ? { orderBy: { [sortBy]: order || 'asc' } } : null),
+      where:
+        user.role === 'STUDENT'
+          ? { studentId: user.id }
+          : {
+              adminId: user.id,
+            },
     });
   }
 
+  @AllowAuthenticated('ADMIN', 'STUDENT')
+  @ApiBearerAuth()
   @ApiOkResponse({ type: OrderEntity })
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -50,7 +61,7 @@ export class OrdersController {
     @GetUser() user: GetUserType
   ) {
     const order = await this.prisma.order.findUnique({ where: { id } });
-    checkRowLevelPermission(user, order.staffId || order.studentId);
+    checkRowLevelPermission(user, order.adminId || order.studentId);
     return this.prisma.order.update({
       where: { id },
       data: updateOrderDto,
@@ -62,7 +73,7 @@ export class OrdersController {
   @Delete(':id')
   async remove(@Param('id') id: string, @GetUser() user: GetUserType) {
     const order = await this.prisma.order.findUnique({ where: { id } });
-    checkRowLevelPermission(user, order.staffId || order.studentId);
+    checkRowLevelPermission(user, order.adminId);
     return this.prisma.order.delete({ where: { id } });
   }
 }

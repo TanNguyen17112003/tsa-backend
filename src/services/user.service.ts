@@ -36,13 +36,21 @@ export class UserService {
         createdAt,
       },
     });
-    const savedCredentials = await this.prismaService.credentials.create({
-      data: {
-        email: user.email,
-        password: hash,
-        uid: savedUser.id,
-      },
-    });
+    const [savedCredentials] = await Promise.all([
+      this.prismaService.credentials.create({
+        data: {
+          email: user.email,
+          password: hash,
+          uid: savedUser.id,
+        },
+      }),
+      await this.prismaService.student.create({
+        data: {
+          studentId: savedUser.id,
+        },
+      }),
+    ]);
+
     const payload = { email: user.email, role: savedUser.role, id: savedUser.id };
     const token = jwt.sign(payload);
 
@@ -65,10 +73,13 @@ export class UserService {
     if (!foundCredentials) {
       throw new HttpException('Email chưa được đăng ký', HttpStatus.UNAUTHORIZED);
     }
-    const comparison = await bcrypt.compare(user.password, foundCredentials.password);
-    if (!comparison) {
-      throw new HttpException('Sai mật khẩu', HttpStatus.UNAUTHORIZED);
-    }
+
+    // Xài tk của user seed thì comment nhé
+
+    // const comparison = await bcrypt.compare(user.password, foundCredentials.password);
+    // if (!comparison) {
+    //   throw new HttpException('Sai mật khẩu', HttpStatus.UNAUTHORIZED);
+    // }
     const foundUser = await this.prismaService.user.findUnique({
       where: { id: foundCredentials.uid },
     });

@@ -8,13 +8,13 @@ export const checkRowLevelPermission = (
 ) => {
   if (!requestedUid) return false;
 
-  if (user.roles?.some((role) => roles.includes(role))) {
+  if (roles.includes(user.role)) {
     return true;
   }
 
   const uids = typeof requestedUid === 'string' ? [requestedUid] : requestedUid.filter(Boolean);
 
-  if (!uids.includes(user.uid)) {
+  if (!uids.includes(user.id)) {
     throw new ForbiddenException();
   }
 };

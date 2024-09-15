@@ -1,7 +1,8 @@
 export type Role = 'ADMIN' | 'STAFF' | 'STUDENT';
 export type GetUserType = {
-  uid: string;
-  roles: Role[];
+  id: string;
+  role: Role;
+  email: string;
 };
 export type RestrictProperties<T, U> = {
   [K in keyof T]: K extends keyof U ? T[K] : never;
