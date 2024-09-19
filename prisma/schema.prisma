@@ -22,40 +22,54 @@ model Sample {
 
 model User {
   id                String             @id @default(cuid())
-  email             String             @unique @db.VarChar(50)
   firstName         String             @db.VarChar(50)
   lastName          String             @db.VarChar(50)
-  password          String             @db.VarChar(255)
-  role              UserRole           @default(CUSTOMER)
-  customer          Customer?
-  shipper           Shipper?
+  phoneNumber       String             @unique @db.VarChar(15)
+  role              UserRole           @default(STUDENT)
+  createdAt         String             @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
+  student           Student?
   staff             Staff?
   admin             Admin?
   verified          Boolean            @default(false)
   verificationEmail VerificationEmail?
+  Credentials       Credentials?
+  AuthProvider      AuthProvider?
 }
 
-model Customer {
-  customerId String  @id @unique
-  user       User    @relation(fields: [customerId], references: [id])
-  orders     Order[]
+model Credentials {
+  uid      String @id @default(cuid())
+  user     User   @relation(fields: [uid], references: [id])
+  email    String @unique @db.VarChar(50)
+  password String @db.VarChar(255)
+}
+
+model AuthProvider {
+  uid  String           @id @default(cuid())
+  user User             @relation(fields: [uid], references: [id])
+  type AuthProviderType
+}
+
+model Student {
+  studentId String     @id @unique
+  user      User       @relation(fields: [studentId], references: [id])
+  orders    Order[]
+  status    UserStatus @default(OFFLINE)
+  reports   Report[]
 }
 
 model Staff {
-  staffId String  @id @unique
-  user    User    @relation(fields: [staffId], references: [id])
-  orders  Order[]
-}
-
-model Shipper {
-  shipperId String  @id @unique
-  user      User    @relation(fields: [shipperId], references: [id])
-  orders    Order[]
+  staffId    String     @id @unique
+  user       User       @relation(fields: [staffId], references: [id])
+  deliveries Delivery[]
+  status     UserStatus @default(OFFLINE)
+  orders     Order[]
 }
 
 model Admin {
-  adminId String @id @unique
-  user    User   @relation(fields: [adminId], references: [id])
+  adminId String   @id @unique
+  user    User     @relation(fields: [adminId], references: [id])
+  reports Report[]
+  orders  Order[]
 }
 
 model VerificationEmail {
@@ -67,28 +81,66 @@ model VerificationEmail {
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  customerId  String
-  status      OrderStatus @default(PENDING)
-  customer    Customer    @relation(fields: [customerId], references: [customerId])
-  shipperId   String? // This is for when the order is initialy created by customer but not yet found a proper shipper
-  shipper     Shipper?    @relation(fields: [shipperId], references: [shipperId])
-  staffId     String? // This is for the order is accepted from both sides: customer and shipper but no staff gets it.
-  staff       Staff?      @relation(fields: [staffId], references: [staffId])
-  createdAt   DateTime    @default(dbgenerated("now()"))
-  deliveredAt DateTime?
-  cancelledAt DateTime?
-  rejectedAt  DateTime?
-  acceptedAt  DateTime?
-  shippingFee Float
-  address     String      @db.VarChar(255)
+  id            String      @id @default(cuid())
+  status        OrderStatus @default(PENDING)
+  studentId     String?
+  student       Student?    @relation(fields: [studentId], references: [studentId])
+  adminId       String?     @db.VarChar(255) // Admin who accepts or rejects the order
+  admin         Admin?      @relation(fields: [adminId], references: [adminId])
+  createdAt     String      @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
+  deliveredAt   String?     @db.VarChar(255)
+  cancelledAt   String?     @db.VarChar(255)
+  rejectedAt    String?     @db.VarChar(255)
+  acceptedAt    String?     @db.VarChar(255)
+  shippingFee   Float?
+  address       String      @db.VarChar(255) // ex: KTX Khu B, ĐHQG TP.HCM 
+  room          String?     @db.VarChar(20) // ex: 101
+  building      String?     @db.VarChar(20) // ex: A
+  delivery      Delivery?   @relation(fields: [deliveryId], references: [deliveryId])
+  deliveryId    String?
+  checkCode     String      @db.VarChar(255)
+  ordinalNumber Int?        @db.SmallInt //  Thứ tự của đơn hàng trong 1 chuyến giao hàng
+  report        Report[]
+  weight        Float?
+  cancelReason  String?     @db.Text
+  rejectReason  String?     @db.Text
+  shipperId     String?     @db.VarChar(255) // Staft who takes responsible for the delivery
+  staff         Staff?      @relation(fields: [shipperId], references: [staffId])
+}
+
+model Delivery {
+  deliveryId String         @id @default(cuid())
+  createdAt  String         @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
+  acceptedAt String?        @db.VarChar(255)
+  deliveryAt String?        @db.VarChar(255)
+  limitTime  String         @db.VarChar(255)
+  delayTime  String?        @db.VarChar(255)
+  status     DeliveryStatus @default(PENDING)
+  orders     Order[]
+  shipperId  String?        @db.VarChar(255) // Staft who takes responsible for the delivery
+  staff      Staff?         @relation(fields: [shipperId], references: [staffId])
+}
+
+model Report {
+  id         String       @id @default(cuid())
+  orderId    String       @db.VarChar(255)
+  order      Order        @relation(fields: [orderId], references: [id])
+  content    String       @db.Text
+  reportedAt String       @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
+  proof      String       @db.VarChar(255) // URL to image or video
+  reply      String?      @db.Text
+  repliedAt  String?      @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
+  status     ReportStatus @default(PENDING)
+  replierId  String?      @db.VarChar(255) // Admin who replies the report
+  admin      Admin?       @relation(fields: [replierId], references: [adminId])
+  studentId  String       @db.VarChar(255) // Student who reports the order
+  student    Student      @relation(fields: [studentId], references: [studentId])
 }
 
 enum UserRole {
   ADMIN
-  CUSTOMER
+  STUDENT
   STAFF
-  SHIPPER
 }
 
 enum OrderStatus {
@@ -96,6 +148,28 @@ enum OrderStatus {
   ACCEPTED
   REJECTED
   DELIVERED
-  CANCELLED
+  CANCELED
   IN_TRANSPORT
+}
+
+enum DeliveryStatus {
+  PENDING
+  ACCEPTED
+  SUCCESS
+}
+
+enum UserStatus {
+  AVAILABLE
+  BUSY
+  OFFLINE
+}
+
+enum ReportStatus {
+  PENDING
+  REPLIED
+}
+
+enum AuthProviderType {
+  GOOGLE
+  CREDENTIALS
 }

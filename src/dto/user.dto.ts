@@ -18,6 +18,9 @@ export class SignUpDto extends SignInDto {
   @IsString()
   @ApiProperty({ example: 'A', description: 'Last name of user' })
   readonly lastName: string;
+  @IsString()
+  @ApiProperty({ example: '123456', description: 'Phone number of user' })
+  readonly phoneNumber: string;
 }
 
 export class UpdateNameDto {

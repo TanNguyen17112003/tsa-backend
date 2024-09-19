@@ -1,8 +1,8 @@
 import { Body, Injectable, NotFoundException, Param } from '@nestjs/common';
+import { PrismaService } from 'src/common/prisma/prisma.service';
 // import { User } from 'src/models/user.model';
 import { CreateSampleDto } from 'src/dto/sample.dto';
 import { Sample } from 'src/models/sample.model';
-import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class SampleService {

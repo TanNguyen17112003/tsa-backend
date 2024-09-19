@@ -1,78 +1,121 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { DateService } from 'src/common/date/date.service';
+import { PrismaService } from 'src/common/prisma/prisma.service';
 import { SignInDto, SignUpDto, UpdatePasswordDto } from 'src/dto/user.dto';
 import { User } from 'src/models/user.model';
-import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class UserService {
-  constructor(private prismaService: PrismaService) {}
+  constructor(
+    private prismaService: PrismaService,
+    private dateService: DateService
+  ) {}
 
   async signup(user: SignUpDto, jwt: JwtService): Promise<{ info: User; token: string }> {
     if (!user.firstName || !user.lastName || !user.email || !user.password) {
       throw new HttpException('Name, email, and password are required', HttpStatus.BAD_REQUEST);
     }
 
-    const existingUser = await this.prismaService.user.findUnique({ where: { email: user.email } });
+    const existingUser = await this.prismaService.credentials.findUnique({
+      where: { email: user.email },
+    });
     if (existingUser) {
-      throw new HttpException('Email is already in use', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Email đã được sử dụng để đăng ký', HttpStatus.BAD_REQUEST);
     }
 
     const salt = await bcrypt.genSalt();
     const hash = await bcrypt.hash(user.password, salt);
-    const reqBody = {
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      password: hash,
-    };
+    const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
     const savedUser = await this.prismaService.user.create({
-      data: reqBody,
+      data: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
+        createdAt,
+      },
     });
+    const [savedCredentials] = await Promise.all([
+      this.prismaService.credentials.create({
+        data: {
+          email: user.email,
+          password: hash,
+          uid: savedUser.id,
+        },
+      }),
+      await this.prismaService.student.create({
+        data: {
+          studentId: savedUser.id,
+        },
+      }),
+    ]);
 
-    const payload = { email: user.email };
+    const payload = { email: user.email, role: savedUser.role, id: savedUser.id };
     const token = jwt.sign(payload);
 
-    return { info: { ...savedUser, _id: savedUser.id, createdAt: new Date() }, token };
+    return {
+      info: { ...savedUser, email: savedCredentials.email },
+      token,
+    };
   }
 
-  async signin(user: SignInDto, jwt: JwtService): Promise<any> {
-    const foundUser = await this.prismaService.user.findUnique({ where: { email: user.email } });
-    if (!foundUser) {
-      throw new HttpException('Incorrect username or password', HttpStatus.UNAUTHORIZED);
+  async signin(
+    user: SignInDto,
+    jwt: JwtService
+  ): Promise<{
+    token: string;
+    name: string;
+  }> {
+    const foundCredentials = await this.prismaService.credentials.findUnique({
+      where: { email: user.email },
+    });
+    if (!foundCredentials) {
+      throw new HttpException('Email chưa được đăng ký', HttpStatus.UNAUTHORIZED);
     }
 
-    const comparison = await bcrypt.compare(user.password, foundUser.password);
-    if (!comparison) {
-      throw new HttpException('Incorrect username or password', HttpStatus.UNAUTHORIZED);
-    }
+    // Xài tk của user seed thì comment nhé
 
-    const payload = { email: user.email };
-    return { token: jwt.sign(payload), name: foundUser.firstName + foundUser.lastName };
+    // const comparison = await bcrypt.compare(user.password, foundCredentials.password);
+    // if (!comparison) {
+    //   throw new HttpException('Sai mật khẩu', HttpStatus.UNAUTHORIZED);
+    // }
+    const foundUser = await this.prismaService.user.findUnique({
+      where: { id: foundCredentials.uid },
+    });
+    const payload = { email: user.email, role: foundUser.role, id: foundUser.id };
+    return {
+      token: jwt.sign(payload),
+      name: foundUser.firstName + foundUser.lastName,
+    };
   }
 
   async updatePassword(user: User, updatePasswordDto: UpdatePasswordDto): Promise<void> {
-    const currentUser = await this.prismaService.user.findUnique({ where: { id: user._id } });
-    if (!currentUser) {
-      throw new Error('User or request not found');
+    const currentCredential = await this.prismaService.credentials.findUnique({
+      where: { uid: user.id },
+    });
+    if (!currentCredential) {
+      throw new Error('Người dùng không tồn tại');
     }
 
     const comparison = await bcrypt.compare(
       updatePasswordDto.currentPassword,
-      currentUser.password
+      currentCredential.password
     );
     if (!comparison) {
-      throw new Error('Incorrect current password');
+      throw new Error('Mật khẩu hiện tại không đúng');
     }
 
     const salt = await bcrypt.genSalt();
     const hash = await bcrypt.hash(updatePasswordDto.newPassword, salt);
-    currentUser.password = hash;
+    await this.prismaService.credentials.update({
+      where: { uid: user.id },
+      data: { password: hash },
+    });
   }
 
   async getByEmail(email: string): Promise<any> {
-    return this.prismaService.user.findUnique({ where: { email } });
+    return this.prismaService.credentials.findUnique({ where: { email } });
   }
   async getById(id: string): Promise<any> {
     return this.prismaService.user.findUnique({ where: { id } });
