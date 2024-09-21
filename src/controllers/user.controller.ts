@@ -1,17 +1,7 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpStatus,
-  Post,
-  Put,
-  Request,
-  Response,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Post, Put, Request, Response } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from 'src/common/auth/auth.guard';
+import { AllowAuthenticated } from 'src/common/auth/auth.decorator';
 import { SignInDto, SignUpDto, UpdatePasswordDto } from 'src/dto/user.dto';
 import { UserService } from 'src/services/user.service';
 
@@ -55,11 +45,11 @@ export class UserController {
     }
   }
 
-  @UseGuards(AuthGuard)
   @Put('/update-password')
   @ApiOperation({ summary: 'Update User Password' })
   @ApiResponse({ status: 200, description: 'OK.' })
-  @ApiBearerAuth('JWT-auth')
+  @AllowAuthenticated()
+  @ApiBearerAuth('JWT-Auth')
   async updatePassword(
     @Response() response,
     @Request() request,
@@ -79,20 +69,20 @@ export class UserController {
     }
   }
 
-  @UseGuards(AuthGuard)
   @Get('/profile')
   @ApiOperation({ summary: 'Get user profile' })
   @ApiResponse({ status: 200, description: 'OK.' })
-  @ApiBearerAuth('JWT-auth')
+  @ApiBearerAuth('JWT-Auth')
+  @AllowAuthenticated()
   async get(@Response() response, @Request() request) {
     return response.status(HttpStatus.OK).json(request.user);
   }
 
-  @UseGuards(AuthGuard)
   @Get('/all')
   @ApiOperation({ summary: 'Get all available users using this application' })
   @ApiResponse({ status: 200, description: 'OK.' })
-  @ApiBearerAuth('JWT-auth')
+  @AllowAuthenticated('ADMIN')
+  @ApiBearerAuth('JWT-Auth')
   async getAllUsers(@Response() response) {
     try {
       const users = await this.userService.getAll();

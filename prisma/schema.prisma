@@ -81,31 +81,31 @@ model VerificationEmail {
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  status        OrderStatus @default(PENDING)
+  id            String        @id @default(cuid())
+  status        OrderStatus   @default(PENDING)
   studentId     String?
-  student       Student?    @relation(fields: [studentId], references: [studentId])
-  adminId       String?     @db.VarChar(255) // Admin who accepts or rejects the order
-  admin         Admin?      @relation(fields: [adminId], references: [adminId])
-  createdAt     String      @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
-  deliveredAt   String?     @db.VarChar(255)
-  cancelledAt   String?     @db.VarChar(255)
-  rejectedAt    String?     @db.VarChar(255)
-  acceptedAt    String?     @db.VarChar(255)
+  student       Student?      @relation(fields: [studentId], references: [studentId])
+  adminId       String?       @db.VarChar(255) // Admin who accepts or rejects the order
+  admin         Admin?        @relation(fields: [adminId], references: [adminId])
+  createdAt     String        @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
+  deliveredAt   String?       @db.VarChar(255)
+  cancelledAt   String?       @db.VarChar(255)
+  rejectedAt    String?       @db.VarChar(255)
+  acceptedAt    String?       @db.VarChar(255)
   shippingFee   Float?
-  address       String      @db.VarChar(255) // ex: KTX Khu B, ĐHQG TP.HCM 
-  room          String?     @db.VarChar(20) // ex: 101
-  building      String?     @db.VarChar(20) // ex: A
-  delivery      Delivery?   @relation(fields: [deliveryId], references: [deliveryId])
+  address       String        @db.VarChar(255) // ex: KTX Khu B, ĐHQG TP.HCM 
+  isPaid        Boolean       @default(false)
+  delivery      Delivery?     @relation(fields: [deliveryId], references: [deliveryId])
   deliveryId    String?
-  checkCode     String      @db.VarChar(255)
-  ordinalNumber Int?        @db.SmallInt //  Thứ tự của đơn hàng trong 1 chuyến giao hàng
+  checkCode     String        @db.VarChar(255)
+  ordinalNumber Int?          @db.SmallInt //  Thứ tự của đơn hàng trong 1 chuyến giao hàng
   report        Report[]
   weight        Float?
-  cancelReason  String?     @db.Text
-  rejectReason  String?     @db.Text
-  shipperId     String?     @db.VarChar(255) // Staft who takes responsible for the delivery
-  staff         Staff?      @relation(fields: [shipperId], references: [staffId])
+  cancelReason  String?       @db.Text
+  rejectReason  String?       @db.Text
+  shipperId     String?       @db.VarChar(255) // Staft who takes responsible for the delivery
+  staff         Staff?        @relation(fields: [shipperId], references: [staffId])
+  paymentMethod PaymentMethod
 }
 
 model Delivery {
@@ -172,4 +172,10 @@ enum ReportStatus {
 enum AuthProviderType {
   GOOGLE
   CREDENTIALS
+}
+
+enum PaymentMethod {
+  CREDIT
+  CASH
+  MOMO
 }

@@ -12,11 +12,11 @@ import { ReportEntity } from './entity/report.entity';
 
 @ApiTags('reports')
 @Controller('api/reports')
+@ApiBearerAuth('JWT-Auth')
 export class ReportsController {
   constructor(private readonly prisma: PrismaService) {}
 
   @AllowAuthenticated('STUDENT')
-  @ApiBearerAuth()
   @ApiCreatedResponse({ type: ReportEntity })
   @Post()
   create(@Body() createReportDto: CreateReport, @GetUser() user: GetUserType) {
@@ -25,7 +25,6 @@ export class ReportsController {
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiBearerAuth()
   @ApiOkResponse({ type: [ReportEntity] })
   @Get()
   findAll(@Query() { skip, take, order, sortBy }: ReportQueryDto, @GetUser() user: GetUserType) {
@@ -40,7 +39,6 @@ export class ReportsController {
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiBearerAuth()
   @ApiOkResponse({ type: ReportEntity })
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -48,7 +46,6 @@ export class ReportsController {
   }
 
   @ApiOkResponse({ type: ReportEntity })
-  @ApiBearerAuth()
   @AllowAuthenticated()
   @Patch(':id')
   async update(
@@ -64,7 +61,6 @@ export class ReportsController {
     });
   }
 
-  @ApiBearerAuth()
   @AllowAuthenticated('ADMIN')
   @Delete(':id')
   async remove(@Param('id') id: string, @GetUser() user: GetUserType) {

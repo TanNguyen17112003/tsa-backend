@@ -12,11 +12,11 @@ import { OrderEntity } from './entity/order.entity';
 
 @ApiTags('orders')
 @Controller('api/orders')
+@ApiBearerAuth('JWT-Auth')
 export class OrdersController {
   constructor(private readonly prisma: PrismaService) {}
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiBearerAuth()
   @ApiCreatedResponse({ type: OrderEntity })
   @Post()
   create(@Body() createOrderDto: CreateOrder, @GetUser() user: GetUserType) {
@@ -25,11 +25,9 @@ export class OrdersController {
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiBearerAuth()
   @ApiOkResponse({ type: [OrderEntity] })
   @Get()
   findAll(@Query() { skip, take, order, sortBy }: OrderQueryDto, @GetUser() user: GetUserType) {
-    checkRowLevelPermission(user, user.id);
     return this.prisma.order.findMany({
       ...(skip ? { skip: +skip } : null),
       ...(take ? { take: +take } : null),
@@ -44,16 +42,14 @@ export class OrdersController {
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiBearerAuth()
   @ApiOkResponse({ type: OrderEntity })
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.prisma.order.findUnique({ where: { id } });
   }
 
-  @ApiOkResponse({ type: OrderEntity })
-  @ApiBearerAuth()
   @AllowAuthenticated()
+  @ApiOkResponse({ type: OrderEntity })
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -68,7 +64,6 @@ export class OrdersController {
     });
   }
 
-  @ApiBearerAuth()
   @AllowAuthenticated()
   @Delete(':id')
   async remove(@Param('id') id: string, @GetUser() user: GetUserType) {
