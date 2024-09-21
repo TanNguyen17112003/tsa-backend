@@ -75,7 +75,15 @@ export class UserController {
   @ApiBearerAuth('JWT-Auth')
   @AllowAuthenticated()
   async get(@Response() response, @Request() request) {
-    return response.status(HttpStatus.OK).json(request.user);
+    try {
+      const user = await this.userService.getById(request.user.id);
+      return response.status(HttpStatus.OK).json(user);
+    } catch (error) {
+      return response.status(HttpStatus.BAD_REQUEST).json({
+        status: 'error',
+        message: error.message,
+      });
+    }
   }
 
   @Get('/all')

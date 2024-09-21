@@ -6,6 +6,17 @@ import { PrismaService } from 'src/common/prisma/prisma.service';
 import { SignInDto, SignUpDto, UpdatePasswordDto } from 'src/dto/user.dto';
 import { User } from 'src/models/user.model';
 
+interface UserResponse {
+  id: string;
+  email: string;
+  role: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  createdAt: string;
+  verified?: boolean;
+}
+
 @Injectable()
 export class UserService {
   constructor(
@@ -65,7 +76,7 @@ export class UserService {
     jwt: JwtService
   ): Promise<{
     token: string;
-    name: string;
+    userInfo: UserResponse;
   }> {
     const foundCredentials = await this.prismaService.credentials.findUnique({
       where: { email: user.email },
@@ -86,7 +97,16 @@ export class UserService {
     const payload = { email: user.email, role: foundUser.role, id: foundUser.id };
     return {
       token: jwt.sign(payload),
-      name: foundUser.firstName + foundUser.lastName,
+      userInfo: {
+        id: foundUser.id,
+        email: user.email,
+        role: foundUser.role,
+        firstName: foundUser.firstName,
+        lastName: foundUser.lastName,
+        createdAt: foundUser.createdAt,
+        phoneNumber: foundUser.phoneNumber,
+        verified: foundUser.verified!,
+      },
     };
   }
 
@@ -117,9 +137,25 @@ export class UserService {
   async getByEmail(email: string): Promise<any> {
     return this.prismaService.credentials.findUnique({ where: { email } });
   }
-  async getById(id: string): Promise<any> {
-    return this.prismaService.user.findUnique({ where: { id } });
+
+  async getById(id: string): Promise<UserResponse> {
+    const user = await this.prismaService.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+    const credentials = await this.prismaService.credentials.findUnique({ where: { uid: id } });
+    return {
+      id: user.id,
+      email: credentials.email,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phoneNumber: user.phoneNumber,
+      createdAt: user.createdAt,
+      verified: user.verified,
+    };
   }
+
   async getAll(): Promise<any> {
     return this.prismaService.user.findMany();
   }
