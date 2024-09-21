@@ -21,10 +21,6 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   shippingFee: number;
   address: string;
   @IsOptional()
-  room: string;
-  @IsOptional()
-  building: string;
-  @IsOptional()
   deliveryId: string;
   @IsOptional()
   ordinalNumber: number;
@@ -37,4 +33,8 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   cancelReason: string;
   @IsOptional()
   shipperId: string;
+  @IsOptional()
+  isPaid: boolean;
+  @IsOptional()
+  paymentMethod: $Enums.PaymentMethod;
 }
