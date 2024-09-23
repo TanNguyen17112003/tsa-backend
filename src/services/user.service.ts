@@ -117,10 +117,10 @@ export class UserService {
     if (!currentCredential) {
       throw new Error('Người dùng không tồn tại');
     }
-
+    console.log(currentCredential.password, updatePasswordDto.currentPassword);
     const comparison = await bcrypt.compare(
-      updatePasswordDto.currentPassword,
-      currentCredential.password
+      updatePasswordDto.currentPassword.normalize('NFC'),
+      currentCredential.password.normalize('NFC')
     );
     if (!comparison) {
       throw new Error('Mật khẩu hiện tại không đúng');

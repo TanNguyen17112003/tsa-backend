@@ -61,7 +61,7 @@ export class ReportsController {
     });
   }
 
-  @AllowAuthenticated('ADMIN')
+  @AllowAuthenticated('ADMIN', 'STUDENT')
   @Delete(':id')
   async remove(@Param('id') id: string, @GetUser() user: GetUserType) {
     const report = await this.prisma.report.findUnique({ where: { id } });
