@@ -1,6 +1,6 @@
 import { $Enums, Report } from '@prisma/client';
 import { IsOptional, IsString } from 'class-validator';
-import { RestrictProperties } from 'src/common/types';
+import { RestrictProperties } from 'src/types';
 
 export class ReportEntity implements RestrictProperties<ReportEntity, Report> {
   @IsString()

@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { AllowAuthenticated, GetUser } from 'src/common/auth/auth.decorator';
-import { checkRowLevelPermission } from 'src/common/auth/util';
-import { PrismaService } from 'src/common/prisma/prisma.service';
-import { GetUserType } from 'src/common/types';
+import { AllowAuthenticated, GetUser } from 'src/auth/auth.decorator';
+import { checkRowLevelPermission } from 'src/auth/util';
+import { PrismaService } from 'src/prisma';
+import { GetUserType } from 'src/types';
 
 import { CreateReport } from './dtos/create.dto';
 import { ReportQueryDto } from './dtos/query.dto';

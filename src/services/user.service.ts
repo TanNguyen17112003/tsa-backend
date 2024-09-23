@@ -1,10 +1,9 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { DateService } from 'src/common/date/date.service';
-import { PrismaService } from 'src/common/prisma/prisma.service';
-import { SignInDto, SignUpDto, UpdatePasswordDto } from 'src/dto/user.dto';
-import { User } from 'src/models/user.model';
+import { PrismaService } from 'src/prisma';
+// import { SignInDto, UpdatePasswordDto } from 'src/users/dto/user.dto';
+// import { UserEntity } from 'src/users/entities/user.entity';
 
 interface UserResponse {
   id: string;
@@ -19,60 +18,10 @@ interface UserResponse {
 
 @Injectable()
 export class UserService {
-  constructor(
-    private prismaService: PrismaService,
-    private dateService: DateService
-  ) {}
-
-  async signup(user: SignUpDto, jwt: JwtService): Promise<{ info: User; token: string }> {
-    if (!user.firstName || !user.lastName || !user.email || !user.password) {
-      throw new HttpException('Name, email, and password are required', HttpStatus.BAD_REQUEST);
-    }
-
-    const existingUser = await this.prismaService.credentials.findUnique({
-      where: { email: user.email },
-    });
-    if (existingUser) {
-      throw new HttpException('Email đã được sử dụng để đăng ký', HttpStatus.BAD_REQUEST);
-    }
-
-    const salt = await bcrypt.genSalt();
-    const hash = await bcrypt.hash(user.password, salt);
-    const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
-    const savedUser = await this.prismaService.user.create({
-      data: {
-        firstName: user.firstName,
-        lastName: user.lastName,
-        phoneNumber: user.phoneNumber,
-        createdAt,
-      },
-    });
-    const [savedCredentials] = await Promise.all([
-      this.prismaService.credentials.create({
-        data: {
-          email: user.email,
-          password: hash,
-          uid: savedUser.id,
-        },
-      }),
-      await this.prismaService.student.create({
-        data: {
-          studentId: savedUser.id,
-        },
-      }),
-    ]);
-
-    const payload = { email: user.email, role: savedUser.role, id: savedUser.id };
-    const token = jwt.sign(payload);
-
-    return {
-      info: { ...savedUser, email: savedCredentials.email },
-      token,
-    };
-  }
+  constructor(private prismaService: PrismaService) {}
 
   async signin(
-    user: SignInDto,
+    user,
     jwt: JwtService
   ): Promise<{
     token: string;
@@ -110,7 +59,7 @@ export class UserService {
     };
   }
 
-  async updatePassword(user: User, updatePasswordDto: UpdatePasswordDto): Promise<void> {
+  async updatePassword(user, updatePasswordDto): Promise<void> {
     const currentCredential = await this.prismaService.credentials.findUnique({
       where: { uid: user.id },
     });
