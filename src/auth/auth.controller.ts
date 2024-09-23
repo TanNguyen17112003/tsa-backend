@@ -5,7 +5,7 @@ import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { SignUpDto, SignUpDtoInit } from './dto';
 
-@Controller('auth')
+@Controller('api/auth')
 @ApiTags('Auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
