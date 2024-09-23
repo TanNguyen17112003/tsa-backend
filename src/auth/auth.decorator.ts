@@ -5,7 +5,7 @@ import {
   SetMetadata,
   UseGuards,
 } from '@nestjs/common';
-import { Role } from 'src/common/types';
+import { Role } from 'src/types';
 
 import { AuthGuard } from './auth.guard';
 

@@ -1,9 +1,10 @@
 import { Body, Controller, Get, HttpStatus, Post, Put, Request, Response } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { AllowAuthenticated } from 'src/common/auth/auth.decorator';
-import { SignInDto, SignUpDto, UpdatePasswordDto } from 'src/dto/user.dto';
+import { AllowAuthenticated } from 'src/auth/auth.decorator';
+// import { AuthGuard } from 'src/auth/auth.guard';
 import { UserService } from 'src/services/user.service';
+// import { SignInDto, UpdatePasswordDto } from 'src/users/dto/user.dto';
 
 @ApiTags('Authentication')
 @Controller('/api/user')
@@ -13,27 +14,10 @@ export class UserController {
     private jwtService: JwtService
   ) {}
 
-  @ApiOperation({ summary: 'Sign up' })
-  @ApiResponse({ status: 200, description: 'OK.' })
-  @Post('/signup')
-  async Signup(@Response() response, @Body() user: SignUpDto) {
-    try {
-      const userInfo = await this.userService.signup(user, this.jwtService);
-      return response.status(HttpStatus.CREATED).json({
-        userInfo,
-      });
-    } catch (error) {
-      return response.status(error.getStatus()).json({
-        status: 'error',
-        message: error.message,
-      });
-    }
-  }
-
   @Post('/signin')
   @ApiOperation({ summary: 'Sign in' })
   @ApiResponse({ status: 200, description: 'OK.' })
-  async SignIn(@Response() response, @Body() user: SignInDto) {
+  async SignIn(@Response() response, @Body() user) {
     try {
       const token = await this.userService.signin(user, this.jwtService);
       return response.status(HttpStatus.OK).json(token);
@@ -50,11 +34,7 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'OK.' })
   @AllowAuthenticated()
   @ApiBearerAuth('JWT-Auth')
-  async updatePassword(
-    @Response() response,
-    @Request() request,
-    @Body() updatePasswordDto: UpdatePasswordDto
-  ) {
+  async updatePassword(@Response() response, @Request() request, @Body() updatePasswordDto) {
     try {
       await this.userService.updatePassword(request.user, updatePasswordDto);
 

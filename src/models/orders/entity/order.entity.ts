@@ -1,6 +1,6 @@
 import { $Enums, Order } from '@prisma/client';
 import { IsOptional } from 'class-validator';
-import { RestrictProperties } from 'src/common/types';
+import { RestrictProperties } from 'src/types';
 
 export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   id: string;

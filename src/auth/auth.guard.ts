@@ -2,16 +2,19 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { Role } from 'src/common/types';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { Role } from 'src/types';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly reflector: Reflector
+    private readonly reflector: Reflector,
+    private readonly prisma: PrismaService
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
+
     const isAuthen = await this.authenticateUser(req);
     if (!isAuthen) {
       throw new UnauthorizedException('Phiên đăng nhập không hợp lệ.');
@@ -25,7 +28,6 @@ export class AuthGuard implements CanActivate {
 
   private async authenticateUser(req: Request): Promise<boolean> {
     const [type, token] = req.headers.authorization?.split(' ') ?? [];
-    console.log(type, token);
     if (type !== 'Bearer' || !token) {
       throw new UnauthorizedException('Phiên đăng nhập không hợp lệ.');
     }
