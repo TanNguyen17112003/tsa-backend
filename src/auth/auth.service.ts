@@ -4,63 +4,86 @@ import * as bcrypt from 'bcrypt';
 import { DateService } from 'src/date';
 import { EmailService } from 'src/email';
 import { PrismaService } from 'src/prisma';
+import { GetUserType } from 'src/types';
 import { v4 as uuidv4 } from 'uuid';
 
-import { SignUpDto } from './dto';
+import { SignInResultDto, SignUpDto } from './dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
-    private emailService: EmailService,
-    private dateService: DateService
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
+    private readonly dateService: DateService
   ) {}
 
   /**
-   * Initiates the registration process by sending a verification email
+   * Initiates the registration process by sending a verification email.
+   *
+   * This belongs to the registration flow of a student with email and password.
    * @param email The email address to send the verification email to
    */
   async initiateRegistration(email: string) {
     const credentialAndUser = await this.prisma.credentials.findUnique({
       where: { email },
+      include: {
+        user: true,
+      },
     });
-    if (credentialAndUser) {
+    if (credentialAndUser && credentialAndUser.user.verified) {
       throw new BadRequestException('Email already registered');
     }
 
     const token = uuidv4();
-    const tokenExpires = new Date(Date.now() + 3600000); // 1 hour from now (UTC)
-
-    const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
-    await this.prisma.user.create({
-      data: {
-        createdAt,
-        student: {
-          create: {},
+    const expiresAt = new Date(Date.now() + 3600000); // 1 hour from now (UTC)
+    if (credentialAndUser) {
+      // Update new token and expiration time
+      await this.prisma.verificationEmail.upsert({
+        where: { userId: credentialAndUser.uid },
+        update: {
+          token,
+          expiresAt,
         },
-        Credentials: {
-          create: {
-            email,
+        create: {
+          token,
+          expiresAt,
+          userId: credentialAndUser.uid,
+        },
+      });
+    } else {
+      const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
+      await this.prisma.user.create({
+        data: {
+          createdAt,
+          student: {
+            create: {},
+          },
+          Credentials: {
+            create: {
+              email,
+            },
+          },
+          verificationEmail: {
+            create: {
+              token,
+              expiresAt,
+            },
           },
         },
-        verificationEmail: {
-          create: {
-            token,
-            expiresAt: tokenExpires,
-          },
-        },
-      },
-    });
+      });
+    }
 
-    const verificationLink = `${process.env.APP_URL}/auth/signup/verify?token=${token}`;
+    const verificationLink = `${process.env.APP_URL}/api/auth/signup/verify?token=${token}`;
     await this.emailService.sendVerificationEmail(email, verificationLink);
 
     return { message: 'Verification email sent' };
   }
 
   /**
-   * Verifies the email address of a user
+   * Verifies the email address of a user.
+   *
+   * This belongs to the registration flow of a student with email and password.
    * @param token The verification token
    */
   async verifyEmail(token: string) {
@@ -75,27 +98,22 @@ export class AuthService {
     await this.prisma.verificationEmail.delete({
       where: { userId: user.userId },
     });
-    await this.prisma.user.update({
-      where: { id: user.userId },
-      data: {
-        verified: true,
-      },
-    });
 
-    const jwtToken = this.jwtService.sign({ userId: user.userId });
+    const jwtToken = this.jwtService.sign({ userId: user.userId }, { expiresIn: '1h' });
     return `${process.env.FRONTEND_URL_COMPLETE_SIGNUP}?token=${jwtToken}`;
   }
 
   /**
-   * Completes the registration process by setting the user's password and personal information
+   * Completes the registration process by setting the user's password and personal information.
+   *
+   * This belongs to the registration flow of a student with email and password.
    * @param token The JWT token containing the user ID
    * @param userData The user's password and personal information
    */
-  async completeRegistration(token: string, userData: SignUpDto) {
+  async completeRegistration(userData: SignUpDto) {
     let userId: string;
-
     try {
-      const payload = this.jwtService.verify<{ userId: string }>(token);
+      const payload = this.jwtService.verify<{ userId: string }>(userData.token);
       userId = payload.userId;
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired token');
@@ -104,7 +122,6 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
-
     if (!user || user.verified) {
       throw new BadRequestException('User not found or already verified');
     }
@@ -118,6 +135,7 @@ export class AuthService {
         firstName: userData.firstName,
         lastName: userData.lastName,
         phoneNumber: userData.phoneNumber,
+        verified: true,
       },
     });
     await this.prisma.student.update({
@@ -136,5 +154,45 @@ export class AuthService {
     });
 
     return { message: 'Registration completed successfully' };
+  }
+
+  /**
+   * Logs in a user with email and password using JWT strategy.
+   * @param email The email address of the user
+   * @param password The password of the user
+   */
+  async signin(email: string, password: string): Promise<SignInResultDto> {
+    const credential = await this.prisma.credentials.findUnique({
+      where: { email },
+    });
+    if (!credential) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: credential.uid },
+    });
+    if (!user.verified) {
+      throw new UnauthorizedException('Email not verified');
+    }
+
+    const comparison = await bcrypt.compare(password, credential.password);
+    if (!comparison) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const payload: GetUserType = {
+      email,
+      role: user.role,
+      id: user.id,
+    };
+
+    return {
+      token: this.jwtService.sign(payload),
+      userInfo: {
+        ...user,
+        email,
+      },
+    };
   }
 }

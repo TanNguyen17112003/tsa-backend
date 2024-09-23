@@ -1,10 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Dormitory } from '@prisma/client';
-import { IsIn, IsString } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 
 export class SignUpDtoInit {
   @IsString()
-  @ApiProperty({ example: 'abc@example.com', description: 'Email of user' })
+  @ApiProperty({ example: 'user@example.com', description: 'Email of user' })
   readonly email: string;
 }
 
@@ -18,8 +18,9 @@ export class SignUpDto {
   readonly lastName: string;
 
   @IsString()
-  @ApiProperty({ example: '123456', description: 'Phone number of user' })
-  readonly phoneNumber: string;
+  @IsOptional()
+  @ApiPropertyOptional({ example: '123456', description: 'Phone number of user' })
+  readonly phoneNumber: string | null;
 
   @IsString()
   @ApiProperty({ example: 'nguyenaa', description: 'Password of user' })
@@ -36,4 +37,8 @@ export class SignUpDto {
   @IsString()
   @ApiProperty({ example: 'A101', description: 'Room of student' })
   readonly room: string;
+
+  @IsString()
+  @ApiProperty({ example: 'valid-token', description: 'JWT Token to validate registration' })
+  readonly token: string;
 }

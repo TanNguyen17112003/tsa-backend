@@ -3,7 +3,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 
 import { AuthService } from './auth.service';
-import { SignUpDto, SignUpDtoInit } from './dto';
+import { SignInDto, SignInResultDto, SignUpDto, SignUpDtoInit } from './dto';
 
 @Controller('api/auth')
 @ApiTags('Auth')
@@ -33,7 +33,15 @@ export class AuthController {
   @ApiOperation({ summary: 'Complete the registration process' })
   @ApiResponse({ status: 200, description: 'Registration completed' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
-  completeRegistration(@Body('token') token: string, @Body('userData') userData: SignUpDto) {
-    return this.authService.completeRegistration(token, userData);
+  completeRegistration(@Body() userData: SignUpDto) {
+    return this.authService.completeRegistration(userData);
+  }
+
+  @Post('signin')
+  @ApiOperation({ summary: 'Sign in with email and password' })
+  @ApiResponse({ status: 200, description: 'OK' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async SignIn(@Body() user: SignInDto): Promise<SignInResultDto> {
+    return this.authService.signin(user.email, user.password);
   }
 }

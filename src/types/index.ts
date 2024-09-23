@@ -1,7 +1,9 @@
-export type Role = 'ADMIN' | 'STAFF' | 'STUDENT';
+import { UserRole } from '@prisma/client';
+
+export type Role = 'ADMIN' | 'STAFF' | 'STUDENT'; // Should use UserRole type from Prisma instead, will delete this later
 export type GetUserType = {
   id: string;
-  role: Role;
+  role: UserRole;
   email: string;
 };
 export type RestrictProperties<T, U> = {
