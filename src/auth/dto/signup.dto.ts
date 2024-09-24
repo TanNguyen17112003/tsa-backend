@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Dormitory } from '@prisma/client';
-import { IsIn, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsIn, IsString, ValidateNested } from 'class-validator';
 
 export class SignUpDtoInit {
   @IsString()
@@ -36,4 +37,26 @@ export class SignUpDto {
   @IsString()
   @ApiProperty({ example: 'A101', description: 'Room of student' })
   readonly room: string;
+}
+
+export class CompleteRegistrationDto {
+  @IsString()
+  @ApiProperty({ example: 'some-token-value', description: 'Registration token' })
+  token: string;
+
+  @ValidateNested()
+  @Type(() => SignUpDto)
+  @ApiProperty({
+    type: SignUpDto,
+    example: {
+      firstName: 'John',
+      lastName: 'Doe',
+      phoneNumber: '123456',
+      password: 'nguyenaa',
+      dormitory: 'A',
+      building: 'A',
+      room: 'A101',
+    },
+  })
+  userData: SignUpDto;
 }

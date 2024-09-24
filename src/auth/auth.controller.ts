@@ -3,7 +3,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 
 import { AuthService } from './auth.service';
-import { SignUpDto, SignUpDtoInit } from './dto';
+import { CompleteRegistrationDto, SignUpDtoInit } from './dto';
 
 @Controller('api/auth')
 @ApiTags('Auth')
@@ -29,11 +29,11 @@ export class AuthController {
   }
 
   @Post('signup/complete')
-  // @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Complete the registration process' })
   @ApiResponse({ status: 200, description: 'Registration completed' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
-  completeRegistration(@Body('token') token: string, @Body('userData') userData: SignUpDto) {
+  completeRegistration(@Body() completeRegistrationDto: CompleteRegistrationDto) {
+    const { token, userData } = completeRegistrationDto;
     return this.authService.completeRegistration(token, userData);
   }
 }

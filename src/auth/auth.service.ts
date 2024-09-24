@@ -75,12 +75,12 @@ export class AuthService {
     await this.prisma.verificationEmail.delete({
       where: { userId: user.userId },
     });
-    await this.prisma.user.update({
-      where: { id: user.userId },
-      data: {
-        verified: true,
-      },
-    });
+    // await this.prisma.user.update({
+    //   where: { id: user.userId },
+    //   data: {
+    //     verified: true,
+    //   },
+    // });
 
     const jwtToken = this.jwtService.sign({ userId: user.userId });
     return `${process.env.FRONTEND_URL_COMPLETE_SIGNUP}?token=${jwtToken}`;
