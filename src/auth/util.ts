@@ -1,10 +1,11 @@
 import { ForbiddenException } from '@nestjs/common';
-import { GetUserType, Role } from 'src/types';
+import { UserRole } from '@prisma/client';
+import { GetUserType } from 'src/types';
 
 export const checkRowLevelPermission = (
   user: GetUserType,
   requestedUid?: string | string[],
-  roles: Role[] = ['ADMIN', 'STAFF', 'STUDENT']
+  roles: UserRole[] = ['ADMIN', 'STAFF', 'STUDENT']
 ) => {
   if (!requestedUid) return false;
 

@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
-// import * as bcrypt from 'bcrypt';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma';
 
-import { UserEntity } from './entities';
+import { UpdatePasswordDto, UpdateStudentDto } from './dto';
+import { StudentEntity, UserEntity } from './entities';
 
 @Injectable()
 export class UsersService {
@@ -23,10 +24,13 @@ export class UsersService {
     };
   }
 
-  async findById(id: string): Promise<UserEntity> {
+  async findById(id: string): Promise<UserEntity | null> {
     const user = await this.prismaService.user.findUnique({
       where: { id },
     });
+    if (!user) {
+      return null;
+    }
     const credentials = await this.prismaService.credentials.findUnique({
       where: { uid: id },
     });
@@ -36,31 +40,67 @@ export class UsersService {
     };
   }
 
+  async findStudentById(id: string): Promise<StudentEntity | null> {
+    const user = await this.findById(id);
+    if (!user) {
+      return null;
+    }
+    const student = await this.prismaService.student.findUnique({
+      where: { studentId: id },
+    });
+    return {
+      ...user,
+      ...student,
+    };
+  }
+
   async findAll(): Promise<UserEntity[]> {
     return this.prismaService.user.findMany();
   }
 
-  // async updatePassword(user: User, updatePasswordDto: UpdatePasswordDto): Promise<void> {
-  //   const currentCredential = await this.prismaService.credentials.findUnique({
-  //     where: { uid: user.id },
-  //   });
-  //   if (!currentCredential) {
-  //     throw new Error('Người dùng không tồn tại');
-  //   }
+  async updateStudentById(id: string, data: UpdateStudentDto): Promise<StudentEntity> {
+    const user = await this.prismaService.user.update({
+      where: { id },
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phoneNumber: data.phoneNumber,
+      },
+    });
+    const student = await this.prismaService.student.update({
+      where: { studentId: id },
+      data: {
+        dormitory: data.dormitory,
+        building: data.building,
+        room: data.room,
+      },
+    });
+    return {
+      ...user,
+      ...student,
+    };
+  }
 
-  //   const comparison = await bcrypt.compare(
-  //     updatePasswordDto.currentPassword,
-  //     currentCredential.password
-  //   );
-  //   if (!comparison) {
-  //     throw new Error('Mật khẩu hiện tại không đúng');
-  //   }
+  async updatePassword(userId: string, updatePasswordDto: UpdatePasswordDto): Promise<void> {
+    const currentCredential = await this.prismaService.credentials.findUnique({
+      where: { uid: userId },
+    });
+    if (!currentCredential) {
+      throw new BadRequestException('Người dùng không tồn tại');
+    }
 
-  //   const salt = await bcrypt.genSalt();
-  //   const hash = await bcrypt.hash(updatePasswordDto.newPassword, salt);
-  //   await this.prismaService.credentials.update({
-  //     where: { uid: user.id },
-  //     data: { password: hash },
-  //   });
-  // }
+    const comparison = await bcrypt.compare(
+      updatePasswordDto.currentPassword,
+      currentCredential.password
+    );
+    if (!comparison) {
+      throw new BadRequestException('Mật khẩu hiện tại không đúng');
+    }
+
+    const hash = await bcrypt.hash(updatePasswordDto.newPassword, Number(process.env.SALT_ROUNDS));
+    await this.prismaService.credentials.update({
+      where: { uid: userId },
+      data: { password: hash },
+    });
+  }
 }
