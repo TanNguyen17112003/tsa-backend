@@ -5,23 +5,27 @@ import { checkRowLevelPermission } from 'src/auth/util';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
-import { CreateOrder } from './dtos/create.dto';
+import { CreateOrderDto } from './dtos/create.dto';
 import { OrderQueryDto } from './dtos/query.dto';
 import { UpdateOrder } from './dtos/update.dto';
 import { OrderEntity } from './entity/order.entity';
+import { OrderService } from './orders.service';
 
 @ApiTags('orders')
 @Controller('api/orders')
 @ApiBearerAuth('JWT-Auth')
 export class OrdersController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly orderService: OrderService
+  ) {}
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
   @ApiCreatedResponse({ type: OrderEntity })
   @Post()
-  create(@Body() createOrderDto: CreateOrder, @GetUser() user: GetUserType) {
+  create(@Body() createOrderDto: CreateOrderDto, @GetUser() user: GetUserType) {
     checkRowLevelPermission(user, createOrderDto.studentId || createOrderDto.adminId);
-    return this.prisma.order.create({ data: createOrderDto });
+    return this.orderService.createOrder(createOrderDto, user);
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')

@@ -84,31 +84,41 @@ model VerificationEmail {
 }
 
 model Order {
-  id            String         @id @default(cuid())
-  status        OrderStatus    @default(PENDING)
-  studentId     String?
-  student       Student?       @relation(fields: [studentId], references: [studentId])
-  adminId       String?        @db.VarChar(255) // Admin who accepts or rejects the order
-  admin         Admin?         @relation(fields: [adminId], references: [adminId])
-  createdAt     String         @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
-  deliveredAt   String?        @db.VarChar(255)
-  cancelledAt   String?        @db.VarChar(255)
-  rejectedAt    String?        @db.VarChar(255)
-  acceptedAt    String?        @db.VarChar(255)
-  shippingFee   Float?
-  address       String         @db.VarChar(255) // ex: KTX Khu B, ĐHQG TP.HCM 
-  isPaid        Boolean        @default(false)
-  delivery      Delivery?      @relation(fields: [deliveryId], references: [deliveryId])
-  deliveryId    String?
-  checkCode     String         @db.VarChar(255)
-  ordinalNumber Int?           @db.SmallInt //  Thứ tự của đơn hàng trong 1 chuyến giao hàng
-  report        Report[]
-  weight        Float?
-  cancelReason  String?        @db.Text
-  rejectReason  String?        @db.Text
-  shipperId     String?        @db.VarChar(255) // Staft who takes responsible for the delivery
-  staff         Staff?         @relation(fields: [shipperId], references: [staffId])
-  paymentMethod PaymentMethod?
+  id                 String               @id @default(cuid())
+  studentId          String?
+  student            Student?             @relation(fields: [studentId], references: [studentId])
+  adminId            String?              @db.VarChar(255) // Admin who accepts or rejects the order
+  admin              Admin?               @relation(fields: [adminId], references: [adminId])
+  shippingFee        Float?
+  deliveryDate       String?
+  isPaid             Boolean              @default(false)
+  delivery           Delivery?            @relation(fields: [deliveryId], references: [deliveryId])
+  deliveryId         String?
+  room               String?              @db.VarChar(255)
+  dormitory          Dormitory?
+  building           String?              @db.VarChar(255)
+  checkCode          String               @db.VarChar(255)
+  ordinalNumber      Int?                 @db.SmallInt //  Thứ tự của đơn hàng trong 1 chuyến giao hàng
+  report             Report[]
+  product            String               @db.VarChar(255) // Các sản phẩm để tăng tính xác thực khi admin xác nhận đơn hàng
+  weight             Float?
+  shipperId          String?              @db.VarChar(255) // Staff who takes responsibility for the delivery
+  staff              Staff?               @relation(fields: [shipperId], references: [staffId])
+  paymentMethod      PaymentMethod?
+  OrderStatusHistory OrderStatusHistory[]
+  latestStatusId     String?              @unique @db.VarChar(255)
+  latestStatus       OrderStatusHistory?  @relation("latestStatus", fields: [latestStatusId], references: [id])
+  phone              String?              @db.VarChar(15)
+}
+
+model OrderStatusHistory {
+  id          String      @id @default(cuid())
+  orderId     String      @db.VarChar(255)
+  order       Order       @relation(fields: [orderId], references: [id])
+  status      OrderStatus
+  reason      String?     @db.Text
+  time        String      @db.VarChar(255) // Unix timestamp for each time the status changes
+  orderLatest Order?      @relation("latestStatus")
 }
 
 model Delivery {

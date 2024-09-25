@@ -1,11 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Dormitory } from '@prisma/client';
-import { Type } from 'class-transformer';
-import { IsIn, IsString, ValidateNested } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 
 export class SignUpDtoInit {
   @IsString()
-  @ApiProperty({ example: 'abc@example.com', description: 'Email of user' })
+  @ApiProperty({ example: 'user@example.com', description: 'Email of user' })
   readonly email: string;
 }
 
@@ -19,8 +18,9 @@ export class SignUpDto {
   readonly lastName: string;
 
   @IsString()
-  @ApiProperty({ example: '123456', description: 'Phone number of user' })
-  readonly phoneNumber: string;
+  @IsOptional()
+  @ApiPropertyOptional({ example: '123456', description: 'Phone number of user' })
+  readonly phoneNumber: string | null;
 
   @IsString()
   @ApiProperty({ example: 'nguyenaa', description: 'Password of user' })
@@ -37,26 +37,8 @@ export class SignUpDto {
   @IsString()
   @ApiProperty({ example: 'A101', description: 'Room of student' })
   readonly room: string;
-}
 
-export class CompleteRegistrationDto {
   @IsString()
-  @ApiProperty({ example: 'some-token-value', description: 'Registration token' })
-  token: string;
-
-  @ValidateNested()
-  @Type(() => SignUpDto)
-  @ApiProperty({
-    type: SignUpDto,
-    example: {
-      firstName: 'John',
-      lastName: 'Doe',
-      phoneNumber: '123456',
-      password: 'nguyenaa',
-      dormitory: 'A',
-      building: 'A',
-      room: 'A101',
-    },
-  })
-  userData: SignUpDto;
+  @ApiProperty({ example: 'valid-token', description: 'JWT Token to validate registration' })
+  readonly token: string;
 }
