@@ -1,13 +1,13 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { $Enums } from '@prisma/client';
 import { AllowAuthenticated, GetUser } from 'src/auth/auth.decorator';
 import { checkRowLevelPermission } from 'src/auth/util';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
-import { CreateOrderDto } from './dtos/create.dto';
+import { CreateAdminOrderDto, CreateOrderDto, CreateStudentOrderDto } from './dtos/create.dto';
 import { OrderQueryDto } from './dtos/query.dto';
-import { UpdateOrder } from './dtos/update.dto';
 import { OrderEntity } from './entity/order.entity';
 import { OrderService } from './orders.service';
 
@@ -31,48 +31,42 @@ export class OrdersController {
   @AllowAuthenticated('ADMIN', 'STUDENT')
   @ApiOkResponse({ type: [OrderEntity] })
   @Get()
-  findAll(@Query() { skip, take, order, sortBy }: OrderQueryDto, @GetUser() user: GetUserType) {
-    return this.prisma.order.findMany({
-      ...(skip ? { skip: +skip } : null),
-      ...(take ? { take: +take } : null),
-      ...(sortBy ? { orderBy: { [sortBy]: order || 'asc' } } : null),
-      where:
-        user.role === 'STUDENT'
-          ? { studentId: user.id }
-          : {
-              adminId: user.id,
-            },
-    });
+  findAll(@Query() query: OrderQueryDto, @GetUser() user: GetUserType) {
+    return this.orderService.getOrders(query, user);
+  }
+
+  @AllowAuthenticated()
+  @ApiOkResponse({ type: OrderEntity })
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.orderService.getOrder(id);
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
   @ApiOkResponse({ type: OrderEntity })
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.prisma.order.findUnique({ where: { id } });
-  }
-
-  @AllowAuthenticated()
-  @ApiOkResponse({ type: OrderEntity })
   @Patch(':id')
-  async update(
+  async updateInfo(
     @Param('id') id: string,
-    @Body() updateOrderDto: UpdateOrder,
+    @Body() updateOrderDto: CreateStudentOrderDto | CreateAdminOrderDto,
     @GetUser() user: GetUserType
   ) {
-    const order = await this.prisma.order.findUnique({ where: { id } });
-    checkRowLevelPermission(user, order.adminId || order.studentId);
-    return this.prisma.order.update({
-      where: { id },
-      data: updateOrderDto,
-    });
+    return this.orderService.updateOrderInfo(id, updateOrderDto, user);
   }
 
-  @AllowAuthenticated()
+  @AllowAuthenticated('ADMIN', 'STAFF')
+  @ApiOkResponse({ type: OrderEntity })
+  @Patch(':id')
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() status: $Enums.OrderStatus,
+    @GetUser() user: GetUserType
+  ) {
+    return this.orderService.updateStatus(id, status, user);
+  }
+
+  @AllowAuthenticated('ADMIN', 'STUDENT')
   @Delete(':id')
   async remove(@Param('id') id: string, @GetUser() user: GetUserType) {
-    const order = await this.prisma.order.findUnique({ where: { id } });
-    checkRowLevelPermission(user, order.adminId);
-    return this.prisma.order.delete({ where: { id } });
+    return this.orderService.deleteOrder(id, user);
   }
 }

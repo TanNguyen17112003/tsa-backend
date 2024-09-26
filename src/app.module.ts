@@ -10,6 +10,7 @@ import { ReportsController } from 'src/models/reports/reports.controller';
 import { PrismaModule } from 'src/prisma';
 import { AppService } from 'src/services/app.service';
 import { SampleService } from 'src/services/sample.service';
+import { UsersModule } from 'src/users';
 
 import { OrdersModule } from './models/orders/orders.module';
 
@@ -20,6 +21,7 @@ import { OrdersModule } from './models/orders/orders.module';
     DateModule,
     EmailModule,
     AuthModule,
+    UsersModule,
     OrdersModule,
   ],
   controllers: [AppController, SampleController, OrdersController, ReportsController],

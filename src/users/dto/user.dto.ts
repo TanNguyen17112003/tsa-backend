@@ -1,12 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
+import { SignUpDto } from 'src/auth/dto';
 
-// export class UpdateUserDto extends PartialType(SignUpDto) {
-// @IsString()
-// @IsNotEmpty()
-// @ApiProperty({ example: 'Nguyen A', description: 'Name of user' })
-// readonly name: string;
-// }
+export class UpdateStudentDto extends PartialType(OmitType(SignUpDto, ['token', 'password'])) {}
 
 export class UpdatePasswordDto {
   @IsString()

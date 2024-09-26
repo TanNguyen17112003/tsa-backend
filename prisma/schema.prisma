@@ -106,19 +106,16 @@ model Order {
   staff              Staff?               @relation(fields: [shipperId], references: [staffId])
   paymentMethod      PaymentMethod?
   OrderStatusHistory OrderStatusHistory[]
-  latestStatusId     String?              @unique @db.VarChar(255)
-  latestStatus       OrderStatusHistory?  @relation("latestStatus", fields: [latestStatusId], references: [id])
   phone              String?              @db.VarChar(15)
 }
 
 model OrderStatusHistory {
-  id          String      @id @default(cuid())
-  orderId     String      @db.VarChar(255)
-  order       Order       @relation(fields: [orderId], references: [id])
-  status      OrderStatus
-  reason      String?     @db.Text
-  time        String      @db.VarChar(255) // Unix timestamp for each time the status changes
-  orderLatest Order?      @relation("latestStatus")
+  id      String      @id @default(cuid())
+  orderId String      @db.VarChar(255)
+  order   Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status  OrderStatus
+  reason  String?     @db.Text
+  time    String      @db.VarChar(255) // Unix timestamp for each time the status changes
 }
 
 model Delivery {
