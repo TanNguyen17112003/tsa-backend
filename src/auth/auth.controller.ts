@@ -3,7 +3,14 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 
 import { AuthService } from './auth.service';
-import { SignInDto, SignInResultDto, SignUpDto, SignUpDtoInit } from './dto';
+import {
+  RefreshTokenDto,
+  RefreshTokenResultDto,
+  SignInDto,
+  SignInResultDto,
+  SignUpDto,
+  SignUpDtoInit,
+} from './dto';
 
 @Controller('api/auth')
 @ApiTags('Auth')
@@ -15,7 +22,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Initiate the Sign up process with user (student) email' })
   @ApiResponse({ status: 201, description: 'Request success' })
   @ApiResponse({ status: 400, description: 'Email already registered' })
-  async initiateRegistration(@Body() body: SignUpDtoInit) {
+  initiateRegistration(@Body() body: SignUpDtoInit) {
     return this.authService.initiateRegistration(body.email);
   }
 
@@ -40,7 +47,25 @@ export class AuthController {
   @ApiOperation({ summary: 'Sign in with email and password' })
   @ApiResponse({ status: 200, description: 'OK' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async SignIn(@Body() user: SignInDto): Promise<SignInResultDto> {
+  signIn(@Body() user: SignInDto): Promise<SignInResultDto> {
     return this.authService.signin(user.email, user.password);
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh access token using refresh token' })
+  @ApiResponse({ status: 200, description: 'New tokens generated' })
+  @ApiResponse({ status: 401, description: 'Invalid refresh token' })
+  refreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<RefreshTokenResultDto> {
+    return this.authService.refreshTokens(refreshTokenDto.refreshToken);
+  }
+
+  @Post('signout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Sign out' })
+  @ApiResponse({ status: 200, description: 'Sign out success' })
+  @ApiResponse({ status: 401, description: 'Invalid refresh token' })
+  signOut(@Body() refreshTokenDto: RefreshTokenDto) {
+    return this.authService.signout(refreshTokenDto.refreshToken);
   }
 }

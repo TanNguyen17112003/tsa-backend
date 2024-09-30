@@ -156,6 +156,41 @@ export class AuthService {
     return { message: 'Registration completed successfully' };
   }
 
+  async generateTokens(payload: GetUserType) {
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+    const refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    await this.prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        expiresAt: refreshTokenExpiry,
+        userId: payload.id,
+      },
+    });
+
+    return { accessToken, refreshToken };
+  }
+
+  async refreshTokens(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify<GetUserType>(refreshToken);
+      const storedToken = await this.prisma.refreshToken.findUnique({
+        where: { token: refreshToken },
+        include: { user: true },
+      });
+
+      if (!storedToken || storedToken.expiresAt < new Date()) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+      return { accessToken, refreshToken };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
   /**
    * Logs in a user with email and password using JWT strategy.
    * @param email The email address of the user
@@ -187,12 +222,39 @@ export class AuthService {
       id: user.id,
     };
 
+    const { accessToken, refreshToken } = await this.generateTokens(payload);
+
     return {
-      token: this.jwtService.sign(payload),
+      accessToken,
+      refreshToken,
       userInfo: {
         ...user,
         email,
       },
     };
+  }
+
+  /**
+   * Invalidates the refresh token of a user, effectively logging them out.
+   * @param refreshToken The refresh token to invalidate
+   */
+  async signout(refreshToken: string) {
+    try {
+      this.jwtService.verify<GetUserType>(refreshToken);
+      const storedToken = await this.prisma.refreshToken.findUnique({
+        where: { token: refreshToken },
+      });
+
+      if (!storedToken) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      await this.prisma.refreshToken.delete({
+        where: { token: refreshToken },
+      });
+      return { message: 'Sign out successful' };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 }

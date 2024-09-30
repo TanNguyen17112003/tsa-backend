@@ -1,18 +1,16 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from 'src/auth';
-import { AppController } from 'src/controllers/app.controller';
-import { SampleController } from 'src/controllers/sample.controller';
 import { DateModule } from 'src/date';
 import { EmailModule } from 'src/email';
 import { OrdersController } from 'src/models/orders/orders.controller';
+import { OrdersModule } from 'src/models/orders/orders.module';
 import { ReportsController } from 'src/models/reports/reports.controller';
 import { PrismaModule } from 'src/prisma';
-import { AppService } from 'src/services/app.service';
-import { SampleService } from 'src/services/sample.service';
 import { UsersModule } from 'src/users';
 
-import { OrdersModule } from './models/orders/orders.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -24,7 +22,7 @@ import { OrdersModule } from './models/orders/orders.module';
     UsersModule,
     OrdersModule,
   ],
-  controllers: [AppController, SampleController, OrdersController, ReportsController],
-  providers: [AppService, SampleService],
+  controllers: [AppController, OrdersController, ReportsController],
+  providers: [AppService],
 })
 export class AppModule {}

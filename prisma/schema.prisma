@@ -34,6 +34,7 @@ model User {
   verificationEmail VerificationEmail?
   Credentials       Credentials?
   AuthProvider      AuthProvider?
+  refreshTokens     RefreshToken[]
 }
 
 model Credentials {
@@ -41,6 +42,14 @@ model Credentials {
   user     User    @relation(fields: [uid], references: [id])
   email    String  @unique @db.VarChar(50)
   password String? @db.VarChar(255)
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model AuthProvider {
