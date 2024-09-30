@@ -1,10 +1,13 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { UserRole } from '@prisma/client';
 import { Request } from 'express';
-import { PrismaService } from 'src/common/prisma/prisma.service';
-import { Role } from 'src/common/types';
+import { PrismaService } from 'src/prisma';
 
+// I think this guard is handling to much logic. It should be split into two guards.
+// One for authentication (which can extend AuthGuard('jwt') from @nestjs/passport-jwt)
+// and one for authorization.
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
@@ -13,7 +16,7 @@ export class AuthGuard implements CanActivate {
     private readonly prisma: PrismaService
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest();
+    const req = context.switchToHttp().getRequest<Request>();
 
     const isAuthen = await this.authenticateUser(req);
     if (!isAuthen) {
@@ -44,7 +47,7 @@ export class AuthGuard implements CanActivate {
     // const userRoles = await this.getUserRoles(req.user.id);
     // req.user.roles = userRoles;
     const userRole = req.user.role;
-    const requiredRoles = this.getMetadata<Role[]>('roles', context);
+    const requiredRoles = this.getMetadata<UserRole[]>('roles', context);
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
@@ -56,8 +59,8 @@ export class AuthGuard implements CanActivate {
     return this.reflector.getAllAndOverride<T>(key, [context.getHandler(), context.getClass()]);
   }
 
-  // private async getUserRoles(uid: string): Promise<Role[]> {
-  //   const roles: Role[] = [];
+  // private async getUserRoles(uid: string): Promise<UserRole[]> {
+  //   const roles: UserRole[] = [];
   //   const [admin, staff, student] = await Promise.all([
   //     this.prisma.admin.findUnique({
   //       where: {

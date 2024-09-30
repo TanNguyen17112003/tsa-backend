@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { OrderStatus, Prisma, ReportStatus, UserRole } from '@prisma/client';
+import { Prisma, ReportStatus, UserRole } from '@prisma/client';
 import * as moment from 'moment';
 
 import { chooseRandomEnum, randomDormitory } from './utils';
@@ -50,7 +50,7 @@ export const credentialSamples = (uid: string): Prisma.CredentialsCreateInput =>
 });
 
 export const orderSamples: Prisma.OrderCreateInput[] = Array.from({ length: NUM_ORDERS }, () => ({
-  status: chooseRandomEnum(OrderStatus),
+  product: faker.commerce.productName(),
   createdAt: moment().format('X'),
   address: randomDormitory(),
   checkCode: faker.string.alphanumeric(10),

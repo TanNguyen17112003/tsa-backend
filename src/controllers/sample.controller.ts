@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from 'src/common/auth/auth.guard';
+import { AuthGuard } from 'src/auth/auth.guard';
 import { CreateSampleDto } from 'src/dto/sample.dto';
 import { SampleService } from 'src/services/sample.service';
 

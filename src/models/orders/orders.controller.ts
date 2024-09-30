@@ -1,79 +1,72 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { AllowAuthenticated, GetUser } from 'src/common/auth/auth.decorator';
-import { checkRowLevelPermission } from 'src/common/auth/util';
-import { PrismaService } from 'src/common/prisma/prisma.service';
-import { GetUserType } from 'src/common/types';
+import { $Enums } from '@prisma/client';
+import { AllowAuthenticated, GetUser } from 'src/auth/auth.decorator';
+import { checkRowLevelPermission } from 'src/auth/util';
+import { PrismaService } from 'src/prisma';
+import { GetUserType } from 'src/types';
 
-import { CreateOrder } from './dtos/create.dto';
+import { CreateOrderDto } from './dtos/create.dto';
 import { OrderQueryDto } from './dtos/query.dto';
-import { UpdateOrder } from './dtos/update.dto';
 import { OrderEntity } from './entity/order.entity';
+import { OrderService } from './orders.service';
 
-@ApiTags('orders')
+@ApiTags('Orders')
 @Controller('api/orders')
+@ApiBearerAuth('JWT-Auth')
 export class OrdersController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly orderService: OrderService
+  ) {}
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiBearerAuth()
   @ApiCreatedResponse({ type: OrderEntity })
   @Post()
-  create(@Body() createOrderDto: CreateOrder, @GetUser() user: GetUserType) {
+  create(@Body() createOrderDto: CreateOrderDto, @GetUser() user: GetUserType) {
     checkRowLevelPermission(user, createOrderDto.studentId || createOrderDto.adminId);
-    return this.prisma.order.create({ data: createOrderDto });
+    return this.orderService.createOrder(createOrderDto, user);
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiBearerAuth()
   @ApiOkResponse({ type: [OrderEntity] })
   @Get()
-  findAll(@Query() { skip, take, order, sortBy }: OrderQueryDto, @GetUser() user: GetUserType) {
-    checkRowLevelPermission(user, user.id);
-    return this.prisma.order.findMany({
-      ...(skip ? { skip: +skip } : null),
-      ...(take ? { take: +take } : null),
-      ...(sortBy ? { orderBy: { [sortBy]: order || 'asc' } } : null),
-      where:
-        user.role === 'STUDENT'
-          ? { studentId: user.id }
-          : {
-              adminId: user.id,
-            },
-    });
+  findAll(@Query() query: OrderQueryDto, @GetUser() user: GetUserType) {
+    return this.orderService.getOrders(query, user);
   }
 
-  @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiBearerAuth()
+  @AllowAuthenticated()
   @ApiOkResponse({ type: OrderEntity })
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.prisma.order.findUnique({ where: { id } });
+    return this.orderService.getOrder(id);
   }
 
+  @AllowAuthenticated('ADMIN', 'STUDENT')
   @ApiOkResponse({ type: OrderEntity })
-  @ApiBearerAuth()
-  @AllowAuthenticated()
   @Patch(':id')
-  async update(
+  async updateInfo(
     @Param('id') id: string,
-    @Body() updateOrderDto: UpdateOrder,
+    @Body() updateOrderDto: CreateOrderDto,
     @GetUser() user: GetUserType
   ) {
-    const order = await this.prisma.order.findUnique({ where: { id } });
-    checkRowLevelPermission(user, order.adminId || order.studentId);
-    return this.prisma.order.update({
-      where: { id },
-      data: updateOrderDto,
-    });
+    return this.orderService.updateOrderInfo(id, updateOrderDto, user);
   }
 
-  @ApiBearerAuth()
-  @AllowAuthenticated()
+  @AllowAuthenticated('ADMIN', 'STAFF')
+  @ApiOkResponse({ type: OrderEntity })
+  @Patch('status/:id')
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() status: $Enums.OrderStatus,
+    @GetUser() user: GetUserType
+  ) {
+    return this.orderService.updateStatus(id, status, user);
+  }
+
+  @AllowAuthenticated('ADMIN', 'STUDENT')
   @Delete(':id')
   async remove(@Param('id') id: string, @GetUser() user: GetUserType) {
-    const order = await this.prisma.order.findUnique({ where: { id } });
-    checkRowLevelPermission(user, order.adminId);
-    return this.prisma.order.delete({ where: { id } });
+    return this.orderService.deleteOrder(id, user);
   }
 }

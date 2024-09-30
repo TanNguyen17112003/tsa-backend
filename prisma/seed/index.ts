@@ -43,68 +43,46 @@ const createUsers = async () => {
   }
   return userSamples;
 };
+
 const createOrders = async (users: Prisma.UserCreateInput[]) => {
   const admins = users.filter((user) => user.role === 'ADMIN');
   const students = users.filter((user) => user.role === 'STUDENT');
-  const staffs = users.filter((user) => user.role === 'STAFF');
+
   for (const order of orderSamples) {
     const probability = Math.random();
 
-    // Create a base structure for the order creation
-    let orderData: any = { ...order };
+    const orderData: Prisma.OrderCreateInput = { ...order };
 
-    if (order.status === 'PENDING') {
-      orderData = {
-        ...orderData,
-        student:
-          probability > 0.7
-            ? {
-                connect: {
-                  studentId: students[Math.floor(Math.random() * students.length)]?.id,
-                },
-              }
-            : undefined,
-        admin:
-          probability <= 0.7
-            ? {
-                connect: {
-                  adminId: admins[Math.floor(Math.random() * admins.length)]?.id,
-                },
-              }
-            : undefined,
+    if (probability > 0.7) {
+      orderData.student = {
+        connect: {
+          studentId: students[Math.floor(Math.random() * students.length)]?.id,
+        },
       };
     } else {
-      orderData = {
-        ...orderData,
-        staff:
-          order.status !== 'ACCEPTED' && order.status !== 'REJECTED'
-            ? {
-                connect: {
-                  staffId: staffs[Math.floor(Math.random() * staffs.length)]?.id,
-                },
-              }
-            : undefined,
-        student: {
-          connect: {
-            studentId: students[Math.floor(Math.random() * students.length)]?.id,
-          },
+      orderData.admin = {
+        connect: {
+          adminId: admins[Math.floor(Math.random() * admins.length)]?.id,
         },
-        admin: {
-          connect: {
-            adminId: admins[Math.floor(Math.random() * admins.length)]?.id,
-          },
-        },
-        rejectReason: order.status === 'REJECTED' ? 'Đơn hàng thuộc danh mục cấm' : undefined,
-        cancelReason: order.status === 'CANCELED' ? 'Người nhận không có mặt' : undefined,
-        shippingFee: order.status !== 'REJECTED' ? 20000 : undefined,
       };
     }
 
-    // Create the order in the database
-    const createOrder = await prisma.order.create({
+    const createdOrder = await prisma.order.create({
       data: orderData,
     });
-    const report = reportSamples(createOrder.id);
+
+    const status = probability > 0.5 ? 'ACCEPTED' : 'REJECTED';
+
+    await prisma.orderStatusHistory.create({
+      data: {
+        orderId: createdOrder.id,
+        status: status,
+        time: new Date().toISOString(),
+        reason: status === 'REJECTED' ? 'Đơn hàng thuộc danh mục cấm' : undefined,
+      },
+    });
+
+    const report = reportSamples(createdOrder.id);
     await prisma.report.create({
       data: {
         ...report,

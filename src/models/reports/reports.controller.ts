@@ -1,22 +1,22 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { AllowAuthenticated, GetUser } from 'src/common/auth/auth.decorator';
-import { checkRowLevelPermission } from 'src/common/auth/util';
-import { PrismaService } from 'src/common/prisma/prisma.service';
-import { GetUserType } from 'src/common/types';
+import { AllowAuthenticated, GetUser } from 'src/auth/auth.decorator';
+import { checkRowLevelPermission } from 'src/auth/util';
+import { PrismaService } from 'src/prisma';
+import { GetUserType } from 'src/types';
 
 import { CreateReport } from './dtos/create.dto';
 import { ReportQueryDto } from './dtos/query.dto';
 import { UpdateReport } from './dtos/update.dto';
 import { ReportEntity } from './entity/report.entity';
 
-@ApiTags('reports')
+@ApiTags('Reports')
 @Controller('api/reports')
+@ApiBearerAuth('JWT-Auth')
 export class ReportsController {
   constructor(private readonly prisma: PrismaService) {}
 
   @AllowAuthenticated('STUDENT')
-  @ApiBearerAuth()
   @ApiCreatedResponse({ type: ReportEntity })
   @Post()
   create(@Body() createReportDto: CreateReport, @GetUser() user: GetUserType) {
@@ -25,7 +25,6 @@ export class ReportsController {
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiBearerAuth()
   @ApiOkResponse({ type: [ReportEntity] })
   @Get()
   findAll(@Query() { skip, take, order, sortBy }: ReportQueryDto, @GetUser() user: GetUserType) {
@@ -40,7 +39,6 @@ export class ReportsController {
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiBearerAuth()
   @ApiOkResponse({ type: ReportEntity })
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -48,7 +46,6 @@ export class ReportsController {
   }
 
   @ApiOkResponse({ type: ReportEntity })
-  @ApiBearerAuth()
   @AllowAuthenticated()
   @Patch(':id')
   async update(
@@ -64,8 +61,7 @@ export class ReportsController {
     });
   }
 
-  @ApiBearerAuth()
-  @AllowAuthenticated('ADMIN')
+  @AllowAuthenticated('ADMIN', 'STUDENT')
   @Delete(':id')
   async remove(@Param('id') id: string, @GetUser() user: GetUserType) {
     const report = await this.prisma.report.findUnique({ where: { id } });
