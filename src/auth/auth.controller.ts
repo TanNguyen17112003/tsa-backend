@@ -36,7 +36,6 @@ export class AuthController {
   }
 
   @Post('signup/complete')
-  // @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Complete the registration process' })
   @ApiResponse({ status: 200, description: 'Registration completed' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })

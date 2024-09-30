@@ -10,7 +10,7 @@ import { ReportQueryDto } from './dtos/query.dto';
 import { UpdateReport } from './dtos/update.dto';
 import { ReportEntity } from './entity/report.entity';
 
-@ApiTags('reports')
+@ApiTags('Reports')
 @Controller('api/reports')
 @ApiBearerAuth('JWT-Auth')
 export class ReportsController {
@@ -61,7 +61,7 @@ export class ReportsController {
     });
   }
 
-  @AllowAuthenticated('ADMIN')
+  @AllowAuthenticated('ADMIN', 'STUDENT')
   @Delete(':id')
   async remove(@Param('id') id: string, @GetUser() user: GetUserType) {
     const report = await this.prisma.report.findUnique({ where: { id } });

@@ -1,8 +1,8 @@
 import { PartialType } from '@nestjs/swagger';
 import { Order } from '@prisma/client';
 
-import { CreateOrder } from './create.dto';
+import { CreateOrderDto } from './create.dto';
 
-export class UpdateOrder extends PartialType(CreateOrder) {
+export class UpdateOrder extends PartialType(CreateOrderDto) {
   id: Order['id'];
 }

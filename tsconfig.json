@@ -13,6 +13,7 @@
     "paths": {
       "src/*": ["src/*"]
     },
+    "strict": true,
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
