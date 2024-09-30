@@ -6,12 +6,12 @@ import { checkRowLevelPermission } from 'src/auth/util';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
-import { CreateAdminOrderDto, CreateOrderDto, CreateStudentOrderDto } from './dtos/create.dto';
+import { CreateOrderDto } from './dtos/create.dto';
 import { OrderQueryDto } from './dtos/query.dto';
 import { OrderEntity } from './entity/order.entity';
 import { OrderService } from './orders.service';
 
-@ApiTags('orders')
+@ApiTags('Orders')
 @Controller('api/orders')
 @ApiBearerAuth('JWT-Auth')
 export class OrdersController {
@@ -47,7 +47,7 @@ export class OrdersController {
   @Patch(':id')
   async updateInfo(
     @Param('id') id: string,
-    @Body() updateOrderDto: CreateStudentOrderDto | CreateAdminOrderDto,
+    @Body() updateOrderDto: CreateOrderDto,
     @GetUser() user: GetUserType
   ) {
     return this.orderService.updateOrderInfo(id, updateOrderDto, user);
@@ -55,7 +55,7 @@ export class OrdersController {
 
   @AllowAuthenticated('ADMIN', 'STAFF')
   @ApiOkResponse({ type: OrderEntity })
-  @Patch(':id')
+  @Patch('status/:id')
   async updateStatus(
     @Param('id') id: string,
     @Body() status: $Enums.OrderStatus,

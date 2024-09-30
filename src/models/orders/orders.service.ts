@@ -7,8 +7,10 @@ import { CreateAdminOrderDto, CreateStudentOrderDto } from './dtos/create.dto';
 import { OrderQueryDto } from './dtos/query.dto';
 import { OrderEntity } from './entity/order.entity';
 import {
+  convertToUnixTimestamp,
   createOrderStatusHistory,
   findExistingOrder,
+  getHistoryTimee,
   getLatestOrderStatus,
   validateUserForOrder,
 } from './utils/order.util';
@@ -33,14 +35,14 @@ export class OrderService {
             },
     });
 
-    // Fetch the latest order status for each order
     const ordersWithStatus = await Promise.all(
       orders.map(async (order) => {
         const latestStatus = await getLatestOrderStatus(this.prisma, order.id);
-
+        const historyTime = await getHistoryTimee(this.prisma, order.id);
         return {
           ...order,
           latestStatus,
+          historyTime,
         };
       })
     );
@@ -51,9 +53,11 @@ export class OrderService {
   async getOrder(id: string) {
     const order = await this.prisma.order.findUnique({ where: { id } });
     const latestStatus = await getLatestOrderStatus(this.prisma, id);
+    const historyTime = await getHistoryTimee(this.prisma, order.id);
     return {
       ...order,
       latestStatus,
+      historyTime,
     };
   }
 
@@ -73,17 +77,43 @@ export class OrderService {
           where: { id: existingOrder.id },
           data: {
             ...createOrderDto,
+            deliveryDate: convertToUnixTimestamp(
+              (createOrderDto as CreateStudentOrderDto).deliveryDate
+            ),
           },
         });
         await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
-        return { message: 'Order updated and status set to ACCEPTED' };
+        const historyTime = await getHistoryTimee(this.prisma, existingOrder.id);
+        const latestStatus = await getLatestOrderStatus(this.prisma, existingOrder.id);
+        return {
+          message: 'Order updated and status set to ACCEPTED',
+          data: {
+            ...existingOrder,
+            latestStatus,
+            historyTime,
+          },
+        };
       }
 
       const newOrder = await this.prisma.order.create({
-        data: createOrderDto as CreateStudentOrderDto,
+        data: {
+          ...(createOrderDto as CreateStudentOrderDto),
+          deliveryDate: convertToUnixTimestamp(
+            (createOrderDto as CreateStudentOrderDto).deliveryDate
+          ),
+        },
       });
       await createOrderStatusHistory(this.prisma, newOrder.id, 'PENDING');
-      return { message: 'Order created and status set to PENDING' };
+      const historyTime = await getHistoryTimee(this.prisma, newOrder.id);
+      const latestStatus = await getLatestOrderStatus(this.prisma, newOrder.id);
+      return {
+        message: 'Order created and status set to PENDING',
+        data: {
+          ...newOrder,
+          latestStatus,
+          historyTime,
+        },
+      };
     } else if ('adminId' in createOrderDto) {
       validateUserForOrder(user, createOrderDto, 'ADMIN');
 
@@ -97,14 +127,32 @@ export class OrderService {
           },
         });
         await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
-        return { message: 'Order updated and status set to ACCEPTED' };
+        const historyTime = await getHistoryTimee(this.prisma, existingOrder.id);
+        const latestStatus = await getLatestOrderStatus(this.prisma, existingOrder.id);
+        return {
+          message: 'Order updated and status set to ACCEPTED',
+          data: {
+            ...existingOrder,
+            latestStatus,
+            historyTime,
+          },
+        };
       }
 
       const newOrder = await this.prisma.order.create({
         data: createOrderDto as CreateAdminOrderDto,
       });
       await createOrderStatusHistory(this.prisma, newOrder.id, 'PENDING');
-      return { message: 'Order created and status set to PENDING' };
+      const historyTime = await getHistoryTimee(this.prisma, newOrder.id);
+      const latestStatus = await getLatestOrderStatus(this.prisma, newOrder.id);
+      return {
+        message: 'Order created and status set to PENDING',
+        data: {
+          ...newOrder,
+          latestStatus,
+          historyTime,
+        },
+      };
     } else {
       throw new BadRequestException('Invalid order creation request');
     }
@@ -132,9 +180,16 @@ export class OrderService {
 
     await this.prisma.order.update({
       where: { id },
-      data: updateOrderDto,
+      data: {
+        ...updateOrderDto,
+        deliveryDate: convertToUnixTimestamp(
+          (updateOrderDto as CreateStudentOrderDto).deliveryDate
+        ),
+      },
     });
-    return { message: 'Order updated' };
+    const latestStatus = await getLatestOrderStatus(this.prisma, id);
+    const historyTime = await getHistoryTimee(this.prisma, order.id);
+    return { message: 'Order updated', data: { ...order, latestStatus, historyTime } };
   }
 
   async updateStatus(id: string, status: $Enums.OrderStatus, _: GetUserType) {

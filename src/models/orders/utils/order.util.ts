@@ -52,3 +52,15 @@ export const getLatestOrderStatus = async (prisma: PrismaService, orderId: strin
 
   return latestStatus ? latestStatus.status : null;
 };
+
+export const getHistoryTimee = async (prisma: PrismaService, orderId: string) => {
+  const historyTime = await prisma.orderStatusHistory.findMany({
+    where: { orderId },
+    orderBy: { time: 'desc' },
+  });
+  return historyTime ? historyTime : null;
+};
+
+export const convertToUnixTimestamp = (dateString: string): string => {
+  return Math.floor(new Date(dateString).getTime() / 1000).toString();
+};
