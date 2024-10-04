@@ -10,7 +10,16 @@ declare const module: any;
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          'script-src': ["'self'", 'https://cdnjs.cloudflare.com'],
+        },
+      },
+    })
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
