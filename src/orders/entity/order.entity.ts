@@ -18,8 +18,6 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   @IsOptional()
   room: string;
   @IsOptional()
-  deliveryId: string;
-  @IsOptional()
   ordinalNumber: number;
   @IsOptional()
   phone: string;
