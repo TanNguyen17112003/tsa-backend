@@ -22,17 +22,11 @@ export class OrderService {
   async getOrders(query: OrderQueryDto, user: GetUserType): Promise<OrderEntity[]> {
     const { skip, take, order, sortBy } = query;
 
-    // Fetch orders based on the query parameters and user role
     const orders = await this.prisma.order.findMany({
       ...(skip ? { skip: +skip } : null),
       ...(take ? { take: +take } : null),
       ...(sortBy ? { orderBy: { [sortBy]: order || 'asc' } } : null),
-      where:
-        user.role === 'STUDENT'
-          ? { studentId: user.id }
-          : {
-              adminId: user.id,
-            },
+      where: user.role === 'STUDENT' ? { studentId: user.id } : {},
     });
 
     const ordersWithStatus = await Promise.all(
@@ -120,12 +114,6 @@ export class OrderService {
       const existingOrder = await findExistingOrder(this.prisma, checkCode, product, weight);
 
       if (existingOrder) {
-        await this.prisma.order.update({
-          where: { id: existingOrder.id },
-          data: {
-            phone: (createOrderDto as CreateAdminOrderDto).phone,
-          },
-        });
         await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
         const historyTime = await getHistoryTimee(this.prisma, existingOrder.id);
         const latestStatus = await getLatestOrderStatus(this.prisma, existingOrder.id);

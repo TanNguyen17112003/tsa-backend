@@ -38,10 +38,6 @@ export const validateUserForOrder = (
   if (role === 'STUDENT' && (user.role !== 'STUDENT' || user.id !== order.studentId)) {
     throw new UnauthorizedException();
   }
-
-  if (role === 'ADMIN' && (user.role !== 'ADMIN' || user.id !== order.adminId)) {
-    throw new UnauthorizedException();
-  }
 };
 
 export const getLatestOrderStatus = async (prisma: PrismaService, orderId: string) => {

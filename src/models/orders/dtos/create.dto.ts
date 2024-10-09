@@ -19,5 +19,4 @@ export class CreateAdminOrderDto extends PickType(CreateOrderDto, [
   'checkCode',
   'product',
   'weight',
-  'phone',
 ]) {}
