@@ -1,11 +1,10 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { $Enums } from '@prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
-import { CreateAdminOrderDto, CreateStudentOrderDto } from './dtos/create.dto';
-import { OrderQueryDto } from './dtos/query.dto';
-import { OrderEntity } from './entity/order.entity';
+import { CreateAdminOrderDto, CreateStudentOrderDto, OrderQueryDto } from './dtos';
+import { OrderEntity } from './entity';
 import {
   convertToUnixTimestamp,
   createOrderStatusHistory,
