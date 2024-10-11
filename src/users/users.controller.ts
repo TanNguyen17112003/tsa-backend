@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Patch, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { UserRole } from '@prisma/client';
 import { AllowAuthenticated, GetUser } from 'src/auth/auth.decorator';
 import { GetUserType } from 'src/types';
 
-import { UpdatePasswordDto, UpdateStudentDto } from './dto';
-import { StudentEntity } from './entities';
+import { UpdatePasswordDto, UpdateRoleDto, UpdateStudentDto } from './dto';
+import { StudentEntity, UserEntity } from './entities';
 import { UsersService } from './users.service';
 
 // These APIs are currently for students only
@@ -14,6 +15,14 @@ import { UsersService } from './users.service';
 @ApiBearerAuth('JWT-Auth')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get('/')
+  @ApiOperation({ summary: 'Get all available users using this application' })
+  @ApiResponse({ status: 200, description: 'OK.', type: [UserEntity] })
+  @AllowAuthenticated('ADMIN')
+  async getAllUsers() {
+    return this.usersService.getUsers();
+  }
 
   @Get('/profile')
   @ApiOperation({ summary: 'Get profile of current logged in user' })
@@ -41,6 +50,21 @@ export class UsersController {
     return { message: 'Cập nhật mật khẩu thành công' };
   }
 
+  @Put('/role/:id')
+  @ApiOperation({ summary: 'Update User Role' })
+  @ApiResponse({ status: 200, description: 'OK.' })
+  @AllowAuthenticated('ADMIN')
+  async updateRole(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
+    return this.usersService.updateUserRole(id, updateRoleDto.role as UserRole);
+  }
+
+  @Delete('/:id')
+  @ApiOperation({ summary: 'Delete User' })
+  @ApiResponse({ status: 200, description: 'OK.' })
+  @AllowAuthenticated('ADMIN')
+  async delete(@Param('id') id: string) {
+    return this.usersService.deleteUser(id);
+  }
   // @Get('/all')
   // @ApiOperation({ summary: 'Get all available users using this application' })
   // @ApiResponse({ status: 200, description: 'OK.' })

@@ -33,7 +33,7 @@ model User {
 
 model Credentials {
   uid      String  @id @default(cuid())
-  user     User    @relation(fields: [uid], references: [id])
+  user     User    @relation(fields: [uid], references: [id], onDelete: Cascade)
   email    String  @unique @db.VarChar(50)
   password String? @db.VarChar(255)
 }
@@ -43,18 +43,18 @@ model RefreshToken {
   token     String   @unique
   expiresAt DateTime
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AuthProvider {
   uid  String           @id @default(cuid())
-  user User             @relation(fields: [uid], references: [id])
+  user User             @relation(fields: [uid], references: [id], onDelete: Cascade)
   type AuthProviderType
 }
 
 model Student {
   studentId String     @id @unique
-  user      User       @relation(fields: [studentId], references: [id])
+  user      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
   status    UserStatus @default(OFFLINE)
   dormitory Dormitory?
   building  String?
@@ -65,7 +65,7 @@ model Student {
 
 model Staff {
   staffId    String     @id @unique
-  user       User       @relation(fields: [staffId], references: [id])
+  user       User       @relation(fields: [staffId], references: [id], onDelete: Cascade)
   deliveries Delivery[]
   status     UserStatus @default(OFFLINE)
   orders     Order[]

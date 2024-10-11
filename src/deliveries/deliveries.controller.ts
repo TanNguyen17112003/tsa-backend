@@ -9,7 +9,7 @@ import { DeliveryEntity } from './entities';
 
 @ApiTags('Deliveries')
 @ApiBearerAuth('JWT-Auth')
-@Controller('deliveries')
+@Controller('api/deliveries')
 export class DeliveriesController {
   constructor(private readonly deliveriesService: DeliveriesService) {}
 
