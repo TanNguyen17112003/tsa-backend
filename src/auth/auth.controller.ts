@@ -22,16 +22,20 @@ export class AuthController {
   @ApiOperation({ summary: 'Initiate the Sign up process with user (student) email' })
   @ApiResponse({ status: 201, description: 'Request success' })
   @ApiResponse({ status: 400, description: 'Email already registered' })
-  initiateRegistration(@Body() body: SignUpDtoInit) {
-    return this.authService.initiateRegistration(body.email);
+  initiateRegistration(@Body() body: SignUpDtoInit, @Query('mobile') mobile: boolean = false) {
+    return this.authService.initiateRegistration(body.email, mobile);
   }
 
   @Get('signup/verify')
   @ApiOperation({ summary: 'Verify the email from the initial signup process' })
   @ApiResponse({ status: 302, description: 'Redirected' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
-  async verifyEmail(@Query('token') token: string, @Res() res: Response) {
-    const redirectUrl = await this.authService.verifyEmail(token);
+  async verifyEmail(
+    @Query('token') token: string,
+    @Query('mobile') mobile: boolean = false,
+    @Res() res: Response
+  ) {
+    const redirectUrl = await this.authService.verifyEmail(token, mobile);
     res.redirect(redirectUrl);
   }
 

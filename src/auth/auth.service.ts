@@ -23,8 +23,9 @@ export class AuthService {
    *
    * This belongs to the registration flow of a student with email and password.
    * @param email The email address to send the verification email to
+   * @param mobile Whether the request is from a mobile device
    */
-  async initiateRegistration(email: string) {
+  async initiateRegistration(email: string, mobile: boolean) {
     const credentialAndUser = await this.prisma.credentials.findUnique({
       where: { email },
       include: {
@@ -74,7 +75,7 @@ export class AuthService {
       });
     }
 
-    const verificationLink = `${process.env.APP_URL}/api/auth/signup/verify?token=${token}`;
+    const verificationLink = `${process.env.APP_URL}/api/auth/signup/verify?token=${token}&mobile=${mobile}`;
     await this.emailService.sendVerificationEmail(email, verificationLink);
 
     return { message: 'Verification email sent' };
@@ -85,8 +86,10 @@ export class AuthService {
    *
    * This belongs to the registration flow of a student with email and password.
    * @param token The verification token
+   * @param mobile Whether the request is from a mobile device
+   * @returns The URL to redirect the user to
    */
-  async verifyEmail(token: string) {
+  async verifyEmail(token: string, mobile: boolean) {
     const user = await this.prisma.verificationEmail.findFirst({
       where: { token: token, expiresAt: { gt: new Date() } },
     });
@@ -100,6 +103,10 @@ export class AuthService {
     });
 
     const jwtToken = this.jwtService.sign({ userId: user.userId }, { expiresIn: '1h' });
+
+    if (mobile) {
+      return `${process.env.MOBILE_URL_COMPLETE_SIGNUP}/${jwtToken}`;
+    }
     return `${process.env.FRONTEND_URL_COMPLETE_SIGNUP}?token=${jwtToken}`;
   }
 
