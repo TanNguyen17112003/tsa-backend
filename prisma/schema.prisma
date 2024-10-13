@@ -14,12 +14,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Sample {
-  id        String   @id @default(cuid())
-  content   String   @db.VarChar(255)
-  createdAt DateTime @default(dbgenerated("now()"))
-}
-
 model User {
   id                String             @id @default(cuid())
   firstName         String?            @db.VarChar(50)
@@ -39,7 +33,7 @@ model User {
 
 model Credentials {
   uid      String  @id @default(cuid())
-  user     User    @relation(fields: [uid], references: [id])
+  user     User    @relation(fields: [uid], references: [id], onDelete: Cascade)
   email    String  @unique @db.VarChar(50)
   password String? @db.VarChar(255)
 }
@@ -49,18 +43,18 @@ model RefreshToken {
   token     String   @unique
   expiresAt DateTime
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AuthProvider {
   uid  String           @id @default(cuid())
-  user User             @relation(fields: [uid], references: [id])
+  user User             @relation(fields: [uid], references: [id], onDelete: Cascade)
   type AuthProviderType
 }
 
 model Student {
   studentId String     @id @unique
-  user      User       @relation(fields: [studentId], references: [id])
+  user      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
   status    UserStatus @default(OFFLINE)
   dormitory Dormitory?
   building  String?
@@ -71,7 +65,7 @@ model Student {
 
 model Staff {
   staffId    String     @id @unique
-  user       User       @relation(fields: [staffId], references: [id])
+  user       User       @relation(fields: [staffId], references: [id], onDelete: Cascade)
   deliveries Delivery[]
   status     UserStatus @default(OFFLINE)
   orders     Order[]
@@ -101,8 +95,7 @@ model Order {
   shippingFee        Float?
   deliveryDate       String?
   isPaid             Boolean              @default(false)
-  delivery           Delivery?            @relation(fields: [deliveryId], references: [deliveryId])
-  deliveryId         String?
+  deliveries         Delivery[]
   room               String?              @db.VarChar(255)
   dormitory          Dormitory?
   building           String?              @db.VarChar(255)
@@ -128,16 +121,23 @@ model OrderStatusHistory {
 }
 
 model Delivery {
-  deliveryId String         @id @default(cuid())
-  createdAt  String         @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
-  acceptedAt String?        @db.VarChar(255)
-  deliveryAt String?        @db.VarChar(255)
-  limitTime  String         @db.VarChar(255)
-  delayTime  String?        @db.VarChar(255)
-  status     DeliveryStatus @default(PENDING)
-  orders     Order[]
-  shipperId  String?        @db.VarChar(255) // Staft who takes responsible for the delivery
-  staff      Staff?         @relation(fields: [shipperId], references: [staffId])
+  id                    String                  @id @default(cuid())
+  createdAt             String                  @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
+  limitTime             Int // Thời gian giới hạn để nhận đơn hàng (giây)
+  // delayTime             String?                 @db.VarChar(255)
+  orders                Order[]
+  staffId               String?                 @db.VarChar(255) // Staft who takes responsible for the delivery
+  staff                 Staff?                  @relation(fields: [staffId], references: [staffId])
+  DeliveryStatusHistory DeliveryStatusHistory[]
+}
+
+model DeliveryStatusHistory {
+  id         String         @id @default(cuid())
+  deliveryId String         @db.VarChar(255)
+  delivery   Delivery       @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  status     DeliveryStatus
+  reason     String?        @db.Text
+  time       String         @db.VarChar(255) // Unix timestamp for each time the status changes
 }
 
 model Report {
@@ -179,7 +179,8 @@ enum OrderStatus {
 enum DeliveryStatus {
   PENDING
   ACCEPTED
-  SUCCESS
+  FINISHED
+  CANCELED
 }
 
 enum UserStatus {

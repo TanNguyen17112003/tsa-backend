@@ -15,3 +15,10 @@ export class UpdatePasswordDto {
   @ApiProperty({ example: 'ABC', description: 'New password of user' })
   readonly newPassword: string;
 }
+
+export class UpdateRoleDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ example: 'ADMIN', description: 'New role of user' })
+  readonly role: string;
+}

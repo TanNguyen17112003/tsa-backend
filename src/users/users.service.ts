@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { UserRole, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma';
 
@@ -8,6 +9,92 @@ import { StudentEntity, UserEntity } from './entities';
 @Injectable()
 export class UsersService {
   constructor(private prismaService: PrismaService) {}
+
+  async getUsers(): Promise<UserEntity[]> {
+    const users = await this.prismaService.user.findMany({
+      include: {
+        student: true,
+        staff: true,
+      },
+    });
+
+    return users.map((user) => {
+      if (user.role === 'STUDENT' && user.student) {
+        return {
+          ...user,
+          status: user.student.status,
+          dormitory: user.student.dormitory,
+          building: user.student.building,
+          room: user.student.room,
+        };
+      } else if (user.role === 'STAFF' && user.staff) {
+        return {
+          ...user,
+          status: user.staff.status,
+        };
+      } else {
+        return user;
+      }
+    });
+  }
+
+  async updateUserRole(id: string, newRole: UserRole): Promise<UserEntity> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id },
+      include: {
+        student: true,
+        staff: true,
+        admin: true,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not exist!');
+    }
+
+    if (user.role === UserRole.STUDENT && user.student) {
+      await this.prismaService.student.delete({
+        where: { studentId: id },
+      });
+    } else if (user.role === UserRole.STAFF && user.staff) {
+      await this.prismaService.staff.delete({
+        where: { staffId: id },
+      });
+    } else if (user.role === UserRole.ADMIN && user.admin) {
+      await this.prismaService.admin.delete({
+        where: { adminId: id },
+      });
+    }
+
+    const updatedUser = await this.prismaService.user.update({
+      where: { id },
+      data: { role: newRole },
+    });
+
+    if (newRole === UserRole.STUDENT) {
+      await this.prismaService.student.create({
+        data: {
+          user: { connect: { id } },
+          status: UserStatus.OFFLINE,
+        },
+      });
+    } else if (newRole === UserRole.STAFF) {
+      await this.prismaService.staff.create({
+        data: {
+          user: { connect: { id } },
+          status: UserStatus.OFFLINE,
+        },
+      });
+    } else if (newRole === UserRole.ADMIN) {
+      await this.prismaService.admin.create({
+        data: {
+          user: { connect: { id } },
+        },
+      });
+    }
+
+    return updatedUser;
+  }
 
   async findByEmail(email: string): Promise<UserEntity | null> {
     const credential = await this.prismaService.credentials.findUnique({ where: { email } });
@@ -102,5 +189,10 @@ export class UsersService {
       where: { uid: userId },
       data: { password: hash },
     });
+  }
+
+  async deleteUser(id: string): Promise<{ message: string }> {
+    await this.prismaService.user.delete({ where: { id } });
+    return { message: 'User deleted successfully' };
   }
 }

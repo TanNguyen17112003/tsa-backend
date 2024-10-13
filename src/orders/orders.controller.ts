@@ -1,14 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { $Enums } from '@prisma/client';
-import { AllowAuthenticated, GetUser } from 'src/auth/auth.decorator';
-import { checkRowLevelPermission } from 'src/auth/util';
+import { AllowAuthenticated, checkRowLevelPermission, GetUser } from 'src/auth';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
-import { CreateOrderDto } from './dtos/create.dto';
-import { OrderQueryDto } from './dtos/query.dto';
-import { OrderEntity } from './entity/order.entity';
+import { CreateOrderDto, OrderQueryDto } from './dtos';
+import { OrderEntity } from './entity';
 import { OrderService } from './orders.service';
 
 @ApiTags('Orders')
