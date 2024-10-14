@@ -3,11 +3,13 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { DateService } from 'src/date';
 import { EmailService } from 'src/email';
+import { admin } from 'src/firebase-admin.config';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 import { v4 as uuidv4 } from 'uuid';
 
 import { SignInResultDto, SignUpDto } from './dto';
+import { GoogleSignInDto } from './dto/google-signin.dto';
 
 @Injectable()
 export class AuthService {
@@ -239,6 +241,71 @@ export class AuthService {
         email,
       },
     };
+  }
+
+  async signInWithGoogle(dto: GoogleSignInDto): Promise<SignInResultDto> {
+    try {
+      const decodedToken = await admin.auth().verifyIdToken(dto.idToken);
+      const { email, name, picture } = decodedToken;
+
+      let credential = await this.prisma.credentials.findUnique({ where: { email } });
+
+      if (!credential) {
+        const user = await this.prisma.user.create({
+          data: {
+            firstName: name.split(' ')[0],
+            lastName: name.split(' ').slice(1).join(' '),
+            verified: true,
+            createdAt: Math.floor(new Date().getTime() / 1000).toString(),
+            AuthProvider: {
+              create: {
+                type: 'GOOGLE',
+              },
+            },
+          },
+        });
+
+        await this.prisma.student.create({
+          data: {
+            studentId: user.id,
+            status: 'AVAILABLE',
+          },
+        });
+
+        credential = await this.prisma.credentials.create({
+          data: {
+            email,
+            uid: user.id,
+          },
+        });
+      }
+
+      const user = await this.prisma.user.findUnique({ where: { id: credential.uid } });
+
+      const payload = { email: credential.email, id: user.id, role: user.role };
+      const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+      const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+      await this.prisma.refreshToken.create({
+        data: {
+          token: refreshToken,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          userId: user.id,
+        },
+      });
+
+      return {
+        accessToken,
+        refreshToken,
+        userInfo: {
+          ...user,
+          email: credential.email,
+          photoUrl: picture, // Add this line
+        },
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid Google ID token');
+    }
   }
 
   /**

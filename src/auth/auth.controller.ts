@@ -11,6 +11,7 @@ import {
   SignUpDto,
   SignUpDtoInit,
 } from './dto';
+import { GoogleSignInDto } from './dto/google-signin.dto';
 
 @Controller('api/auth')
 @ApiTags('Auth')
@@ -53,6 +54,15 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   signIn(@Body() user: SignInDto): Promise<SignInResultDto> {
     return this.authService.signin(user.email, user.password);
+  }
+
+  @Post('signin/google')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Sign in with Google' })
+  @ApiResponse({ status: 200, description: 'OK' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  signInWithGoogle(@Body() dto: GoogleSignInDto): Promise<SignInResultDto> {
+    return this.authService.signInWithGoogle(dto);
   }
 
   @Post('refresh')
