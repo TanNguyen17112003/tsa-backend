@@ -300,10 +300,11 @@ export class AuthService {
         userInfo: {
           ...user,
           email: credential.email,
-          photoUrl: picture, // Add this line
+          photoUrl: picture,
         },
       };
     } catch (error) {
+      console.error('Error verifying Google ID token:', error);
       throw new UnauthorizedException('Invalid Google ID token');
     }
   }
