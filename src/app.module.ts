@@ -1,17 +1,18 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AuthModule } from 'src/auth';
-import { DateModule } from 'src/date';
-import { DeliveriesModule } from 'src/deliveries';
-import { EmailModule } from 'src/email';
-import { OrdersModule } from 'src/orders';
-import { PrismaModule } from 'src/prisma';
-import { ReportsModule } from 'src/reports';
-import { UsersModule } from 'src/users';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { DateModule } from './date/date.module';
+import { DeliveriesModule } from './deliveries';
+import { EmailModule } from './email/email.module';
+import { FirebaseAdminConfigService } from './firebase-admin.config';
+import { OrdersModule } from './orders/orders.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { ReportsModule } from './reports';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -22,11 +23,11 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     AuthModule,
     UsersModule,
     OrdersModule,
+    CloudinaryModule,
     ReportsModule,
     DeliveriesModule,
-    CloudinaryModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, FirebaseAdminConfigService],
 })
 export class AppModule {}

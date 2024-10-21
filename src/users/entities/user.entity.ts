@@ -41,4 +41,9 @@ export class UserEntity implements User {
   @IsOptional()
   @ApiPropertyOptional({ example: 'user@example.com', description: 'Email of user' })
   email?: string | null;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({ example: 'avatar.jpg', description: 'Avatar of user' })
+  photoUrl?: string | null;
 }
