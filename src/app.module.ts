@@ -10,6 +10,7 @@ import { DeliveriesModule } from './deliveries';
 import { EmailModule } from './email/email.module';
 import { FirebaseAdminConfigService } from './firebase-admin.config';
 import { OrdersModule } from './orders/orders.module';
+import { PaymentModule } from './payment/payment.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReportsModule } from './reports';
 import { UsersModule } from './users/users.module';
@@ -26,6 +27,7 @@ import { UsersModule } from './users/users.module';
     CloudinaryModule,
     ReportsModule,
     DeliveriesModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService, FirebaseAdminConfigService],
