@@ -9,15 +9,7 @@ declare const module: any;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
-  // Enable CORS for all domains
-  app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-  });
-
-  // Use Helmet with specific content security policy
+  app.enableCors();
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -28,7 +20,6 @@ async function bootstrap() {
       },
     })
   );
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

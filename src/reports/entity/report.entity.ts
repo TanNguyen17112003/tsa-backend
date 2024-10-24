@@ -19,6 +19,7 @@ export class ReportEntity implements RestrictProperties<ReportEntity, Report> {
   @IsString()
   @IsOptional()
   repliedAt: string;
+  @IsOptional()
   status: $Enums.ReportStatus;
   @IsString()
   @IsOptional()

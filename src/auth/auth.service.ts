@@ -166,7 +166,7 @@ export class AuthService {
   }
 
   async generateTokens(payload: GetUserType) {
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '45m' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
     const refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
@@ -193,7 +193,7 @@ export class AuthService {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+      const accessToken = this.jwtService.sign(payload, { expiresIn: '45m' });
       return { accessToken, refreshToken };
     } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');
@@ -283,7 +283,7 @@ export class AuthService {
       const user = await this.prisma.user.findUnique({ where: { id: credential.uid } });
 
       const payload = { email: credential.email, id: user.id, role: user.role };
-      const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+      const accessToken = this.jwtService.sign(payload, { expiresIn: '45m' });
       const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
       await this.prisma.refreshToken.create({
