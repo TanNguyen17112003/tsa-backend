@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import * as moment from 'moment';
+import moment from 'moment';
 
 import { DateService } from './date.service';
 

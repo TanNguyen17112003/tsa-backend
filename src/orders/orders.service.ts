@@ -32,6 +32,16 @@ export class OrderService {
       orders.map(async (order) => {
         const latestStatus = await getLatestOrderStatus(this.prisma, order.id);
         const historyTime = await getHistoryTimee(this.prisma, order.id);
+        if (order.shipperId) {
+          const staff = await this.prisma.user.findUnique({ where: { id: order.shipperId } });
+          return {
+            ...order,
+            latestStatus,
+            historyTime,
+            lastName: staff.lastName,
+            firstName: staff.firstName,
+          };
+        }
         return {
           ...order,
           latestStatus,

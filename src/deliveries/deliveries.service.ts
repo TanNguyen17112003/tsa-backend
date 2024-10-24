@@ -27,6 +27,15 @@ export class DeliveriesService {
     }
 
     const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
+    // update field attribute shipperId in each order of orders
+    orders.forEach(async (order) => {
+      await this.prisma.order.update({
+        where: { id: order.id },
+        data: {
+          shipperId: deliveryData.staffId,
+        },
+      });
+    });
     return this.prisma.delivery.create({
       data: {
         ...deliveryData,
