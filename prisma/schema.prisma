@@ -29,6 +29,7 @@ model User {
   Credentials       Credentials?
   AuthProvider      AuthProvider?
   refreshTokens     RefreshToken[]
+  photoUrl          String?            @db.VarChar(500)
 }
 
 model Credentials {
