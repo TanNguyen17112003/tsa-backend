@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { DeliveryStatus } from '@prisma/client';
 import { DateService } from 'src/date';
+import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
 
 import { CreateDeliveryDto, UpdateDeliveryDto } from './dtos';
@@ -9,7 +10,8 @@ import { CreateDeliveryDto, UpdateDeliveryDto } from './dtos';
 export class DeliveriesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly dateService: DateService
+    private readonly dateService: DateService,
+    private readonly notificationService: NotificationsService
   ) {}
 
   async createDelivery(createDeliveryDto: CreateDeliveryDto) {
@@ -36,7 +38,8 @@ export class DeliveriesService {
         },
       });
     });
-    return this.prisma.delivery.create({
+
+    const newDelivery = await this.prisma.delivery.create({
       data: {
         ...deliveryData,
         createdAt,
@@ -51,6 +54,16 @@ export class DeliveriesService {
         },
       },
     });
+    await this.notificationService.sendNotification({
+      type: 'DELIVERY',
+      title: 'Chuyến đi mới vừa được tạo',
+      content: 'Bạn vừa được giao một chuyến đi mới',
+      deliveryId: newDelivery.id,
+      orderId: undefined,
+      reportId: undefined,
+      userId: deliveryData.staffId,
+    });
+    return newDelivery;
   }
 
   async getDeliveries() {
@@ -121,6 +134,20 @@ export class DeliveriesService {
       throw new NotFoundException('Delivery not found');
     }
 
+    await this.notificationService.sendNotification({
+      type: 'DELIVERY',
+      title: 'Thay đổi trạng thái chuyến đi',
+      content:
+        status === 'CANCELED'
+          ? 'Chuyến đi đã bị hủy'
+          : status === 'FINISHED'
+            ? 'Chuyến đi đã hoàn thành'
+            : 'Chuyến đi đang vận chuyển',
+      deliveryId: delivery.id,
+      orderId: undefined,
+      reportId: undefined,
+      userId: delivery.staffId,
+    });
     return this.prisma.delivery.update({
       where: { id },
       data: {

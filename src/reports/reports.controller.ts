@@ -1,45 +1,38 @@
+// src/reports/reports.controller.ts
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { AllowAuthenticated, checkRowLevelPermission, GetUser } from 'src/auth';
-import { PrismaService } from 'src/prisma';
+import { AllowAuthenticated, GetUser } from 'src/auth';
 import { GetUserType } from 'src/types';
 
 import { CreateReport, ReportQueryDto, UpdateReport } from './dtos';
 import { ReportEntity } from './entity/report.entity';
+import { ReportsService } from './reports.service';
 
 @ApiTags('Reports')
 @Controller('api/reports')
 @ApiBearerAuth('JWT-Auth')
 export class ReportsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly reportsService: ReportsService) {}
 
   @AllowAuthenticated('STUDENT')
   @ApiCreatedResponse({ type: ReportEntity })
   @Post()
   create(@Body() createReportDto: CreateReport, @GetUser() user: GetUserType) {
-    checkRowLevelPermission(user, createReportDto.studentId);
-    return this.prisma.report.create({ data: createReportDto });
+    return this.reportsService.createReport(createReportDto, user);
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
   @ApiOkResponse({ type: [ReportEntity] })
   @Get()
-  findAll(@Query() { skip, take, order, sortBy }: ReportQueryDto, @GetUser() user: GetUserType) {
-    checkRowLevelPermission(user, user.id);
-    const studentId = user.role === 'STUDENT' ? user.id : null;
-    return this.prisma.report.findMany({
-      ...(skip ? { skip: +skip } : null),
-      ...(take ? { take: +take } : null),
-      ...(sortBy ? { orderBy: { [sortBy]: order || 'asc' } } : null),
-      where: studentId ? { studentId } : {},
-    });
+  findAll(@Query() query: ReportQueryDto, @GetUser() user: GetUserType) {
+    return this.reportsService.getReports(query, user);
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
   @ApiOkResponse({ type: ReportEntity })
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.prisma.report.findUnique({ where: { id } });
+    return this.reportsService.getReport(id);
   }
 
   @ApiOkResponse({ type: ReportEntity })
@@ -50,19 +43,12 @@ export class ReportsController {
     @Body() updateReportDto: UpdateReport,
     @GetUser() user: GetUserType
   ) {
-    const report = await this.prisma.report.findUnique({ where: { id } });
-    checkRowLevelPermission(user, report.replierId);
-    return this.prisma.report.update({
-      where: { id },
-      data: updateReportDto,
-    });
+    return this.reportsService.updateReport(id, updateReportDto, user);
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
   @Delete(':id')
   async remove(@Param('id') id: string, @GetUser() user: GetUserType) {
-    const report = await this.prisma.report.findUnique({ where: { id } });
-    checkRowLevelPermission(user, report.replierId);
-    return this.prisma.report.delete({ where: { id } });
+    return this.reportsService.deleteReport(id, user);
   }
 }

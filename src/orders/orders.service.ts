@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { $Enums } from '@prisma/client';
+import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
@@ -16,7 +17,10 @@ import {
 
 @Injectable()
 export class OrderService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationsService
+  ) {}
 
   async getOrders(query: OrderQueryDto, user: GetUserType): Promise<OrderEntity[]> {
     const { skip, take, order, sortBy } = query;
@@ -76,6 +80,9 @@ export class OrderService {
       const existingOrder = await findExistingOrder(this.prisma, checkCode, product, weight);
 
       if (existingOrder) {
+        if (existingOrder.studentId) {
+          throw new Error('This order already exists');
+        }
         await this.prisma.order.update({
           where: { id: existingOrder.id },
           data: {
@@ -86,6 +93,15 @@ export class OrderService {
           },
         });
         await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
+        await this.notificationService.sendNotification({
+          type: 'ORDER',
+          title: 'Xác nhận đơn hàng',
+          content: `Đơn hàng ${existingOrder.checkCode} của bạn đã được xác nhận`,
+          orderId: existingOrder.id,
+          userId: existingOrder.studentId,
+          deliveryId: undefined,
+          reportId: undefined,
+        });
         const historyTime = await getHistoryTimee(this.prisma, existingOrder.id);
         const latestStatus = await getLatestOrderStatus(this.prisma, existingOrder.id);
         return {
@@ -123,7 +139,19 @@ export class OrderService {
       const existingOrder = await findExistingOrder(this.prisma, checkCode, product, weight);
 
       if (existingOrder) {
+        if (existingOrder.adminId) {
+          throw new Error('This order already exists');
+        }
         await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
+        await this.notificationService.sendNotification({
+          type: 'ORDER',
+          title: 'Xác nhận đơn hàng',
+          content: `Đơn hàng ${existingOrder.checkCode} của bạn đã được xác nhận`,
+          orderId: existingOrder.id,
+          userId: existingOrder.studentId,
+          deliveryId: undefined,
+          reportId: undefined,
+        });
         const historyTime = await getHistoryTimee(this.prisma, existingOrder.id);
         const latestStatus = await getLatestOrderStatus(this.prisma, existingOrder.id);
         return {
@@ -194,6 +222,15 @@ export class OrderService {
     if (!order) {
       throw new BadRequestException('Order not found');
     }
+    await this.notificationService.sendNotification({
+      type: 'ORDER',
+      title: 'Thay đổi trạng thái đơn hàng',
+      content: `Đơn hàng ${order.checkCode} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : 'Đang vận chuyển'}`,
+      orderId: order.id,
+      userId: order.studentId,
+      deliveryId: undefined,
+      reportId: undefined,
+    });
     await createOrderStatusHistory(this.prisma, id, status);
   }
 
