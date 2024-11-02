@@ -35,7 +35,7 @@ export const validateUserForOrder = (
   order: any,
   role: 'STUDENT' | 'ADMIN' | 'STAFF'
 ) => {
-  if (role === 'STUDENT' && (user.role !== 'STUDENT' || user.id !== order.studentId)) {
+  if (role === 'STUDENT' && user.role !== 'STUDENT') {
     throw new UnauthorizedException();
   }
 };
