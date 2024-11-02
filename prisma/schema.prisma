@@ -29,6 +29,8 @@ model User {
   Credentials       Credentials?
   AuthProvider      AuthProvider?
   refreshTokens     RefreshToken[]
+  photoUrl          String?            @db.VarChar(500)
+  Notification      Notification[]
 }
 
 model Credentials {
@@ -109,6 +111,8 @@ model Order {
   paymentMethod      PaymentMethod?
   OrderStatusHistory OrderStatusHistory[]
   phone              String?              @db.VarChar(15)
+  Notification       Notification[]
+  proofImage         String?              @db.VarChar(500)
 }
 
 model OrderStatusHistory {
@@ -129,6 +133,7 @@ model Delivery {
   staffId               String?                 @db.VarChar(255) // Staft who takes responsible for the delivery
   staff                 Staff?                  @relation(fields: [staffId], references: [staffId])
   DeliveryStatusHistory DeliveryStatusHistory[]
+  Notification          Notification[]
 }
 
 model DeliveryStatusHistory {
@@ -141,19 +146,37 @@ model DeliveryStatusHistory {
 }
 
 model Report {
-  id         String       @id @default(cuid())
-  orderId    String       @db.VarChar(255)
-  order      Order        @relation(fields: [orderId], references: [id])
-  content    String       @db.Text
-  reportedAt String       @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
-  proof      String       @db.VarChar(255) // URL to image or video
-  reply      String?      @db.Text
-  repliedAt  String?      @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
-  status     ReportStatus @default(PENDING)
-  replierId  String?      @db.VarChar(255) // Admin who replies the report
-  admin      Admin?       @relation(fields: [replierId], references: [adminId])
-  studentId  String       @db.VarChar(255) // Student who reports the order
-  student    Student      @relation(fields: [studentId], references: [studentId])
+  id           String         @id @default(cuid())
+  orderId      String         @db.VarChar(255)
+  order        Order          @relation(fields: [orderId], references: [id])
+  content      String         @db.Text
+  reportedAt   String         @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
+  proof        String         @db.VarChar(255) // URL to image or video
+  reply        String?        @db.Text
+  repliedAt    String?        @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
+  status       ReportStatus   @default(PENDING)
+  replierId    String?        @db.VarChar(255) // Admin who replies the report
+  admin        Admin?         @relation(fields: [replierId], references: [adminId])
+  studentId    String         @db.VarChar(255) // Student who reports the order
+  student      Student        @relation(fields: [studentId], references: [studentId])
+  Notification Notification[]
+}
+
+model Notification {
+  id         String          @id @default(cuid())
+  type       NotificatioType
+  title      String
+  content    String
+  createdAt  String          @db.VarChar(255)
+  orderId    String?         @db.VarChar(255)
+  deliveryId String?         @db.VarChar(255)
+  reportId   String?         @db.VarChar(255)
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order      Order?          @relation(fields: [orderId], references: [id])
+  delivery   Delivery?       @relation(fields: [deliveryId], references: [id])
+  report     Report?         @relation(fields: [reportId], references: [id])
+  isRead     Boolean         @default(false)
 }
 
 enum UserRole {
@@ -203,4 +226,10 @@ enum PaymentMethod {
   CREDIT
   CASH
   MOMO
+}
+
+enum NotificatioType {
+  ORDER
+  DELIVERY
+  REPORT
 }

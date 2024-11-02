@@ -3,6 +3,8 @@ import { IsOptional } from 'class-validator';
 import { RestrictProperties } from 'src/types';
 
 export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
+  @IsOptional()
+  proofImage: string;
   id: string;
   @IsOptional()
   studentId: string;

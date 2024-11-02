@@ -255,6 +255,7 @@ export class AuthService {
           data: {
             firstName: name.split(' ')[0],
             lastName: name.split(' ').slice(1).join(' '),
+            photoUrl: picture,
             verified: true,
             createdAt: Math.floor(new Date().getTime() / 1000).toString(),
             AuthProvider: {
@@ -300,7 +301,7 @@ export class AuthService {
         userInfo: {
           ...user,
           email: credential.email,
-          photoUrl: picture,
+          photoUrl: user.photoUrl || picture,
         },
       };
     } catch (error) {

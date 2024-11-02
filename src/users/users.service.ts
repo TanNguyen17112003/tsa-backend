@@ -152,6 +152,7 @@ export class UsersService {
         firstName: data.firstName,
         lastName: data.lastName,
         phoneNumber: data.phoneNumber,
+        photoUrl: data.photoUrl,
       },
     });
     const student = await this.prismaService.student.update({
