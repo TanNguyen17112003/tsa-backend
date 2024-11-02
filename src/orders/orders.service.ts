@@ -70,37 +70,44 @@ export class OrderService {
   ) {
     const { checkCode, product, weight } = createOrderDto;
 
-    if ('studentId' in createOrderDto) {
+    if (user.role === 'STUDENT') {
       validateUserForOrder(user, createOrderDto, 'STUDENT');
 
       const existingOrder = await findExistingOrder(this.prisma, checkCode, product, weight);
-
       if (existingOrder) {
-        await this.prisma.order.update({
-          where: { id: existingOrder.id },
-          data: {
-            ...createOrderDto,
-            deliveryDate: convertToUnixTimestamp(
-              (createOrderDto as CreateStudentOrderDto).deliveryDate
-            ),
-          },
-        });
-        await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
-        const historyTime = await getHistoryTimee(this.prisma, existingOrder.id);
-        const latestStatus = await getLatestOrderStatus(this.prisma, existingOrder.id);
-        return {
-          message: 'Order updated and status set to ACCEPTED',
-          data: {
-            ...existingOrder,
-            latestStatus,
-            historyTime,
-          },
-        };
+        if (existingOrder.studentId !== user.id) {
+          throw new UnauthorizedException(
+            'This order already exists and belongs to another student'
+          );
+        } else {
+          await this.prisma.order.update({
+            where: { id: existingOrder.id },
+            data: {
+              ...createOrderDto,
+              studentId: user.id,
+              deliveryDate: convertToUnixTimestamp(
+                (createOrderDto as CreateStudentOrderDto).deliveryDate
+              ),
+            },
+          });
+          await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
+          const historyTime = await getHistoryTimee(this.prisma, existingOrder.id);
+          const latestStatus = await getLatestOrderStatus(this.prisma, existingOrder.id);
+          return {
+            message: 'Order updated and status set to ACCEPTED',
+            data: {
+              ...existingOrder,
+              latestStatus,
+              historyTime,
+            },
+          };
+        }
       }
 
       const newOrder = await this.prisma.order.create({
         data: {
           ...(createOrderDto as CreateStudentOrderDto),
+          studentId: user.id,
           deliveryDate: convertToUnixTimestamp(
             (createOrderDto as CreateStudentOrderDto).deliveryDate
           ),
@@ -117,7 +124,7 @@ export class OrderService {
           historyTime,
         },
       };
-    } else if ('adminId' in createOrderDto) {
+    } else if (user.role === 'ADMIN') {
       validateUserForOrder(user, createOrderDto, 'ADMIN');
 
       const existingOrder = await findExistingOrder(this.prisma, checkCode, product, weight);
@@ -137,7 +144,10 @@ export class OrderService {
       }
 
       const newOrder = await this.prisma.order.create({
-        data: createOrderDto as CreateAdminOrderDto,
+        data: {
+          ...(createOrderDto as CreateAdminOrderDto),
+          adminId: user.id,
+        },
       });
       await createOrderStatusHistory(this.prisma, newOrder.id, 'PENDING');
       const historyTime = await getHistoryTimee(this.prisma, newOrder.id);
