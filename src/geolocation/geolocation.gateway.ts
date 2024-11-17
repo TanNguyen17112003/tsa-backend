@@ -1,20 +1,33 @@
+import { JwtService } from '@nestjs/jwt';
 import {
   ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsException,
 } from '@nestjs/websockets';
+import { NextFunction } from 'express';
 import { Server, Socket } from 'socket.io';
+import { PrismaService } from 'src/prisma';
+import type { TServer, TSocket } from 'src/types/socket.d.ts';
+
+import { LocationUpdateDto } from './dtos/location-update.dto';
 
 @WebSocketGateway()
-export class GeolocationGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class GeolocationGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
   @WebSocketServer()
-  server: Server;
+  server: TServer;
 
   private clients: { [key: string]: Socket } = {};
+
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService
+  ) {}
 
   handleConnection(client: Socket) {
     console.log('Client connected:', client.id);
@@ -26,34 +39,77 @@ export class GeolocationGateway implements OnGatewayConnection, OnGatewayDisconn
     delete this.clients[client.id];
   }
 
-  @SubscribeMessage('subscribeToOrder')
-  handleSubscribeToOrder(
-    @MessageBody() { orderId }: { orderId: string },
-    @ConnectedSocket() socket: Socket
-  ) {
-    // Student subscribes to get real-time location updates of staff
-    socket.join(`order_${orderId}`);
-    console.log(`Client ${socket.id} subscribed to order ${orderId}`);
+  afterInit(server: Server) {
+    server.engine.use(async (req: any, res: any, next: NextFunction) => {
+      const isHandshake = req._query.sid === undefined;
+
+      if (isHandshake) {
+        const [type, token] = req.headers.authorization?.split(' ') ?? [];
+        if (type !== 'Bearer' || !token) {
+          return next(new WsException('Phiên đăng nhập không hợp lệ.'));
+        }
+        try {
+          const user = await this.jwtService.verify(token);
+          req['user'] = user;
+        } catch (err) {
+          return next(new WsException('Phiên đăng nhập không hợp lệ.'));
+        }
+      }
+
+      next();
+    });
   }
 
-  @SubscribeMessage('unsubscribeFromOrder')
+  @SubscribeMessage('subscribeToShipper')
+  handleSubscribeToShipper(
+    @MessageBody() { shipperId }: { shipperId: string },
+    @ConnectedSocket() socket: Socket
+  ) {
+    // Student subscribes to get real-time location updates of staff (shipper)
+    socket.join(this.getRoom(shipperId));
+    console.log(`Client ${socket.id} subscribed to shipper with ID ${shipperId}`);
+  }
+
+  @SubscribeMessage('unsubscribeFromShipper')
   handleUnsubscribeFromOrder(
-    @MessageBody() { orderId }: { orderId: string },
+    @MessageBody() { shipperId }: { shipperId: string },
     @ConnectedSocket() socket: Socket
   ) {
     // Student (should) unsubscribes when leaving the map page
-    socket.leave(`order_${orderId}`);
-    console.log(`Client ${socket.id} unsubscribed from order ${orderId}`);
+    socket.leave(this.getRoom(shipperId));
+    console.log(`Client ${socket.id} unsubscribed from shipper with ID ${shipperId}`);
   }
 
   @SubscribeMessage('locationUpdate')
-  handleEvent(
-    @MessageBody() data: { orderId: string; staffId: string; latitude: number; longitude: number },
-    @ConnectedSocket() socket: Socket
-  ) {
+  async handleEvent(@MessageBody() data: LocationUpdateDto, @ConnectedSocket() socket: TSocket) {
     // Staff who is delivering this order emits their location updates
-    // Will implement auth to check if the staff is allowed to emit location updates for the order
-    socket.to(`order_${data.orderId}`).emit('locationUpdate', data);
-    console.log(`Client ${socket.id} emitted location update for order ${data.orderId}`);
+    const { orderId, ...locationData } = data;
+    const shipperId = data.staffId;
+
+    if (!(await this.isStaffAuthorizedToUpdateLocation(shipperId, orderId))) {
+      throw new WsException('Bạn không có quyền cập nhật vị trí cho đơn hàng này.');
+    }
+
+    socket.to(this.getRoom(shipperId)).emit('locationUpdate', locationData);
+    console.log(`Staff ${shipperId} emitted location update for order ${orderId}`);
+  }
+
+  private getRoom(shipperId: string) {
+    return `shipper:${shipperId}`;
+  }
+
+  private async isStaffAuthorizedToUpdateLocation(
+    staffId: string,
+    orderId: string
+  ): Promise<boolean> {
+    // Return true if the staff is assigned to deliver this order
+    const order = await this.prisma.order.findFirst({
+      where: {
+        id: orderId,
+        shipperId: staffId,
+      },
+    });
+
+    return !!order;
   }
 }
