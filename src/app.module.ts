@@ -9,6 +9,7 @@ import { DateModule } from './date/date.module';
 import { DeliveriesModule } from './deliveries';
 import { EmailModule } from './email/email.module';
 import { FirebaseAdminConfigService } from './firebase-admin.config';
+import { GeolocationModule } from './geolocation';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentModule } from './payment/payment.module';
@@ -30,6 +31,7 @@ import { UsersModule } from './users/users.module';
     DeliveriesModule,
     PaymentModule,
     NotificationsModule,
+    GeolocationModule,
   ],
   controllers: [AppController],
   providers: [AppService, FirebaseAdminConfigService],
