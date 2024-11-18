@@ -20,7 +20,7 @@ export class DeliveriesController {
     return this.deliveriesService.createDelivery(createDeliveryDto);
   }
 
-  @AllowAuthenticated('ADMIN')
+  @AllowAuthenticated('ADMIN', 'STAFF')
   @ApiOkResponse({ type: [DeliveryEntity] })
   @Get()
   findAllDeliveries(): Promise<DeliveryEntity[]> {
