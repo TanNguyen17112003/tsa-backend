@@ -221,6 +221,17 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: credential.uid },
     });
+    let studentAdditionalInfo = null;
+    if (user.role === 'STUDENT') {
+      const studentInfo = await this.prisma.student.findUnique({
+        where: { studentId: user.id },
+      });
+      studentAdditionalInfo = {
+        dormitory: studentInfo.dormitory,
+        building: studentInfo.building,
+        room: studentInfo.room,
+      };
+    }
     if (!user.verified) {
       throw new UnauthorizedException('Email not verified');
     }
@@ -243,6 +254,7 @@ export class AuthService {
       refreshToken,
       userInfo: {
         ...user,
+        ...(studentAdditionalInfo && studentAdditionalInfo),
         email,
       },
     };
@@ -287,6 +299,17 @@ export class AuthService {
       }
 
       const user = await this.prisma.user.findUnique({ where: { id: credential.uid } });
+      let studentAdditionalInfo = null;
+      if (user.role === 'STUDENT') {
+        const studentInfo = await this.prisma.student.findUnique({
+          where: { studentId: user.id },
+        });
+        studentAdditionalInfo = {
+          dormitory: studentInfo.dormitory,
+          building: studentInfo.building,
+          room: studentInfo.room,
+        };
+      }
 
       const payload = { email: credential.email, id: user.id, role: user.role };
       const accessToken = this.jwtService.sign(payload, { expiresIn: '45m' });
@@ -305,6 +328,7 @@ export class AuthService {
         refreshToken,
         userInfo: {
           ...user,
+          ...(studentAdditionalInfo && studentAdditionalInfo),
           email: credential.email,
           photoUrl: user.photoUrl || picture,
         },

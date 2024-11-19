@@ -17,7 +17,13 @@ import type { TServer, TSocket } from 'src/types/socket.d.ts';
 
 import { LocationUpdateDto } from './dtos/location-update.dto';
 
-@WebSocketGateway()
+@WebSocketGateway({
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+})
 export class GeolocationGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
   @WebSocketServer()
   server: TServer;
