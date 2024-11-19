@@ -42,8 +42,12 @@ export class OrderService {
             ...order,
             latestStatus,
             historyTime,
-            lastName: staff.lastName,
-            firstName: staff.firstName,
+            staffInfo: {
+              lastName: staff.lastName,
+              firstName: staff.firstName,
+              phoneNumber: staff.phoneNumber,
+              photoUrl: staff.photoUrl,
+            },
           };
         }
         return {

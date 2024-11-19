@@ -1061,10 +1061,10 @@
     multer "1.4.4-lts.1"
     tslib "2.6.3"
 
-"@nestjs/platform-socket.io@^10.4.6":
-  version "10.4.6"
-  resolved "https://registry.yarnpkg.com/@nestjs/platform-socket.io/-/platform-socket.io-10.4.6.tgz#06941e3f6d85c6b2f1a88e816c562071cd056080"
-  integrity sha512-lGv99O7C00wtnGq9M0mcwrOpH2qmuqAXQyvo/d/I7rmaf3OO1Sg8qWDLAnPKHdaumwOL2mnET3kvCJ06MaL6WA==
+"@nestjs/platform-socket.io@^10.4.8":
+  version "10.4.8"
+  resolved "https://registry.yarnpkg.com/@nestjs/platform-socket.io/-/platform-socket.io-10.4.8.tgz#cf483794f3b1831d804a3ac3a3f7b999664489d4"
+  integrity sha512-KzCL+P037HiaW3iODueJ/vw5a8bSr6uIturgGSuRz6c8WR+SfqKC6jNXw0JTW5NVqEqX8tOunEVXoI3MFnWz/w==
   dependencies:
     socket.io "4.8.0"
     tslib "2.7.0"
@@ -1099,10 +1099,10 @@
   dependencies:
     tslib "2.6.3"
 
-"@nestjs/websockets@^10.4.6":
-  version "10.4.6"
-  resolved "https://registry.yarnpkg.com/@nestjs/websockets/-/websockets-10.4.6.tgz#237eb36b905a9b8d065575ae099de5902ba5c2cf"
-  integrity sha512-53YqDQylPAOudNFiiBvrN8QrRl/sZ9oEjKbD3wBVgrFREbaiuTySoyyy6HwVs60HW29uQwck+Bp7qkKGjhtQKg==
+"@nestjs/websockets@^10.4.8":
+  version "10.4.8"
+  resolved "https://registry.yarnpkg.com/@nestjs/websockets/-/websockets-10.4.8.tgz#9c2b982059e850a56999f56c87ac3a88acbce4ea"
+  integrity sha512-IpObWsZvjjUxmBuIF/AkcyXrFFzwNYNsw2reZXHy7C31wJsYAjwr6rHMSRGyqsxfqTA2DqjCczorewM6BAEXig==
   dependencies:
     iterare "1.2.1"
     object-hash "3.0.0"
@@ -6555,10 +6555,23 @@ socket.io-parser@~4.2.4:
     "@socket.io/component-emitter" "~3.1.0"
     debug "~4.3.1"
 
-socket.io@4.8.0, socket.io@^4.8.0:
+socket.io@4.8.0:
   version "4.8.0"
   resolved "https://registry.yarnpkg.com/socket.io/-/socket.io-4.8.0.tgz#33d05ae0915fad1670bd0c4efcc07ccfabebe3b1"
   integrity sha512-8U6BEgGjQOfGz3HHTYaC/L1GaxDCJ/KM0XTkJly0EhZ5U/du9uNEZy4ZgYzEzIqlx2CMm25CrCqr1ck899eLNA==
+  dependencies:
+    accepts "~1.3.4"
+    base64id "~2.0.0"
+    cors "~2.8.5"
+    debug "~4.3.2"
+    engine.io "~6.6.0"
+    socket.io-adapter "~2.5.2"
+    socket.io-parser "~4.2.4"
+
+socket.io@^4.8.1:
+  version "4.8.1"
+  resolved "https://registry.yarnpkg.com/socket.io/-/socket.io-4.8.1.tgz#fa0eaff965cc97fdf4245e8d4794618459f7558a"
+  integrity sha512-oZ7iUCxph8WYRHHcjBEc9unw3adt5CmSNlppj/5Q4k2RIrhl8Z5yY2Xr4j9zj0+wzVZ0bxmYoGSzKJnRl6A4yg==
   dependencies:
     accepts "~1.3.4"
     base64id "~2.0.0"
@@ -6646,7 +6659,16 @@ string-length@^4.0.1:
     char-regex "^1.0.2"
     strip-ansi "^6.0.0"
 
-"string-width-cjs@npm:string-width@^4.2.0", "string-width@^1.0.2 || 2 || 3 || 4", string-width@^4.1.0, string-width@^4.2.0, string-width@^4.2.3:
+"string-width-cjs@npm:string-width@^4.2.0":
+  version "4.2.3"
+  resolved "https://registry.npmjs.org/string-width/-/string-width-4.2.3.tgz"
+  integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
+  dependencies:
+    emoji-regex "^8.0.0"
+    is-fullwidth-code-point "^3.0.0"
+    strip-ansi "^6.0.1"
+
+"string-width@^1.0.2 || 2 || 3 || 4", string-width@^4.1.0, string-width@^4.2.0, string-width@^4.2.3:
   version "4.2.3"
   resolved "https://registry.npmjs.org/string-width/-/string-width-4.2.3.tgz"
   integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
@@ -6715,7 +6737,14 @@ string_decoder@~1.1.1:
   dependencies:
     safe-buffer "~5.1.0"
 
-"strip-ansi-cjs@npm:strip-ansi@^6.0.1", strip-ansi@^6.0.0, strip-ansi@^6.0.1:
+"strip-ansi-cjs@npm:strip-ansi@^6.0.1":
+  version "6.0.1"
+  resolved "https://registry.npmjs.org/strip-ansi/-/strip-ansi-6.0.1.tgz"
+  integrity sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==
+  dependencies:
+    ansi-regex "^5.0.1"
+
+strip-ansi@^6.0.0, strip-ansi@^6.0.1:
   version "6.0.1"
   resolved "https://registry.npmjs.org/strip-ansi/-/strip-ansi-6.0.1.tgz"
   integrity sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==
@@ -7385,7 +7414,7 @@ word-wrap@^1.2.5:
   resolved "https://registry.npmjs.org/word-wrap/-/word-wrap-1.2.5.tgz"
   integrity sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==
 
-"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0", wrap-ansi@^7.0.0:
+"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0":
   version "7.0.0"
   resolved "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-7.0.0.tgz"
   integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==
@@ -7398,6 +7427,15 @@ wrap-ansi@^6.0.1, wrap-ansi@^6.2.0:
   version "6.2.0"
   resolved "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-6.2.0.tgz"
   integrity sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==
+  dependencies:
+    ansi-styles "^4.0.0"
+    string-width "^4.1.0"
+    strip-ansi "^6.0.0"
+
+wrap-ansi@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-7.0.0.tgz"
+  integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==
   dependencies:
     ansi-styles "^4.0.0"
     string-width "^4.1.0"

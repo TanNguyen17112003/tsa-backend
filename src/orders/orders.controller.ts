@@ -26,7 +26,7 @@ export class OrdersController {
     return this.orderService.createOrder(createOrderDto, user);
   }
 
-  @AllowAuthenticated('ADMIN', 'STUDENT')
+  @AllowAuthenticated()
   @ApiOkResponse({ type: [OrderEntity] })
   @Get()
   findAll(@Query() query: OrderQueryDto, @GetUser() user: GetUserType) {
