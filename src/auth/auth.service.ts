@@ -248,7 +248,6 @@ export class AuthService {
     };
 
     const { accessToken, refreshToken } = await this.generateTokens(payload);
-
     return {
       accessToken,
       refreshToken,
@@ -264,7 +263,6 @@ export class AuthService {
     try {
       const decodedToken = await admin.auth().verifyIdToken(dto.idToken);
       const { email, name, picture } = decodedToken;
-
       let credential = await this.prisma.credentials.findUnique({ where: { email } });
 
       if (!credential) {
