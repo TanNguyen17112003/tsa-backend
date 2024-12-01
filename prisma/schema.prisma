@@ -31,6 +31,7 @@ model User {
   refreshTokens     RefreshToken[]
   photoUrl          String?            @db.VarChar(500)
   Notification      Notification[]
+  DeviceToken       DeviceToken[]
 }
 
 model Credentials {
@@ -179,6 +180,16 @@ model Notification {
   isRead     Boolean         @default(false)
 }
 
+model DeviceToken {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String       @unique
+  platform     Platform
+  pushNotiType PushNotiType
+  createdAt    String       @db.VarChar(255)
+}
+
 enum UserRole {
   ADMIN
   STUDENT
@@ -232,4 +243,15 @@ enum NotificatioType {
   ORDER
   DELIVERY
   REPORT
+}
+
+enum PushNotiType {
+  ENABLED
+  DISABLED
+  LOGOUT
+}
+
+enum Platform {
+  ANDROID
+  IOS
 }
