@@ -27,7 +27,7 @@ export class OrderService {
     query: OrderQueryDto,
     user: GetUserType
   ): Promise<PageResponseDto<GetOrderResponseDto>> {
-    const { page, size, search, isPaid, sortBy, sortOrder } = query;
+    const { page, size, search, status, isPaid, sortBy, sortOrder, startDate, endDate } = query;
 
     const where: any = {};
     if (user.role === 'STUDENT') {
@@ -39,11 +39,24 @@ export class OrderService {
         { product: { contains: search, mode: 'insensitive' } },
       ];
     }
-    // if (status) {
-    //   where.status = status;
-    // }
+    if (status) {
+      where.latestStatus = status;
+    }
     if (isPaid !== undefined) {
       where.isPaid = isPaid;
+    }
+    if (startDate) {
+      where.deliveryDate = {
+        gte: convertToUnixTimestamp(startDate),
+      };
+    }
+    if (endDate) {
+      const nextDay = new Date(endDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      where.deliveryDate = {
+        ...where.deliveryDate,
+        lte: convertToUnixTimestamp(nextDay.toISOString().split('T')[0]),
+      };
     }
 
     const orderBy: any[] = [];

@@ -95,19 +95,20 @@ model Order {
   shippingFee        Float?
   deliveryDate       String?
   isPaid             Boolean              @default(false)
-  deliveries         Delivery[]
   room               String?              @db.VarChar(255)
   dormitory          Dormitory?
   building           String?              @db.VarChar(255)
   checkCode          String               @db.VarChar(255)
-  report             Report[]
   product            String               @db.VarChar(255) // Các sản phẩm để tăng tính xác thực khi admin xác nhận đơn hàng
   weight             Float?
   shipperId          String?              @db.VarChar(255) // Staff who takes responsibility for the delivery
   staff              Staff?               @relation(fields: [shipperId], references: [staffId])
   paymentMethod      PaymentMethod?
-  OrderStatusHistory OrderStatusHistory[]
   phone              String?              @db.VarChar(15)
+  latestStatus       OrderStatus?
+  deliveries         Delivery[]
+  report             Report[]
+  orderStatusHistory OrderStatusHistory[]
   Notification       Notification[]
 }
 

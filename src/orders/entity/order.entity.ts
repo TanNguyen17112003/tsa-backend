@@ -1,4 +1,4 @@
-import { Dormitory, Order, PaymentMethod } from '@prisma/client';
+import { Dormitory, Order, OrderStatus, PaymentMethod } from '@prisma/client';
 import { IsOptional } from 'class-validator';
 import { RestrictProperties } from 'src/types';
 
@@ -30,4 +30,6 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   paymentMethod: PaymentMethod;
   @IsOptional()
   product: string;
+  @IsOptional()
+  latestStatus: OrderStatus;
 }

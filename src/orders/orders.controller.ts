@@ -49,10 +49,7 @@ export class OrdersController {
     },
   })
   @Get()
-  async findAll(
-    @Query() query: OrderQueryDto,
-    @GetUser() user: GetUserType
-  ): Promise<PageResponseDto<GetOrderResponseDto>> {
+  async findAll(@Query() query: OrderQueryDto, @GetUser() user: GetUserType) {
     return this.orderService.getOrders(query, user);
   }
 
