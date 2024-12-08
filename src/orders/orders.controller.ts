@@ -22,7 +22,7 @@ export class OrdersController {
   @ApiCreatedResponse({ type: OrderEntity })
   @Post()
   create(@Body() createOrderDto: CreateOrderDto, @GetUser() user: GetUserType) {
-    checkRowLevelPermission(user, createOrderDto.studentId || createOrderDto.adminId);
+    checkRowLevelPermission(user, createOrderDto.studentId); // || createOrderDto.adminId
     return this.orderService.createOrder(createOrderDto, user);
   }
 

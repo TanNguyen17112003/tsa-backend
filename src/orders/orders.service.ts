@@ -138,9 +138,9 @@ export class OrderService {
       const existingOrder = await findExistingOrder(this.prisma, checkCode, product, weight);
 
       if (existingOrder) {
-        if (existingOrder.adminId) {
-          throw new Error('This order already exists');
-        }
+        // if (existingOrder.adminId) {
+        //   throw new Error('This order already exists');
+        // }
         await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
         await this.notificationService.sendNotification({
           type: 'ORDER',
@@ -166,7 +166,7 @@ export class OrderService {
       const newOrder = await this.prisma.order.create({
         data: {
           ...(createOrderDto as CreateAdminOrderDto),
-          adminId: user.id,
+          // adminId: user.id,
         },
       });
       await createOrderStatusHistory(this.prisma, newOrder.id, 'PENDING');

@@ -3,13 +3,9 @@ import { IsOptional } from 'class-validator';
 import { RestrictProperties } from 'src/types';
 
 export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
-  @IsOptional()
-  proofImage: string;
   id: string;
   @IsOptional()
   studentId: string;
-  @IsOptional()
-  adminId: string;
   shippingFee: number;
   @IsOptional()
   deliveryDate: string;
@@ -19,8 +15,6 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   building: string;
   @IsOptional()
   room: string;
-  @IsOptional()
-  ordinalNumber: number;
   @IsOptional()
   phone: string;
   @IsOptional()
