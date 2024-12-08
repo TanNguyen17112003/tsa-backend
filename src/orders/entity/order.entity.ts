@@ -1,26 +1,21 @@
-import { $Enums, Order } from '@prisma/client';
+import { Dormitory, Order, OrderStatus, PaymentMethod } from '@prisma/client';
 import { IsOptional } from 'class-validator';
 import { RestrictProperties } from 'src/types';
 
 export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
-  @IsOptional()
-  proofImage: string;
   id: string;
   @IsOptional()
   studentId: string;
   @IsOptional()
-  adminId: string;
   shippingFee: number;
   @IsOptional()
   deliveryDate: string;
   @IsOptional()
-  dormitory: $Enums.Dormitory;
+  dormitory: Dormitory;
   @IsOptional()
   building: string;
   @IsOptional()
   room: string;
-  @IsOptional()
-  ordinalNumber: number;
   @IsOptional()
   phone: string;
   @IsOptional()
@@ -32,7 +27,9 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   @IsOptional()
   isPaid: boolean;
   @IsOptional()
-  paymentMethod: $Enums.PaymentMethod;
+  paymentMethod: PaymentMethod;
   @IsOptional()
   product: string;
+  @IsOptional()
+  latestStatus: OrderStatus;
 }

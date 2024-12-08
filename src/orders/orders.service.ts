@@ -1,11 +1,12 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { $Enums } from '@prisma/client';
+import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
 import { CreateAdminOrderDto, CreateStudentOrderDto, OrderQueryDto } from './dtos';
-import { OrderEntity } from './entity';
+import { GetOrderResponseDto } from './dtos/response.dto';
 import {
   convertToUnixTimestamp,
   createOrderStatusHistory,
@@ -22,15 +23,58 @@ export class OrderService {
     private readonly notificationService: NotificationsService
   ) {}
 
-  async getOrders(query: OrderQueryDto, user: GetUserType): Promise<OrderEntity[]> {
-    const { skip, take, order, sortBy } = query;
+  async getOrders(
+    query: OrderQueryDto,
+    user: GetUserType
+  ): Promise<PageResponseDto<GetOrderResponseDto>> {
+    const { page, size, search, status, isPaid, sortBy, sortOrder, startDate, endDate } = query;
 
-    const orders = await this.prisma.order.findMany({
-      ...(skip ? { skip: +skip } : null),
-      ...(take ? { take: +take } : null),
-      ...(sortBy ? { orderBy: { [sortBy]: order || 'asc' } } : null),
-      where: user.role === 'STUDENT' ? { studentId: user.id } : {},
-    });
+    const where: any = {};
+    if (user.role === 'STUDENT') {
+      where.studentId = user.id;
+    }
+    if (search) {
+      where.OR = [
+        { checkCode: { contains: search, mode: 'insensitive' } },
+        { product: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    if (status) {
+      where.latestStatus = status;
+    }
+    if (isPaid !== undefined) {
+      where.isPaid = isPaid;
+    }
+    if (startDate) {
+      where.deliveryDate = {
+        gte: convertToUnixTimestamp(startDate),
+      };
+    }
+    if (endDate) {
+      const nextDay = new Date(endDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      where.deliveryDate = {
+        ...where.deliveryDate,
+        lte: convertToUnixTimestamp(nextDay.toISOString().split('T')[0]),
+      };
+    }
+
+    const orderBy: any[] = [];
+    if (sortBy) {
+      orderBy.push({
+        [sortBy]: sortOrder || 'asc',
+      });
+    }
+
+    const [orders, totalElements] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        skip: (page - 1) * size,
+        take: size,
+        orderBy,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
 
     const ordersWithStatus = await Promise.all(
       orders.map(async (order) => {
@@ -58,7 +102,13 @@ export class OrderService {
       })
     );
 
-    return ordersWithStatus;
+    const totalPages = Math.ceil(totalElements / size);
+
+    return {
+      totalElements,
+      totalPages,
+      results: ordersWithStatus,
+    };
   }
 
   async getOrder(id: string) {
@@ -138,9 +188,9 @@ export class OrderService {
       const existingOrder = await findExistingOrder(this.prisma, checkCode, product, weight);
 
       if (existingOrder) {
-        if (existingOrder.adminId) {
-          throw new Error('This order already exists');
-        }
+        // if (existingOrder.adminId) {
+        //   throw new Error('This order already exists');
+        // }
         await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
         await this.notificationService.sendNotification({
           type: 'ORDER',
@@ -166,7 +216,7 @@ export class OrderService {
       const newOrder = await this.prisma.order.create({
         data: {
           ...(createOrderDto as CreateAdminOrderDto),
-          adminId: user.id,
+          // adminId: user.id,
         },
       });
       await createOrderStatusHistory(this.prisma, newOrder.id, 'PENDING');
