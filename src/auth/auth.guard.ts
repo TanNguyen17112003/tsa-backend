@@ -1,4 +1,10 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
@@ -20,7 +26,11 @@ export class AuthGuard implements CanActivate {
 
     const isAuthen = await this.authenticateUser(req);
     if (!isAuthen) {
-      throw new UnauthorizedException('Phiên đăng nhập không hợp lệ.');
+      throw new UnauthorizedException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        code: 'INVALID_ACCESS_TOKEN',
+        message: 'Phiên đăng nhập không hợp lệ.',
+      });
     }
     const isAuthorized = await this.authorizeUser(req, context);
     if (!isAuthorized) {
@@ -32,7 +42,11 @@ export class AuthGuard implements CanActivate {
   private async authenticateUser(req: Request): Promise<boolean> {
     const [type, token] = req.headers.authorization?.split(' ') ?? [];
     if (type !== 'Bearer' || !token) {
-      throw new UnauthorizedException('Phiên đăng nhập không hợp lệ.');
+      throw new UnauthorizedException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        code: 'INVALID_ACCESS_TOKEN',
+        message: 'Phiên đăng nhập không hợp lệ.',
+      });
     }
     try {
       const user = await this.jwtService.verify(token);
