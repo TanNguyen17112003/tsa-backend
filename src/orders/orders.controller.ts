@@ -1,22 +1,28 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger';
 import { $Enums } from '@prisma/client';
 import { AllowAuthenticated, checkRowLevelPermission, GetUser } from 'src/auth';
-import { PrismaService } from 'src/prisma';
+import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { GetUserType } from 'src/types';
 
 import { CreateOrderDto, OrderQueryDto } from './dtos';
+import { GetOrderResponseDto } from './dtos/response.dto';
 import { OrderEntity } from './entity';
 import { OrderService } from './orders.service';
 
 @ApiTags('Orders')
 @Controller('api/orders')
 @ApiBearerAuth('JWT-Auth')
+@ApiExtraModels(PageResponseDto, GetOrderResponseDto)
 export class OrdersController {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly orderService: OrderService
-  ) {}
+  constructor(private readonly orderService: OrderService) {}
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
   @ApiCreatedResponse({ type: OrderEntity })
@@ -27,9 +33,26 @@ export class OrdersController {
   }
 
   @AllowAuthenticated()
-  @ApiOkResponse({ type: [OrderEntity] })
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(PageResponseDto) },
+        {
+          properties: {
+            results: {
+              type: 'array',
+              items: { $ref: getSchemaPath(GetOrderResponseDto) },
+            },
+          },
+        },
+      ],
+    },
+  })
   @Get()
-  findAll(@Query() query: OrderQueryDto, @GetUser() user: GetUserType) {
+  async findAll(
+    @Query() query: OrderQueryDto,
+    @GetUser() user: GetUserType
+  ): Promise<PageResponseDto<GetOrderResponseDto>> {
     return this.orderService.getOrders(query, user);
   }
 

@@ -1,4 +1,4 @@
-import { $Enums, Order } from '@prisma/client';
+import { Dormitory, Order, PaymentMethod } from '@prisma/client';
 import { IsOptional } from 'class-validator';
 import { RestrictProperties } from 'src/types';
 
@@ -6,11 +6,12 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   id: string;
   @IsOptional()
   studentId: string;
+  @IsOptional()
   shippingFee: number;
   @IsOptional()
   deliveryDate: string;
   @IsOptional()
-  dormitory: $Enums.Dormitory;
+  dormitory: Dormitory;
   @IsOptional()
   building: string;
   @IsOptional()
@@ -26,7 +27,7 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   @IsOptional()
   isPaid: boolean;
   @IsOptional()
-  paymentMethod: $Enums.PaymentMethod;
+  paymentMethod: PaymentMethod;
   @IsOptional()
   product: string;
 }
