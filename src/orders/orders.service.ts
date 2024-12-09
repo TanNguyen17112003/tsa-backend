@@ -174,6 +174,13 @@ export class OrderService {
       await createOrderStatusHistory(this.prisma, newOrder.id, 'PENDING');
       const historyTime = await getHistoryTimee(this.prisma, newOrder.id);
       const latestStatus = await getLatestOrderStatus(this.prisma, newOrder.id);
+      await this.notificationService.sendPushNotification({
+        userId: user.id,
+        message: {
+          title: 'Tạo đơn hàng thành công',
+          message: `Đơn hàng ${newOrder.checkCode} của bạn đã được tạo thành công. Vui lòng chờ admin xác nhận`,
+        },
+      });
       return {
         message: 'Order created and status set to PENDING',
         data: {
@@ -201,6 +208,7 @@ export class OrderService {
           deliveryId: undefined,
           reportId: undefined,
         });
+
         const historyTime = await getHistoryTimee(this.prisma, existingOrder.id);
         const latestStatus = await getLatestOrderStatus(this.prisma, existingOrder.id);
         return {
@@ -282,6 +290,17 @@ export class OrderService {
       userId: order.studentId,
       deliveryId: undefined,
       reportId: undefined,
+    });
+    await this.notificationService.sendPushNotification({
+      userId: order.studentId,
+      message: {
+        title: 'Thay đổi trạng thái đơn hàng',
+        message: `Đơn hàng ${order.checkCode} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : 'Đang vận chuyển'}`,
+        body: {
+          type: 'ORDER',
+          orderId: order.id,
+        },
+      },
     });
     await createOrderStatusHistory(this.prisma, id, status);
   }

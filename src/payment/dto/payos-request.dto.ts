@@ -9,6 +9,7 @@ export class PayOsRequestDto {
 
   @ApiProperty({ example: '111111', description: 'Order ID' })
   @IsString()
+  @IsOptional()
   readonly orderId: string;
 
   @ApiProperty({ example: 'Thanh toán đơn hàng với PayOS', description: 'Info of payment service' })
