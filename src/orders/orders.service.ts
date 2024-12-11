@@ -277,11 +277,21 @@ export class OrderService {
     return { message: 'Order updated', data: { ...order, latestStatus, historyTime } };
   }
 
-  async updateStatus(id: string, status: $Enums.OrderStatus, _: GetUserType) {
+  async updateStatus(id: string, status: $Enums.OrderStatus, user: GetUserType) {
     const order = await this.prisma.order.findUnique({ where: { id } });
     if (!order) {
       throw new BadRequestException('Order not found');
     }
+    // For staff update status of order to DELIVERED and payment method is CASH
+    if (user.role === 'STAFF' && status === 'DELIVERED' && order.paymentMethod === 'CASH') {
+      await this.prisma.order.update({
+        where: { id },
+        data: {
+          isPaid: true,
+        },
+      });
+    }
+
     await this.notificationService.sendNotification({
       type: 'ORDER',
       title: 'Thay đổi trạng thái đơn hàng',
