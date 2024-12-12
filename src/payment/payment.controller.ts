@@ -23,7 +23,7 @@ export class PaymentController {
   async createPayOSPayment(@Body() createPaymentDto: PayOsRequestDto, @Res() res: Response) {
     const paymentResponse = await this.paymentService.createPayOSPayment(createPaymentDto);
     if (paymentResponse && paymentResponse.paymentLink.checkoutUrl) {
-      return res.json({ checkoutUrl: paymentResponse.paymentLink.checkoutUrl });
+      return res.json({ paymentLink: paymentResponse.paymentLink });
     } else {
       return res.status(400).json({ message: 'Failed to create PayOS payment' });
     }

@@ -1,7 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { DeliveryStatus } from '@prisma/client';
-import { AllowAuthenticated } from 'src/auth';
+import { AllowAuthenticated, GetUser } from 'src/auth';
+import { GetUserType } from 'src/types';
 
 import { DeliveriesService } from './deliveries.service';
 import { CreateDeliveryDto, UpdateDeliveryDto } from './dtos';
@@ -23,8 +24,8 @@ export class DeliveriesController {
   @AllowAuthenticated('ADMIN', 'STAFF')
   @ApiOkResponse({ type: [DeliveryEntity] })
   @Get()
-  findAllDeliveries(): Promise<DeliveryEntity[]> {
-    return this.deliveriesService.getDeliveries();
+  findAllDeliveries(@GetUser() user: GetUserType): Promise<DeliveryEntity[]> {
+    return this.deliveriesService.getDeliveries(user);
   }
 
   @AllowAuthenticated()

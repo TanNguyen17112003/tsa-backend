@@ -151,12 +151,18 @@ export class NotificationsService {
     const notificationResults = await Promise.allSettled(notificationPromises);
     notificationResults.forEach((result, index) => {
       if (result.status === 'fulfilled') {
-        console.log(`Notification sent to ${foundDevices[index].token}:`, result.value.data);
+        console.log(`Notification sent to ${foundDevices[index].token}`);
       } else {
-        console.error(
-          `Failed to send notification to ${foundDevices[index].token}:`,
-          result.reason
-        );
+        console.log(`Failed to send notification to ${foundDevices[index].token}`);
+        this.prisma.deviceToken.update({
+          where: {
+            userId: userId,
+            token: foundDevices[index].token,
+          },
+          data: {
+            pushNotiType: 'DISABLED',
+          },
+        });
       }
     });
   }

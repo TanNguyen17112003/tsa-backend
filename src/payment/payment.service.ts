@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import PayOS from '@payos/node';
 import axios from 'axios';
 import * as crypto from 'crypto';
+import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
 
 import { MomoRequestDto } from './dto/momo-request.dto';
@@ -61,7 +62,7 @@ export class PaymentService {
     const order = {
       amount: createPaymentDto.amount,
       description: createPaymentDto.description,
-      orderCode: Math.floor(Math.random() * 100000) + 1,
+      orderCode: Number(moment().format('X')) + Math.floor(Math.random() * 1000),
       returnUrl: createPaymentDto.returnUrl,
       cancelUrl: createPaymentDto.cancelUrl,
     };
