@@ -7,13 +7,13 @@ import {
   ApiTags,
   getSchemaPath,
 } from '@nestjs/swagger';
-import { $Enums } from '@prisma/client';
 import { AllowAuthenticated, checkRowLevelPermission, GetUser } from 'src/auth';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { GetUserType } from 'src/types';
 
 import { CreateOrderDto, OrderQueryDto } from './dtos';
 import { GetOrderResponseDto } from './dtos/response.dto';
+import { UpdateStatusDto } from './dtos/updateStatus.dto';
 import { OrderEntity } from './entity';
 import { OrderService } from './orders.service';
 
@@ -76,10 +76,10 @@ export class OrdersController {
   @Patch('status/:id')
   async updateStatus(
     @Param('id') id: string,
-    @Body() status: $Enums.OrderStatus,
+    @Body() updateStatusDto: UpdateStatusDto,
     @GetUser() user: GetUserType
   ) {
-    return this.orderService.updateStatus(id, status, user);
+    return this.orderService.updateStatus(id, updateStatusDto.status, user);
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')
