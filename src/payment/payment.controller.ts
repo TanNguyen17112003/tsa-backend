@@ -22,15 +22,8 @@ export class PaymentController {
   @Post('payos')
   async createPayOSPayment(@Body() createPaymentDto: PayOsRequestDto, @Res() res: Response) {
     const paymentResponse = await this.paymentService.createPayOSPayment(createPaymentDto);
-    if (
-      paymentResponse &&
-      paymentResponse.paymentLink.checkoutUrl &&
-      paymentResponse.paymentLink.qrCode
-    ) {
-      return res.json({
-        checkoutUrl: paymentResponse.paymentLink.checkoutUrl,
-        qrCode: paymentResponse.paymentLink.qrCode,
-      });
+    if (paymentResponse && paymentResponse.paymentLink.checkoutUrl) {
+      return res.json({ paymentLink: paymentResponse.paymentLink });
     } else {
       return res.status(400).json({ message: 'Failed to create PayOS payment' });
     }

@@ -11,9 +11,7 @@ import { AllowAuthenticated, checkRowLevelPermission, GetUser } from 'src/auth';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { GetUserType } from 'src/types';
 
-import { CreateOrderDto, OrderQueryDto } from './dtos';
-import { GetOrderResponseDto } from './dtos/response.dto';
-import { UpdateStatusDto } from './dtos/updateStatus.dto';
+import { CreateOrderDto, GetOrderResponseDto, OrderQueryDto, UpdateStatusDto } from './dtos';
 import { OrderEntity } from './entity';
 import { OrderService } from './orders.service';
 

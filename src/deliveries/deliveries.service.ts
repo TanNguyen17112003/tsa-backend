@@ -3,6 +3,7 @@ import { DeliveryStatus } from '@prisma/client';
 import { DateService } from 'src/date';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
+import { GetUserType } from 'src/types';
 
 import { CreateDeliveryDto, UpdateDeliveryDto } from './dtos';
 
@@ -66,8 +67,9 @@ export class DeliveriesService {
     return newDelivery;
   }
 
-  async getDeliveries() {
+  async getDeliveries(user: GetUserType) {
     return this.prisma.delivery.findMany({
+      where: user.role === 'ADMIN' ? {} : { staffId: user.id },
       include: {
         DeliveryStatusHistory: true,
         orders: true,

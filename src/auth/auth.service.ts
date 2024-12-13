@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { DateService } from 'src/date';
 import { EmailService } from 'src/email';
 import { admin } from 'src/firebase-admin.config';
+import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,7 +18,8 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
-    private readonly dateService: DateService
+    private readonly dateService: DateService,
+    private readonly notificationsService: NotificationsService
   ) {}
 
   /**
@@ -248,6 +250,14 @@ export class AuthService {
     };
 
     const { accessToken, refreshToken } = await this.generateTokens(payload);
+    await this.notificationsService.sendPushNotification({
+      userId: user.id,
+      message: {
+        title: 'Chào mừng bạn đến với TSA',
+        message:
+          'Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của chúng tôi. Chúc bạn một ngày tốt lành!',
+      },
+    });
     return {
       accessToken,
       refreshToken,
