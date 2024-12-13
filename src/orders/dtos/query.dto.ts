@@ -9,7 +9,7 @@ export class OrderQueryDto {
   @Transform(({ value }) => parseInt(value, 10))
   @IsInt()
   @Min(1)
-  page: number = 1;
+  page: number = 3;
 
   @ApiProperty({ default: 10, required: false, description: 'Number of items per page' })
   @IsOptional()

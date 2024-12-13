@@ -155,14 +155,17 @@ export class UsersService {
         photoUrl: data.photoUrl,
       },
     });
-    const student = await this.prismaService.student.update({
-      where: { studentId: id },
-      data: {
-        dormitory: data.dormitory,
-        building: data.building,
-        room: data.room,
-      },
-    });
+    let student;
+    if (user.role === 'STUDENT') {
+      student = await this.prismaService.student.update({
+        where: { studentId: id },
+        data: {
+          dormitory: data.dormitory,
+          building: data.building,
+          room: data.room,
+        },
+      });
+    }
     return {
       ...user,
       ...student,
