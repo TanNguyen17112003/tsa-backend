@@ -6,11 +6,10 @@ import { GetUserType } from 'src/types';
 export const findExistingOrder = async (
   prisma: PrismaService,
   checkCode: string,
-  product: string,
-  weight: number
+  brand: string
 ) => {
   return await prisma.order.findFirst({
-    where: { checkCode, product, weight },
+    where: { checkCode, brand },
   });
 };
 

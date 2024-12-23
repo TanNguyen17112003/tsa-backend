@@ -6,6 +6,7 @@ export class CreateOrderDto extends OmitType(OrderEntity, ['id']) {}
 
 export class CreateStudentOrderDto extends PickType(CreateOrderDto, [
   'checkCode',
+  'brand',
   'product',
   'deliveryDate',
   'weight',
@@ -13,10 +14,12 @@ export class CreateStudentOrderDto extends PickType(CreateOrderDto, [
   'building',
   'dormitory',
   'paymentMethod',
+  'shippingFee',
 ]) {}
 
 export class CreateAdminOrderDto extends PickType(CreateOrderDto, [
   'checkCode',
+  'brand',
   'product',
   'weight',
 ]) {}

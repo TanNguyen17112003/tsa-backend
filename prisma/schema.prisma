@@ -110,6 +110,7 @@ model Order {
   report             Report[]
   orderStatusHistory OrderStatusHistory[]
   Notification       Notification[]
+  brand              String?              @db.VarChar(255)
 }
 
 model OrderStatusHistory {

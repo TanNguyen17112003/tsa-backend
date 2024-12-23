@@ -32,4 +32,6 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   product: string;
   @IsOptional()
   latestStatus: OrderStatus;
+  @IsOptional()
+  brand: string;
 }

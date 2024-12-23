@@ -126,29 +126,33 @@ export class OrderService {
     createOrderDto: CreateStudentOrderDto | CreateAdminOrderDto,
     user: GetUserType
   ) {
-    const { checkCode, product, weight } = createOrderDto;
+    const { checkCode, brand } = createOrderDto;
 
     if (user.role === 'STUDENT') {
       validateUserForOrder(user, createOrderDto, 'STUDENT');
 
-      const existingOrder = await findExistingOrder(this.prisma, checkCode, product, weight);
+      const existingOrder = await findExistingOrder(this.prisma, checkCode, brand);
       if (existingOrder) {
-        if (existingOrder.studentId !== user.id) {
-          throw new UnauthorizedException(
-            'This order already exists and belongs to another student'
-          );
-        } else {
-          await this.prisma.order.update({
-            where: { id: existingOrder.id },
-            data: {
-              ...createOrderDto,
-              studentId: user.id,
-              deliveryDate: convertToUnixTimestamp(
-                (createOrderDto as CreateStudentOrderDto).deliveryDate
-              ),
-            },
-          });
+        // This case is when student create order that has been created by admin
+        if (
+          !existingOrder.studentId &&
+          !existingOrder.deliveryDate &&
+          !existingOrder.room &&
+          !existingOrder.building &&
+          !existingOrder.dormitory
+        ) {
+          await this.updateStatus(existingOrder.id, 'ACCEPTED', user);
           await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
+          await this.notificationService.sendNotification({
+            type: 'ORDER',
+            title: 'Xác nhận đơn hàng',
+            content: `Đơn hàng ${existingOrder.checkCode} của bạn đã được xác nhận`,
+            orderId: existingOrder.id,
+            userId: existingOrder.studentId,
+            deliveryId: undefined,
+            reportId: undefined,
+          });
+
           const historyTime = await getHistoryTimee(this.prisma, existingOrder.id);
           const latestStatus = await getLatestOrderStatus(this.prisma, existingOrder.id);
           return {
@@ -160,12 +164,20 @@ export class OrderService {
             },
           };
         }
+        // This case is when student create order that has been created by another student
+        else if (existingOrder.studentId && existingOrder.studentId !== user.id) {
+          throw new UnauthorizedException(
+            'Đơn hàng này đã thuộc về người khác, bạn không thể tạo đơn hàng này'
+          );
+        } else {
+          throw new BadRequestException('Bạn đã tạo đơn hàng này rồi!');
+        }
       }
-
       const newOrder = await this.prisma.order.create({
         data: {
           ...(createOrderDto as CreateStudentOrderDto),
           studentId: user.id,
+          latestStatus: 'PENDING',
           deliveryDate: convertToUnixTimestamp(
             (createOrderDto as CreateStudentOrderDto).deliveryDate
           ),
@@ -173,7 +185,6 @@ export class OrderService {
       });
       await createOrderStatusHistory(this.prisma, newOrder.id, 'PENDING');
       const historyTime = await getHistoryTimee(this.prisma, newOrder.id);
-      const latestStatus = await getLatestOrderStatus(this.prisma, newOrder.id);
       await this.notificationService.sendPushNotification({
         userId: user.id,
         message: {
@@ -185,19 +196,27 @@ export class OrderService {
         message: 'Order created and status set to PENDING',
         data: {
           ...newOrder,
-          latestStatus,
           historyTime,
         },
       };
     } else if (user.role === 'ADMIN') {
       validateUserForOrder(user, createOrderDto, 'ADMIN');
 
-      const existingOrder = await findExistingOrder(this.prisma, checkCode, product, weight);
+      const existingOrder = await findExistingOrder(this.prisma, checkCode, brand);
 
       if (existingOrder) {
-        // if (existingOrder.adminId) {
-        //   throw new Error('This order already exists');
-        // }
+        // Check for existing order previously created by admin or not
+        if (
+          !existingOrder.deliveryDate &&
+          !existingOrder.room &&
+          !existingOrder.building &&
+          !existingOrder.dormitory
+        ) {
+          throw new BadRequestException(
+            'Đơn hàng này đã được tạo trước đó từ quản trị viên và đang cần xác nhận từ sinh viên!'
+          );
+        }
+        await this.updateStatus(existingOrder.id, 'ACCEPTED', user);
         await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
         await this.notificationService.sendNotification({
           type: 'ORDER',
@@ -224,17 +243,15 @@ export class OrderService {
       const newOrder = await this.prisma.order.create({
         data: {
           ...(createOrderDto as CreateAdminOrderDto),
-          // adminId: user.id,
+          latestStatus: 'PENDING',
         },
       });
       await createOrderStatusHistory(this.prisma, newOrder.id, 'PENDING');
       const historyTime = await getHistoryTimee(this.prisma, newOrder.id);
-      const latestStatus = await getLatestOrderStatus(this.prisma, newOrder.id);
       return {
         message: 'Order created and status set to PENDING',
         data: {
           ...newOrder,
-          latestStatus,
           historyTime,
         },
       };
