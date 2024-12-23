@@ -7,12 +7,14 @@ import { GetUserType } from 'src/types';
 
 import { CreateAdminOrderDto, CreateStudentOrderDto, OrderQueryDto } from './dtos';
 import { GetOrderResponseDto } from './dtos/response.dto';
+import { ShippingFeeDto } from './dtos/shippingFee.dto';
 import {
   convertToUnixTimestamp,
   createOrderStatusHistory,
   findExistingOrder,
   getHistoryTimee,
   getLatestOrderStatus,
+  getShippingFee,
   validateUserForOrder,
 } from './utils/order.util';
 
@@ -142,6 +144,24 @@ export class OrderService {
           !existingOrder.dormitory
         ) {
           await this.updateStatus(existingOrder.id, 'ACCEPTED', user);
+          await this.prisma.order.update({
+            where: { id: existingOrder.id },
+            data: {
+              studentId: user.id,
+              shippingFee: getShippingFee(
+                (createOrderDto as CreateStudentOrderDto).room,
+                (createOrderDto as CreateStudentOrderDto).building,
+                (createOrderDto as CreateStudentOrderDto).dormitory,
+                (createOrderDto as CreateStudentOrderDto).weight
+              ),
+              deliveryDate: convertToUnixTimestamp(
+                (createOrderDto as CreateStudentOrderDto).deliveryDate
+              ),
+              room: (createOrderDto as CreateStudentOrderDto).room,
+              building: (createOrderDto as CreateStudentOrderDto).building,
+              dormitory: (createOrderDto as CreateStudentOrderDto).dormitory,
+            },
+          });
           await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
           await this.notificationService.sendNotification({
             type: 'ORDER',
@@ -180,6 +200,12 @@ export class OrderService {
           latestStatus: 'PENDING',
           deliveryDate: convertToUnixTimestamp(
             (createOrderDto as CreateStudentOrderDto).deliveryDate
+          ),
+          shippingFee: getShippingFee(
+            (createOrderDto as CreateStudentOrderDto).room,
+            (createOrderDto as CreateStudentOrderDto).building,
+            (createOrderDto as CreateStudentOrderDto).dormitory,
+            (createOrderDto as CreateStudentOrderDto).weight
           ),
         },
       });
@@ -355,5 +381,14 @@ export class OrderService {
 
     await this.prisma.order.delete({ where: { id } });
     return { message: 'Order deleted' };
+  }
+
+  async getShippingFee(query: ShippingFeeDto) {
+    const { weight, room, building, dormitory } = query;
+    if (!weight || !room || !building || !dormitory) {
+      throw new BadRequestException('Missing required fields');
+    }
+    const shippingFee = getShippingFee(room, building, dormitory, weight);
+    return { shippingFee };
   }
 }

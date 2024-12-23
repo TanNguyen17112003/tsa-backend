@@ -14,7 +14,6 @@ export class CreateStudentOrderDto extends PickType(CreateOrderDto, [
   'building',
   'dormitory',
   'paymentMethod',
-  'shippingFee',
 ]) {}
 
 export class CreateAdminOrderDto extends PickType(CreateOrderDto, [

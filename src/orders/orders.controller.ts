@@ -12,6 +12,7 @@ import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { GetUserType } from 'src/types';
 
 import { CreateOrderDto, GetOrderResponseDto, OrderQueryDto, UpdateStatusDto } from './dtos';
+import { ShippingFeeDto } from './dtos/shippingFee.dto';
 import { OrderEntity } from './entity';
 import { OrderService } from './orders.service';
 
@@ -29,7 +30,12 @@ export class OrdersController {
     checkRowLevelPermission(user, createOrderDto.studentId); // || createOrderDto.adminId
     return this.orderService.createOrder(createOrderDto, user);
   }
-
+  @AllowAuthenticated()
+  @ApiOkResponse({ type: OrderEntity })
+  @Get('shipping-fee')
+  async getShippingFee(@Query() query: ShippingFeeDto) {
+    return this.orderService.getShippingFee(query);
+  }
   @AllowAuthenticated()
   @ApiOkResponse({
     schema: {
