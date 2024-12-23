@@ -1,10 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { checkRowLevelPermission } from 'src/auth';
+import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { convertToUnixTimestamp } from 'src/orders/utils/order.util';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
 import { CreateReport, ReportQueryDto, UpdateReport } from './dtos';
+import { ReportEntity } from './entity/report.entity';
 
 @Injectable()
 export class ReportsService {
@@ -18,16 +21,54 @@ export class ReportsService {
     return this.prisma.report.create({ data: createReportDto });
   }
 
-  async getReports(query: ReportQueryDto, user: GetUserType) {
-    const { skip, take, order, sortBy } = query;
+  async getReports(
+    query: ReportQueryDto,
+    user: GetUserType
+  ): Promise<PageResponseDto<ReportEntity>> {
+    const { page, size, sortBy, sortOrder, startDate, endDate, status } = query;
+    const where: any = {};
     checkRowLevelPermission(user, user.id);
-    const studentId = user.role === 'STUDENT' ? user.id : null;
-    return this.prisma.report.findMany({
-      ...(skip ? { skip: +skip } : null),
-      ...(take ? { take: +take } : null),
-      ...(sortBy ? { orderBy: { [sortBy]: order || 'asc' } } : null),
-      where: studentId ? { studentId } : {},
-    });
+    if (user.role === 'STUDENT') {
+      where.studentId = user.id;
+    }
+    if (status) {
+      where.status = status;
+    }
+    if (startDate) {
+      where.reportedAt = {
+        gte: convertToUnixTimestamp(startDate),
+      };
+    }
+    if (endDate) {
+      const nextDay = new Date(endDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      where.reportedAt = {
+        ...where.reportedAt,
+        lte: convertToUnixTimestamp(nextDay.toISOString().split('T')[0]),
+      };
+    }
+    const orderBy: any[] = [];
+    if (sortBy) {
+      orderBy.push({
+        [sortBy]: sortOrder || 'asc',
+      });
+    }
+    const [reports, totalElements] = await Promise.all([
+      this.prisma.report.findMany({
+        where,
+        skip: (page - 1) * size,
+        take: size,
+        orderBy,
+      }),
+      this.prisma.report.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(totalElements / size);
+    return {
+      totalElements,
+      totalPages,
+      results: reports,
+    };
   }
 
   async getReport(id: string) {
