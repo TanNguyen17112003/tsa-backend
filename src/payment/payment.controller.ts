@@ -28,4 +28,9 @@ export class PaymentController {
       return res.status(400).json({ message: 'Failed to create PayOS payment' });
     }
   }
+  @Post('webhook-endpoint')
+  async webhookEndpoint(@Body() body: any, @Res() res: Response) {
+    await this.paymentService.handleWebhook(body);
+    return res.status(200).json({ message: 'Webhook received' });
+  }
 }

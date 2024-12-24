@@ -9,6 +9,9 @@ interface ClientToServerEvents {
   subscribeToShipper: (data: { shipperId: string }) => void;
   unsubscribeFromShipper: (data: { shipperId: string }) => void;
   locationUpdate: (data: Omit<LocationUpdateDto, 'orderId'>) => void;
+  subscribeToPayment: (data: { orderId: string }) => void;
+  unsubscribeFromPayment: (data: { orderId: string }) => void;
+  paymentUpdate: (data: { orderId: string }) => void;
 }
 
 type TServer = Server<ServerToClientEvents, ClientToServerEvents>;

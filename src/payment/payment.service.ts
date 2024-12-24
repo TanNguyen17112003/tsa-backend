@@ -4,10 +4,13 @@ import PayOS from '@payos/node';
 import axios from 'axios';
 import * as crypto from 'crypto';
 import moment from 'moment';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { PrismaService } from 'src/prisma';
 import { v4 as uuidv4 } from 'uuid';
 
 import { MomoRequestDto } from './dto/momo-request.dto';
 import { PayOsRequestDto } from './dto/payos-request.dto';
+import { PaymentGateway } from './payment.gateway';
 
 @Injectable()
 export class PaymentService {
@@ -19,7 +22,12 @@ export class PaymentService {
   private readonly apiKey: string;
   private readonly checksumKey: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private prisma: PrismaService,
+    private notificationService: NotificationsService,
+    private paymentGateway: PaymentGateway
+  ) {
     this.partnerCode = this.configService.get<string>('MOMO_PARTNER_CODE');
     this.accessKey = this.configService.get<string>('MOMO_ACCESS_KEY');
     this.secretKey = this.configService.get<string>('MOMO_SECRET_KEY');
@@ -58,15 +66,106 @@ export class PaymentService {
   }
 
   async createPayOSPayment(createPaymentDto: PayOsRequestDto) {
+    const order = await this.prisma.order.findUnique({
+      where: {
+        id: createPaymentDto.orderId,
+      },
+    });
+    if (!order) {
+      throw new Error('Order not found');
+    }
     const payos = new PayOS(this.clientId, this.apiKey, this.checksumKey);
-    const order = {
+    const orderCode = Number(moment().format('X')) + Math.floor(Math.random() * 1000);
+    const payOsOrder = {
       amount: createPaymentDto.amount,
       description: createPaymentDto.description,
-      orderCode: Number(moment().format('X')) + Math.floor(Math.random() * 1000),
+      orderCode,
       returnUrl: createPaymentDto.returnUrl,
       cancelUrl: createPaymentDto.cancelUrl,
     };
-    const paymentLink = await payos.createPaymentLink(order);
+    const paymentLink = await payos.createPaymentLink(payOsOrder);
+    await this.prisma.payment.create({
+      data: {
+        amount: createPaymentDto.amount,
+        orderId: createPaymentDto.orderId,
+        orderCode: orderCode.toString(),
+      },
+    });
     return { paymentLink };
+  }
+  async handleWebhook(body: any) {
+    const data = body.data;
+    const { orderCode, amount, counterAccountName, counterAccountNumber, counterAccountBankName } =
+      data;
+    const payment = await this.prisma.payment.findFirst({
+      where: {
+        orderCode: orderCode.toString(),
+      },
+    });
+    if (!payment) {
+      throw new Error('Payment not found');
+    }
+    const order = await this.prisma.order.findUnique({
+      where: {
+        id: payment.orderId,
+      },
+    });
+    if (!order) {
+      throw new Error('Order not found');
+    }
+    const updatedOrder = await this.prisma.order.update({
+      where: {
+        id: order.id,
+      },
+      data: {
+        remainingAmount: order.remainingAmount - amount,
+        isPaid: order.remainingAmount - amount <= 0,
+      },
+    });
+    await this.prisma.payment.update({
+      where: {
+        id: payment.id,
+      },
+      data: {
+        isPaid: true,
+        counterAccountName,
+        counterAccountNumber,
+        counterAccountBankName,
+      },
+    });
+    const title =
+      order.remainingAmount - amount <= 0 ? 'Thanh toán thành công' : 'Thanh toán một phần';
+    const content =
+      order.remainingAmount - amount <= 0
+        ? `Đơn hàng ${order.id} đã được thanh toán thành công`
+        : `Đã thanh toán ${amount.toLocaleString('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
+          })} cho đơn hàng ${order.id}. Còn lại ${order.remainingAmount.toLocaleString('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
+          })}`;
+
+    await this.notificationService.sendNotification({
+      title,
+      type: 'ORDER',
+      content,
+      userId: order.studentId,
+      orderId: order.id,
+      deliveryId: null,
+      reportId: null,
+    });
+    await this.notificationService.sendPushNotification({
+      message: {
+        title,
+        message: content,
+      },
+      userId: order.studentId,
+    });
+    this.paymentGateway.notifyPaymentUpdate(order.id, {
+      orderId: order.id,
+      isPaid: updatedOrder.isPaid,
+      remainingAmount: updatedOrder.remainingAmount,
+    });
   }
 }
