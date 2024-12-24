@@ -7,12 +7,14 @@ import { GetUserType } from 'src/types';
 
 import { CreateAdminOrderDto, CreateStudentOrderDto, OrderQueryDto } from './dtos';
 import { GetOrderResponseDto } from './dtos/response.dto';
+import { ShippingFeeDto } from './dtos/shippingFee.dto';
 import {
   convertToUnixTimestamp,
   createOrderStatusHistory,
   findExistingOrder,
   getHistoryTimee,
   getLatestOrderStatus,
+  getShippingFee,
   validateUserForOrder,
 } from './utils/order.util';
 
@@ -141,17 +143,26 @@ export class OrderService {
           !existingOrder.building &&
           !existingOrder.dormitory
         ) {
+          await this.prisma.order.update({
+            where: { id: existingOrder.id },
+            data: {
+              studentId: user.id,
+              shippingFee: getShippingFee(
+                (createOrderDto as CreateStudentOrderDto).room,
+                (createOrderDto as CreateStudentOrderDto).building,
+                (createOrderDto as CreateStudentOrderDto).dormitory,
+                (createOrderDto as CreateStudentOrderDto).weight
+              ),
+              deliveryDate: convertToUnixTimestamp(
+                (createOrderDto as CreateStudentOrderDto).deliveryDate
+              ),
+              room: (createOrderDto as CreateStudentOrderDto).room,
+              building: (createOrderDto as CreateStudentOrderDto).building,
+              dormitory: (createOrderDto as CreateStudentOrderDto).dormitory,
+            },
+          });
           await this.updateStatus(existingOrder.id, 'ACCEPTED', user);
           await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
-          await this.notificationService.sendNotification({
-            type: 'ORDER',
-            title: 'Xác nhận đơn hàng',
-            content: `Đơn hàng ${existingOrder.checkCode} của bạn đã được xác nhận`,
-            orderId: existingOrder.id,
-            userId: existingOrder.studentId,
-            deliveryId: undefined,
-            reportId: undefined,
-          });
 
           const historyTime = await getHistoryTimee(this.prisma, existingOrder.id);
           const latestStatus = await getLatestOrderStatus(this.prisma, existingOrder.id);
@@ -180,6 +191,12 @@ export class OrderService {
           latestStatus: 'PENDING',
           deliveryDate: convertToUnixTimestamp(
             (createOrderDto as CreateStudentOrderDto).deliveryDate
+          ),
+          shippingFee: getShippingFee(
+            (createOrderDto as CreateStudentOrderDto).room,
+            (createOrderDto as CreateStudentOrderDto).building,
+            (createOrderDto as CreateStudentOrderDto).dormitory,
+            (createOrderDto as CreateStudentOrderDto).weight
           ),
         },
       });
@@ -212,9 +229,7 @@ export class OrderService {
           !existingOrder.building &&
           !existingOrder.dormitory
         ) {
-          throw new BadRequestException(
-            'Đơn hàng này đã được tạo trước đó từ quản trị viên và đang cần xác nhận từ sinh viên!'
-          );
+          throw new BadRequestException('Đơn hàng này đã được tạo trước đó từ quản trị viên!');
         }
         await this.updateStatus(existingOrder.id, 'ACCEPTED', user);
         await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
@@ -312,7 +327,7 @@ export class OrderService {
     await this.notificationService.sendNotification({
       type: 'ORDER',
       title: 'Thay đổi trạng thái đơn hàng',
-      content: `Đơn hàng ${order.checkCode} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : 'Đang vận chuyển'}`,
+      content: `Đơn hàng ${order.checkCode} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
       orderId: order.id,
       userId: order.studentId,
       deliveryId: undefined,
@@ -322,7 +337,7 @@ export class OrderService {
       userId: order.studentId,
       message: {
         title: 'Thay đổi trạng thái đơn hàng',
-        message: `Đơn hàng ${order.checkCode} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : 'Đang vận chuyển'}`,
+        message: `Đơn hàng ${order.checkCode} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
         body: {
           type: 'ORDER',
           orderId: order.id,
@@ -355,5 +370,14 @@ export class OrderService {
 
     await this.prisma.order.delete({ where: { id } });
     return { message: 'Order deleted' };
+  }
+
+  async getShippingFee(query: ShippingFeeDto) {
+    const { weight, room, building, dormitory } = query;
+    if (!weight || !room || !building || !dormitory) {
+      throw new BadRequestException('Missing required fields');
+    }
+    const shippingFee = getShippingFee(room, building, dormitory, weight);
+    return { shippingFee };
   }
 }
