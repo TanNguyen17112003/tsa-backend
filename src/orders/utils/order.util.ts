@@ -19,14 +19,22 @@ export const createOrderStatusHistory = async (
   status: $Enums.OrderStatus,
   reason?: string
 ) => {
-  await prisma.orderStatusHistory.create({
-    data: {
-      orderId,
-      status,
-      time: Math.floor(Date.now() / 1000).toString(),
-      reason,
-    },
-  });
+  await prisma.$transaction([
+    prisma.orderStatusHistory.create({
+      data: {
+        orderId,
+        status,
+        time: Math.floor(Date.now() / 1000).toString(),
+        reason,
+      },
+    }),
+    prisma.order.update({
+      where: { id: orderId },
+      data: {
+        latestStatus: status,
+      },
+    }),
+  ]);
 };
 
 export const validateUserForOrder = (
