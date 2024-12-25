@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { DeliveryStatus } from '@prisma/client';
+import { DeliveryStatus, OrderStatus } from '@prisma/client';
 import { DateService } from 'src/date';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
@@ -23,10 +23,22 @@ export class DeliveriesService {
       where: {
         id: { in: orderIds },
       },
+      include: {
+        deliveries: true,
+      },
     });
 
     if (orders.length !== orderIds.length) {
       throw new BadRequestException('One or more orders do not exist');
+    }
+
+    // Check if there exists an order that is put into some delivery but is not canceled
+    if (
+      orders.some(
+        (order) => order.deliveries.length > 0 && order.latestStatus !== OrderStatus.CANCELED
+      )
+    ) {
+      throw new BadRequestException('One or more orders are already in a delivery');
     }
 
     const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
