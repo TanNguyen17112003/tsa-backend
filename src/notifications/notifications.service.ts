@@ -6,6 +6,7 @@ import * as nodemailer from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { DateService } from 'src/date';
 import { PrismaService } from 'src/prisma';
+import { GetUserType } from 'src/types';
 
 import { CheckPushNotificationDto } from './dto/check-pushNoti.dto';
 import { CreateNotificationDto } from './dto/create-notification.dto';
@@ -59,18 +60,55 @@ export class NotificationsService {
     return newNotification;
   }
 
-  async getNotifications() {
-    return this.prisma.notification.findMany({
+  async getNotifications(user: GetUserType) {
+    const notifications = await this.prisma.notification.findMany({
       orderBy: {
         createdAt: 'desc',
+      },
+      where: {
+        userId: user.id,
+      },
+    });
+
+    const unreadCount = await this.prisma.notification.count({
+      where: {
+        userId: user.id,
+        isRead: false,
+      },
+    });
+
+    return {
+      notifications,
+      unreadCount,
+    };
+  }
+
+  async updateNotificationStatus(id: string, user: GetUserType) {
+    const notification = await this.prisma.notification.findUnique({
+      where: {
+        id,
+      },
+    });
+    if (!notification) {
+      throw new Error('Không tìm thấy thông báo');
+    }
+    if (notification.userId !== user.id) {
+      throw new Error('Bạn không có quyền thay đổi trạng thái thông báo này');
+    }
+    return this.prisma.notification.update({
+      where: {
+        id,
+      },
+      data: {
+        isRead: true,
       },
     });
   }
 
-  async updateNotificationStatus(id: string) {
-    return this.prisma.notification.update({
+  async markAllNotificationsAsRead(user: GetUserType) {
+    return this.prisma.notification.updateMany({
       where: {
-        id,
+        userId: user.id,
       },
       data: {
         isRead: true,
