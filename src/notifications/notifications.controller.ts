@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AllowAuthenticated, GetUser } from 'src/auth';
+import { GetUserType } from 'src/types';
 
 import { CheckPushNotificationDto } from './dto/check-pushNoti.dto';
 import { CreateNotificationDto } from './dto/create-notification.dto';
@@ -9,6 +11,8 @@ import { NotificationsService } from './notifications.service';
 
 @Controller('api/notifications')
 @ApiTags('Notifications')
+@ApiBearerAuth('JWT-Auth')
+@AllowAuthenticated()
 export class NotificationsController {
   constructor(private notificationsService: NotificationsService) {}
 
@@ -20,14 +24,20 @@ export class NotificationsController {
 
   @Get()
   @ApiOperation({ summary: 'Get notification list' })
-  async getNotifications() {
-    return this.notificationsService.getNotifications();
+  async getNotifications(@GetUser() user: GetUserType) {
+    return this.notificationsService.getNotifications(user);
+  }
+
+  @Patch('read-all')
+  @ApiOperation({ summary: 'Mark all notifications as read' })
+  async markAllNotificationsAsRead(@GetUser() user: GetUserType) {
+    return this.notificationsService.markAllNotificationsAsRead(user);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update notification status' })
-  async updateNotificationStatus(@Param('id') id: string) {
-    return this.notificationsService.updateNotificationStatus(id);
+  async updateNotificationStatus(@Param('id') id: string, @GetUser() user: GetUserType) {
+    return this.notificationsService.updateNotificationStatus(id, user);
   }
 
   @Post('push/register')
