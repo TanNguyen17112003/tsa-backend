@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { DeliveryStatus, OrderStatus } from '@prisma/client';
 import { DateService } from 'src/date';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { createOrderStatusHistory } from 'src/orders/utils/order.util';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
@@ -143,7 +144,12 @@ export class DeliveriesService {
   }
 
   async updateDeliveryStatus(id: string, status: DeliveryStatus) {
-    const delivery = await this.prisma.delivery.findUnique({ where: { id } });
+    const delivery = await this.prisma.delivery.findUnique({
+      where: { id },
+      include: {
+        orders: true,
+      },
+    });
     if (!delivery) {
       throw new NotFoundException('Delivery not found');
     }
@@ -162,6 +168,14 @@ export class DeliveriesService {
       reportId: undefined,
       userId: delivery.staffId,
     });
+
+    if (status === DeliveryStatus.ACCEPTED) {
+      await Promise.all(
+        delivery.orders.map((order) =>
+          createOrderStatusHistory(this.prisma, order.id, OrderStatus.IN_TRANSPORT)
+        )
+      );
+    }
     return this.prisma.delivery.update({
       where: { id },
       data: {
