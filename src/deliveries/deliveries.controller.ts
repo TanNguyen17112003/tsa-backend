@@ -51,7 +51,7 @@ export class DeliveriesController {
     @Param('id') id: string,
     @Body() updateStatusDto: UpdateStatusDto
   ): Promise<DeliveryEntity> {
-    return this.deliveriesService.updateDeliveryStatus(id, updateStatusDto.status);
+    return this.deliveriesService.updateDeliveryStatus(id, updateStatusDto);
   }
 
   @AllowAuthenticated('ADMIN')

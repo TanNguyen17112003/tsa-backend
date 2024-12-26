@@ -6,7 +6,7 @@ import { createOrderStatusHistory } from 'src/orders/utils/order.util';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
-import { CreateDeliveryDto, UpdateDeliveryDto } from './dtos';
+import { CreateDeliveryDto, UpdateDeliveryDto, UpdateStatusDto } from './dtos';
 
 @Injectable()
 export class DeliveriesService {
@@ -143,7 +143,12 @@ export class DeliveriesService {
     return updatedDelivery;
   }
 
-  async updateDeliveryStatus(id: string, status: DeliveryStatus) {
+  async updateDeliveryStatus(id: string, updateStatusDto: UpdateStatusDto) {
+    const { status, reason } = updateStatusDto;
+    if (status === DeliveryStatus.CANCELED && !reason) {
+      throw new BadRequestException('Reason is required when canceling a delivery');
+    }
+
     const delivery = await this.prisma.delivery.findUnique({
       where: { id },
       include: {
@@ -154,15 +159,51 @@ export class DeliveriesService {
       throw new NotFoundException('Delivery not found');
     }
 
+    if (status === DeliveryStatus.CANCELED) {
+      if (
+        delivery.orders.some(
+          (order) =>
+            order.latestStatus === OrderStatus.CANCELED ||
+            order.latestStatus === OrderStatus.DELIVERED
+        )
+      ) {
+        throw new BadRequestException(
+          'Delivery cannot be canceled because one or more orders are already canceled or delivered'
+        );
+      } else {
+        await this.notificationService.sendNotification({
+          type: 'DELIVERY',
+          title: 'Thay đổi trạng thái chuyến đi',
+          content: 'Chuyến đi đã bị hủy',
+          deliveryId: delivery.id,
+          orderId: undefined,
+          reportId: undefined,
+          userId: delivery.staffId,
+        });
+        await Promise.all(
+          delivery.orders.map((order) =>
+            createOrderStatusHistory(this.prisma, order.id, OrderStatus.CANCELED, reason)
+          )
+        );
+        return this.prisma.delivery.update({
+          where: { id },
+          data: {
+            DeliveryStatusHistory: {
+              create: {
+                status,
+                time: this.dateService.getCurrentUnixTimestamp().toString(),
+                reason,
+              },
+            },
+          },
+        });
+      }
+    }
+
     await this.notificationService.sendNotification({
       type: 'DELIVERY',
       title: 'Thay đổi trạng thái chuyến đi',
-      content:
-        status === 'CANCELED'
-          ? 'Chuyến đi đã bị hủy'
-          : status === 'FINISHED'
-            ? 'Chuyến đi đã hoàn thành'
-            : 'Chuyến đi đang vận chuyển',
+      content: status === 'FINISHED' ? 'Chuyến đi đã hoàn thành' : 'Chuyến đi đang vận chuyển',
       deliveryId: delivery.id,
       orderId: undefined,
       reportId: undefined,
@@ -183,6 +224,7 @@ export class DeliveriesService {
           create: {
             status,
             time: this.dateService.getCurrentUnixTimestamp().toString(),
+            reason,
           },
         },
       },
