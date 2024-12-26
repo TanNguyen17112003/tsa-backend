@@ -112,6 +112,8 @@ model Order {
   orderStatusHistory OrderStatusHistory[]
   Notification       Notification[]
   brand              String?              @db.VarChar(255)
+  remainingAmount    Float?
+  payment            Payment[]
 }
 
 model OrderStatusHistory {
@@ -185,6 +187,18 @@ model DeviceToken {
   platform     Platform
   pushNotiType PushNotiType
   createdAt    String       @db.VarChar(255)
+}
+
+model Payment {
+  id                     String  @id @default(cuid())
+  orderId                String  @db.VarChar(255)
+  orderCode              String  @unique @db.VarChar(255)
+  order                  Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount                 Float
+  isPaid                 Boolean @default(false)
+  counterAccountName     String? @db.VarChar(255)
+  counterAccountNumber   String? @db.VarChar(255)
+  counterAccountBankName String? @db.VarChar(255)
 }
 
 enum UserRole {

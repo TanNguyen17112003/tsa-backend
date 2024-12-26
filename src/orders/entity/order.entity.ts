@@ -34,4 +34,6 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   latestStatus: OrderStatus;
   @IsOptional()
   brand: string;
+  @IsOptional()
+  remainingAmount: number;
 }
