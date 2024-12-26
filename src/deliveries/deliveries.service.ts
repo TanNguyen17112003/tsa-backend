@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { DeliveryStatus } from '@prisma/client';
+import { DeliveryStatus, OrderStatus } from '@prisma/client';
 import { DateService } from 'src/date';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { createOrderStatusHistory } from 'src/orders/utils/order.util';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
@@ -23,10 +24,22 @@ export class DeliveriesService {
       where: {
         id: { in: orderIds },
       },
+      include: {
+        deliveries: true,
+      },
     });
 
     if (orders.length !== orderIds.length) {
       throw new BadRequestException('One or more orders do not exist');
+    }
+
+    // Check if there exists an order that is put into some delivery but is not canceled
+    if (
+      orders.some(
+        (order) => order.deliveries.length > 0 && order.latestStatus !== OrderStatus.CANCELED
+      )
+    ) {
+      throw new BadRequestException('One or more orders are already in a delivery');
     }
 
     const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
@@ -131,7 +144,12 @@ export class DeliveriesService {
   }
 
   async updateDeliveryStatus(id: string, status: DeliveryStatus) {
-    const delivery = await this.prisma.delivery.findUnique({ where: { id } });
+    const delivery = await this.prisma.delivery.findUnique({
+      where: { id },
+      include: {
+        orders: true,
+      },
+    });
     if (!delivery) {
       throw new NotFoundException('Delivery not found');
     }
@@ -150,6 +168,14 @@ export class DeliveriesService {
       reportId: undefined,
       userId: delivery.staffId,
     });
+
+    if (status === DeliveryStatus.ACCEPTED) {
+      await Promise.all(
+        delivery.orders.map((order) =>
+          createOrderStatusHistory(this.prisma, order.id, OrderStatus.IN_TRANSPORT)
+        )
+      );
+    }
     return this.prisma.delivery.update({
       where: { id },
       data: {
