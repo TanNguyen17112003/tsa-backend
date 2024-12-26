@@ -1,11 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { DeliveryStatus } from '@prisma/client';
 import { AllowAuthenticated, GetUser } from 'src/auth';
 import { GetUserType } from 'src/types';
 
 import { DeliveriesService } from './deliveries.service';
-import { CreateDeliveryDto, UpdateDeliveryDto } from './dtos';
+import { CreateDeliveryDto, UpdateDeliveryDto, UpdateStatusDto } from './dtos';
 import { DeliveryEntity } from './entities';
 
 @ApiTags('Deliveries')
@@ -50,9 +49,9 @@ export class DeliveriesController {
   @Patch('status/:id')
   async updateStatus(
     @Param('id') id: string,
-    @Body() status: DeliveryStatus
+    @Body() updateStatusDto: UpdateStatusDto
   ): Promise<DeliveryEntity> {
-    return this.deliveriesService.updateDeliveryStatus(id, status);
+    return this.deliveriesService.updateDeliveryStatus(id, updateStatusDto.status);
   }
 
   @AllowAuthenticated('ADMIN')
