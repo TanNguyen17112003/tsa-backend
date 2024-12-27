@@ -332,7 +332,8 @@ export class OrderService {
     if (!order) {
       throw new BadRequestException('Order not found');
     }
-    const { status, canceledImage, reason, finishedImage, distance } = updateStatusDto;
+    const { status, canceledImage, reason, finishedImage, distance, cancelReasonType } =
+      updateStatusDto;
 
     // Check if staff already in the acceptable zone of finish order
     if (status === 'DELIVERED' && distance < 150) {
@@ -346,7 +347,7 @@ export class OrderService {
     }
 
     if (status === 'CANCELED') {
-      this.handleCancelDelivery(updateStatusDto.cancelReasonType, canceledImage, reason);
+      this.handleCancelDelivery(cancelReasonType, canceledImage, reason);
     }
     // For staff update status of order to DELIVERED and payment method is CASH
     if (user.role === 'STAFF' && status === 'DELIVERED' && order.paymentMethod === 'CASH') {
@@ -383,7 +384,7 @@ export class OrderService {
       id,
       status,
       canceledImage,
-      this.mapTypeToReason(updateStatusDto.cancelReasonType, reason),
+      this.mapTypeToReason(cancelReasonType, reason),
       finishedImage
     );
     return { message: 'Order status updated' };

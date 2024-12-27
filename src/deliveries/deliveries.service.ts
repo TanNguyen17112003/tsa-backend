@@ -221,7 +221,7 @@ export class DeliveriesService {
               this.prisma,
               order.id,
               OrderStatus.CANCELED,
-              reason,
+              this.mapTypeToReason(cancelReasonType, reason),
               canceledImage
             )
           )
