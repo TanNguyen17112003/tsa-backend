@@ -83,7 +83,7 @@ export class OrdersController {
     @Body() updateStatusDto: UpdateStatusDto,
     @GetUser() user: GetUserType
   ) {
-    return this.orderService.updateStatus(id, updateStatusDto.status, user);
+    return this.orderService.updateStatus(id, updateStatusDto, user);
   }
 
   @AllowAuthenticated('ADMIN', 'STUDENT')

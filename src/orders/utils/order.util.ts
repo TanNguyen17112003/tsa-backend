@@ -17,7 +17,9 @@ export const createOrderStatusHistory = async (
   prisma: PrismaService,
   orderId: string,
   status: $Enums.OrderStatus,
-  reason?: string
+  reason?: string,
+  canceledImage?: string,
+  finishedImage?: string
 ) => {
   await prisma.$transaction([
     prisma.orderStatusHistory.create({
@@ -26,12 +28,14 @@ export const createOrderStatusHistory = async (
         status,
         time: Math.floor(Date.now() / 1000).toString(),
         reason,
+        canceledImage,
       },
     }),
     prisma.order.update({
       where: { id: orderId },
       data: {
         latestStatus: status,
+        finishedImage,
       },
     }),
   ]);

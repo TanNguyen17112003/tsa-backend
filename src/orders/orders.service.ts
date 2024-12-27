@@ -1,11 +1,16 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { $Enums } from '@prisma/client';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
-import { CreateAdminOrderDto, CreateStudentOrderDto, OrderQueryDto } from './dtos';
+import {
+  CreateAdminOrderDto,
+  CreateStudentOrderDto,
+  OrderCancelReason,
+  OrderQueryDto,
+  UpdateStatusDto,
+} from './dtos';
 import { GetOrderResponseDto } from './dtos/response.dto';
 import { ShippingFeeDto } from './dtos/shippingFee.dto';
 import {
@@ -162,7 +167,13 @@ export class OrderService {
               dormitory: (createOrderDto as CreateStudentOrderDto).dormitory,
             },
           });
-          await this.updateStatus(existingOrder.id, 'ACCEPTED', user);
+          await this.updateStatus(
+            existingOrder.id,
+            {
+              status: 'ACCEPTED',
+            },
+            user
+          );
           await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
 
           const historyTime = await getHistoryTimee(this.prisma, existingOrder.id);
@@ -232,7 +243,13 @@ export class OrderService {
         ) {
           throw new BadRequestException('Đơn hàng này đã được tạo trước đó từ quản trị viên!');
         }
-        await this.updateStatus(existingOrder.id, 'ACCEPTED', user);
+        await this.updateStatus(
+          existingOrder.id,
+          {
+            status: 'ACCEPTED',
+          },
+          user
+        );
         await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
         await this.notificationService.sendNotification({
           type: 'ORDER',
@@ -310,10 +327,26 @@ export class OrderService {
     return { message: 'Order updated', data: { ...order, latestStatus, historyTime } };
   }
 
-  async updateStatus(id: string, status: $Enums.OrderStatus, user: GetUserType) {
+  async updateStatus(id: string, updateStatusDto: UpdateStatusDto, user: GetUserType) {
     const order = await this.prisma.order.findUnique({ where: { id } });
     if (!order) {
       throw new BadRequestException('Order not found');
+    }
+    const { status, canceledImage, reason, finishedImage, distance } = updateStatusDto;
+
+    // Check if staff already in the acceptable zone of finish order
+    if (status === 'DELIVERED' && distance < 150) {
+      throw new BadRequestException(
+        'Bạn cần phải ở trong vùng hoàn thành đơn hàng, tối thiểu 150m'
+      );
+    }
+    // Check if staff has already captured the image of the order when delivering
+    if (status === 'DELIVERED' && !finishedImage) {
+      throw new BadRequestException('Cần phải có hình ảnh khi giao hàng');
+    }
+
+    if (status === 'CANCELED') {
+      this.handleCancelDelivery(updateStatusDto.cancelReasonType, canceledImage, reason);
     }
     // For staff update status of order to DELIVERED and payment method is CASH
     if (user.role === 'STAFF' && status === 'DELIVERED' && order.paymentMethod === 'CASH') {
@@ -345,7 +378,14 @@ export class OrderService {
         },
       },
     });
-    await createOrderStatusHistory(this.prisma, id, status);
+    await createOrderStatusHistory(
+      this.prisma,
+      id,
+      status,
+      canceledImage,
+      this.mapTypeToReason(updateStatusDto.cancelReasonType, reason),
+      finishedImage
+    );
     return { message: 'Order status updated' };
   }
 
@@ -381,4 +421,44 @@ export class OrderService {
     const shippingFee = getShippingFee(room, building, dormitory, weight);
     return { shippingFee };
   }
+
+  handleCancelDelivery = (
+    cancelReasonType?: OrderCancelReason,
+    canceledImage?: string,
+    reason?: string
+  ) => {
+    if (!cancelReasonType) {
+      throw new BadRequestException('Cần phải có lý do khi hủy chuyến đi');
+    }
+    if (cancelReasonType === OrderCancelReason.OTHER && !reason) {
+      throw new BadRequestException('Cần phải có lý do khi chọn lý do hủy là khác');
+    }
+    if (cancelReasonType !== OrderCancelReason.PERSONAL_REASON && !canceledImage) {
+      throw new BadRequestException(
+        'Cần phải có hình ảnh khi chọn lý do hủy không phải là lý do cá nhân'
+      );
+    }
+  };
+  mapTypeToReason = (cancelReasonType: OrderCancelReason, reason?: string) => {
+    switch (cancelReasonType) {
+      case OrderCancelReason.WRONG_ADDRESS:
+        return 'Sai địa chỉ';
+      case OrderCancelReason.CAN_NOT_CONTACT:
+        return 'Không liên lạc được';
+      case OrderCancelReason.PAYMENT_ISSUE:
+        return 'Vấn đề thanh toán';
+      case OrderCancelReason.DAMAGED_PRODUCT:
+        return 'Sản phẩm bị hỏng';
+      case OrderCancelReason.HEAVY_PRODUCT:
+        return 'Sản phẩm quá nặng';
+      case OrderCancelReason.PERSONAL_REASON:
+        return 'Lý do cá nhân';
+      case OrderCancelReason.DAMEGED_VEHICLE:
+        return 'Xe hỏng';
+      case OrderCancelReason.OTHER:
+        return reason;
+      default:
+        return 'Khác';
+    }
+  };
 }
