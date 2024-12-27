@@ -55,9 +55,10 @@ export class DeliveriesController {
   @Patch('status/:id')
   async updateStatus(
     @Param('id') id: string,
-    @Body() updateStatusDto: UpdateStatusDto
+    @Body() updateStatusDto: UpdateStatusDto,
+    @GetUser() user: GetUserType
   ): Promise<DeliveryEntity> {
-    return this.deliveriesService.updateDeliveryStatus(id, updateStatusDto);
+    return this.deliveriesService.updateDeliveryStatus(id, updateStatusDto, user);
   }
 
   @AllowAuthenticated('ADMIN')

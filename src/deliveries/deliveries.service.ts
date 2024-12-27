@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { DeliveryStatus, OrderStatus } from '@prisma/client';
 import { DateService } from 'src/date';
 import { NotificationsService } from 'src/notifications/notifications.service';
-import { createOrderStatusHistory } from 'src/orders/utils/order.util';
+import { createOrderStatusHistory, shortenUUID } from 'src/orders/utils/order.util';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
@@ -79,7 +79,7 @@ export class DeliveriesService {
     await this.notificationService.sendNotification({
       type: 'DELIVERY',
       title: 'Chuyến đi mới vừa được tạo',
-      content: 'Bạn vừa được giao một chuyến đi mới',
+      content: `Chuyến đi ${shortenUUID(newDelivery.id, 'DELIVERY')} đã được tạo`,
       deliveryId: newDelivery.id,
       orderId: undefined,
       reportId: undefined,
@@ -170,10 +170,17 @@ export class DeliveriesService {
     return updatedDelivery;
   }
 
-  async updateDeliveryStatus(id: string, updateStatusDto: UpdateStatusDto) {
+  async updateDeliveryStatus(id: string, updateStatusDto: UpdateStatusDto, user: GetUserType) {
+    // Check if the staff is going to deliver another delivery
+    const isGoingDelivery = await this.prisma.delivery.findFirst({
+      where: { staffId: user.id, latestStatus: DeliveryStatus.ACCEPTED },
+    });
+    if (isGoingDelivery) {
+      throw new BadRequestException('Bạn chỉ có thể nhận một chuyến đi tại một thời điểm');
+    }
     const { status, reason } = updateStatusDto;
     if (status === DeliveryStatus.CANCELED && !reason) {
-      throw new BadRequestException('Reason is required when canceling a delivery');
+      throw new BadRequestException('Cần phải có lý do khi hủy chuyến đi');
     }
 
     const delivery = await this.prisma.delivery.findUnique({
@@ -183,7 +190,7 @@ export class DeliveriesService {
       },
     });
     if (!delivery) {
-      throw new NotFoundException('Delivery not found');
+      throw new NotFoundException('Không tìm thấy chuyến đi');
     }
 
     if (status === DeliveryStatus.CANCELED) {
@@ -195,13 +202,13 @@ export class DeliveriesService {
         )
       ) {
         throw new BadRequestException(
-          'Delivery cannot be canceled because one or more orders are already canceled or delivered'
+          'Chuyến đi không thể bị hủy khi có ít nhất một đơn hàng đã được hủy hoặc đã được giao'
         );
       } else {
         await this.notificationService.sendNotification({
           type: 'DELIVERY',
           title: 'Thay đổi trạng thái chuyến đi',
-          content: 'Chuyến đi đã bị hủy',
+          content: `Chuyến đi ${shortenUUID(delivery.id, 'DELIVERY')} đã bị hủy`,
           deliveryId: delivery.id,
           orderId: undefined,
           reportId: undefined,
@@ -231,7 +238,10 @@ export class DeliveriesService {
     await this.notificationService.sendNotification({
       type: 'DELIVERY',
       title: 'Thay đổi trạng thái chuyến đi',
-      content: status === 'FINISHED' ? 'Chuyến đi đã hoàn thành' : 'Chuyến đi đang vận chuyển',
+      content:
+        status === 'FINISHED'
+          ? `Chuyến đi ${shortenUUID(delivery.id, 'DELIVERY')} đã hoàn thành`
+          : `Chuyến đi ${shortenUUID(delivery.id, 'DELIVERY')} đã được nhận`,
       deliveryId: delivery.id,
       orderId: undefined,
       reportId: undefined,

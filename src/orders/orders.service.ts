@@ -15,6 +15,7 @@ import {
   getHistoryTimee,
   getLatestOrderStatus,
   getShippingFee,
+  shortenUUID,
   validateUserForOrder,
 } from './utils/order.util';
 
@@ -206,7 +207,7 @@ export class OrderService {
         userId: user.id,
         message: {
           title: 'Tạo đơn hàng thành công',
-          message: `Đơn hàng ${newOrder.checkCode} của bạn đã được tạo thành công. Vui lòng chờ admin xác nhận`,
+          message: `Đơn hàng ${shortenUUID(newOrder.checkCode, 'ORDER')} của bạn đã được tạo thành công. Vui lòng chờ admin xác nhận`,
         },
       });
       return {
@@ -236,7 +237,7 @@ export class OrderService {
         await this.notificationService.sendNotification({
           type: 'ORDER',
           title: 'Xác nhận đơn hàng',
-          content: `Đơn hàng ${existingOrder.checkCode} của bạn đã được xác nhận`,
+          content: `Đơn hàng Đơn hàng ${shortenUUID(existingOrder.checkCode, 'ORDER')} của bạn đã được xác nhận`,
           orderId: existingOrder.id,
           userId: existingOrder.studentId,
           deliveryId: undefined,
@@ -327,7 +328,7 @@ export class OrderService {
     await this.notificationService.sendNotification({
       type: 'ORDER',
       title: 'Thay đổi trạng thái đơn hàng',
-      content: `Đơn hàng ${order.checkCode} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
+      content: `Đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
       orderId: order.id,
       userId: order.studentId,
       deliveryId: undefined,
@@ -337,7 +338,7 @@ export class OrderService {
       userId: order.studentId,
       message: {
         title: 'Thay đổi trạng thái đơn hàng',
-        message: `Đơn hàng ${order.checkCode} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
+        message: `Đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
         body: {
           type: 'ORDER',
           orderId: order.id,
