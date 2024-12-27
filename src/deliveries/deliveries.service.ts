@@ -6,7 +6,13 @@ import { createOrderStatusHistory } from 'src/orders/utils/order.util';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
-import { CreateDeliveryDto, UpdateDeliveryDto, UpdateStatusDto } from './dtos';
+import {
+  CreateDeliveryDto,
+  DeliveryOrderDto,
+  GetDeliveryDto,
+  UpdateDeliveryDto,
+  UpdateStatusDto,
+} from './dtos';
 
 @Injectable()
 export class DeliveriesService {
@@ -80,24 +86,83 @@ export class DeliveriesService {
     return newDelivery;
   }
 
-  async getDeliveries(user: GetUserType) {
-    return this.prisma.delivery.findMany({
+  async getDeliveries(user: GetUserType): Promise<GetDeliveryDto[]> {
+    const deliveriesWithStatusesAndOrders = await this.prisma.delivery.findMany({
       where: user.role === 'ADMIN' ? {} : { staffId: user.id },
       include: {
         DeliveryStatusHistory: true,
-        orders: true,
+        orders: {
+          include: {
+            student: {
+              include: {
+                user: {
+                  select: {
+                    lastName: true,
+                    firstName: true,
+                    phoneNumber: true,
+                    photoUrl: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
+
+    const responseData: GetDeliveryDto[] = deliveriesWithStatusesAndOrders.map((delivery) => {
+      const orders: DeliveryOrderDto[] = delivery.orders.map((order) => {
+        return {
+          ...order,
+          studentInfo: order.student.user,
+          student: undefined,
+        };
+      });
+
+      return {
+        ...delivery,
+        orders: orders,
+      };
+    });
+
+    return responseData;
   }
 
-  async getDelivery(id: string) {
-    return this.prisma.delivery.findUnique({
+  async getDelivery(id: string): Promise<GetDeliveryDto> {
+    const delivery = await this.prisma.delivery.findUnique({
       where: { id },
       include: {
         DeliveryStatusHistory: true,
-        orders: true,
+        orders: {
+          include: {
+            student: {
+              include: {
+                user: {
+                  select: {
+                    lastName: true,
+                    firstName: true,
+                    phoneNumber: true,
+                    photoUrl: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
+
+    if (delivery === null) {
+      throw new NotFoundException('Delivery not found');
+    }
+    return {
+      ...delivery,
+      orders: delivery.orders.map((order) => ({
+        ...order,
+        studentInfo: order.student.user,
+        student: undefined,
+      })),
+    };
   }
 
   async updateDelivery(id: string, updateDeliveryDto: UpdateDeliveryDto) {
