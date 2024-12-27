@@ -4,7 +4,13 @@ import { AllowAuthenticated, GetUser } from 'src/auth';
 import { GetUserType } from 'src/types';
 
 import { DeliveriesService } from './deliveries.service';
-import { CreateDeliveryDto, GetDeliveryDto, UpdateDeliveryDto, UpdateStatusDto } from './dtos';
+import {
+  CreateDeliveryDto,
+  GetDeliveriesDto,
+  GetDeliveryDto,
+  UpdateDeliveryDto,
+  UpdateStatusDto,
+} from './dtos';
 import { DeliveryEntity } from './entities';
 
 @ApiTags('Deliveries')
@@ -23,7 +29,7 @@ export class DeliveriesController {
   @AllowAuthenticated('ADMIN', 'STAFF')
   @ApiOkResponse({ type: [GetDeliveryDto] })
   @Get()
-  findAllDeliveries(@GetUser() user: GetUserType): Promise<GetDeliveryDto[]> {
+  findAllDeliveries(@GetUser() user: GetUserType): Promise<GetDeliveriesDto[]> {
     return this.deliveriesService.getDeliveries(user);
   }
 

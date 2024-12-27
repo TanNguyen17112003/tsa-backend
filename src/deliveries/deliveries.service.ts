@@ -8,7 +8,7 @@ import { GetUserType } from 'src/types';
 
 import {
   CreateDeliveryDto,
-  DeliveryOrderDto,
+  GetDeliveriesDto,
   GetDeliveryDto,
   UpdateDeliveryDto,
   UpdateStatusDto,
@@ -69,9 +69,11 @@ export class DeliveriesService {
             time: createdAt,
           },
         },
+        latestStatus: DeliveryStatus.PENDING,
         orders: {
           connect: orderIds.map((id) => ({ id })),
         },
+        numberOrder: orderIds.length,
       },
     });
     await this.notificationService.sendNotification({
@@ -86,46 +88,10 @@ export class DeliveriesService {
     return newDelivery;
   }
 
-  async getDeliveries(user: GetUserType): Promise<GetDeliveryDto[]> {
-    const deliveriesWithStatusesAndOrders = await this.prisma.delivery.findMany({
+  async getDeliveries(user: GetUserType): Promise<GetDeliveriesDto[]> {
+    return await this.prisma.delivery.findMany({
       where: user.role === 'ADMIN' ? {} : { staffId: user.id },
-      include: {
-        DeliveryStatusHistory: true,
-        orders: {
-          include: {
-            student: {
-              include: {
-                user: {
-                  select: {
-                    lastName: true,
-                    firstName: true,
-                    phoneNumber: true,
-                    photoUrl: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
     });
-
-    const responseData: GetDeliveryDto[] = deliveriesWithStatusesAndOrders.map((delivery) => {
-      const orders: DeliveryOrderDto[] = delivery.orders.map((order) => {
-        return {
-          ...order,
-          studentInfo: order.student.user,
-          student: undefined,
-        };
-      });
-
-      return {
-        ...delivery,
-        orders: orders,
-      };
-    });
-
-    return responseData;
   }
 
   async getDelivery(id: string): Promise<GetDeliveryDto> {
@@ -170,16 +136,12 @@ export class DeliveriesService {
 
     // Check existence and status of delivery
     const delivery = await this.prisma.delivery.findUnique({ where: { id } });
-    const latestDeliveryStatus = await this.prisma.deliveryStatusHistory.findFirst({
-      where: { deliveryId: id },
-      orderBy: { time: 'desc' },
-    });
 
     if (!delivery) {
       throw new NotFoundException('Delivery not found');
     }
 
-    if (latestDeliveryStatus.status !== DeliveryStatus.PENDING) {
+    if (delivery.latestStatus !== DeliveryStatus.PENDING) {
       throw new BadRequestException('You can only update deliveries that are pending');
     }
 
@@ -260,6 +222,7 @@ export class DeliveriesService {
                 reason,
               },
             },
+            latestStatus: status,
           },
         });
       }
@@ -292,6 +255,7 @@ export class DeliveriesService {
             reason,
           },
         },
+        latestStatus: status,
       },
     });
   }

@@ -134,6 +134,8 @@ model Delivery {
   staff                 Staff?                  @relation(fields: [staffId], references: [staffId])
   DeliveryStatusHistory DeliveryStatusHistory[]
   Notification          Notification[]
+  latestStatus          DeliveryStatus          @default(PENDING)
+  numberOrder           Int                     @default(0)
 }
 
 model DeliveryStatusHistory {

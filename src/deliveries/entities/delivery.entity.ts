@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Delivery } from '@prisma/client';
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import { Delivery, DeliveryStatus } from '@prisma/client';
+import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import { RestrictProperties } from 'src/types';
 
 export class DeliveryEntity implements RestrictProperties<DeliveryEntity, Delivery> {
@@ -20,4 +20,12 @@ export class DeliveryEntity implements RestrictProperties<DeliveryEntity, Delive
   @IsString()
   @IsOptional()
   staffId: string | null;
+
+  @ApiProperty({ example: 'PENDING', description: 'Latest status of delivery' })
+  @IsEnum(DeliveryStatus)
+  latestStatus: DeliveryStatus;
+
+  @ApiProperty({ example: '3', description: 'Number of orders in delivery' })
+  @IsInt()
+  numberOrder: number;
 }

@@ -1,6 +1,25 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { OrderEntity } from 'src/orders/entity';
 
+export class GetDeliveriesDto {
+  @ApiProperty({ example: '123456789', description: 'Id of delivery' })
+  id: string;
+
+  @ApiProperty({ example: '1729145400', description: 'Created date as Unix timestamp' })
+  createdAt: string;
+
+  @ApiProperty({ example: '3600', description: 'Limit time to deliver (in seconds)' })
+  limitTime: number;
+
+  @ApiProperty({ example: '123456789', description: 'The ID of the staff that makes the delivery' })
+  staffId: string | null;
+
+  @ApiProperty({ example: 'PENDING', description: 'Latest status of delivery' })
+  latestStatus: string;
+
+  @ApiProperty({ example: '3', description: 'Number of orders in delivery' })
+  numberOrder: number;
+}
 export class GetDeliveryDto {
   @ApiProperty({ example: '123456789', description: 'Id of delivery' })
   id: string;
