@@ -176,13 +176,10 @@ export class DeliveriesService {
     const isGoingDelivery = await this.prisma.delivery.findFirst({
       where: { staffId: user.id, latestStatus: DeliveryStatus.ACCEPTED },
     });
-    if (isGoingDelivery) {
+    if (isGoingDelivery && updateStatusDto.status === DeliveryStatus.ACCEPTED) {
       throw new BadRequestException('Bạn chỉ có thể nhận một chuyến đi tại một thời điểm');
     }
     const { status, reason, canceledImage, cancelReasonType } = updateStatusDto;
-    if (status === DeliveryStatus.CANCELED) {
-      this.handleCancelDelivery(cancelReasonType, canceledImage, reason);
-    }
 
     const delivery = await this.prisma.delivery.findUnique({
       where: { id },
@@ -206,6 +203,8 @@ export class DeliveriesService {
           'Chuyến đi không thể bị hủy khi có ít nhất một đơn hàng đã được hủy hoặc đã được giao'
         );
       } else {
+        this.handleCancelDelivery(cancelReasonType, canceledImage, reason);
+
         await this.notificationService.sendNotification({
           type: 'DELIVERY',
           title: 'Thay đổi trạng thái chuyến đi',

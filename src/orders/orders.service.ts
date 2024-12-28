@@ -334,9 +334,8 @@ export class OrderService {
     }
     const { status, canceledImage, reason, finishedImage, distance, cancelReasonType } =
       updateStatusDto;
-
     // Check if staff already in the acceptable zone of finish order
-    if (status === 'DELIVERED' && distance < 150) {
+    if (status === 'DELIVERED' && distance && distance < 150) {
       throw new BadRequestException(
         'Bạn cần phải ở trong vùng hoàn thành đơn hàng, tối thiểu 150m'
       );
@@ -434,7 +433,10 @@ export class OrderService {
     if (cancelReasonType === OrderCancelReason.OTHER && !reason) {
       throw new BadRequestException('Cần phải có lý do khi chọn lý do hủy là khác');
     }
-    if (cancelReasonType !== OrderCancelReason.PERSONAL_REASON && !canceledImage) {
+    if (
+      !(cancelReasonType in [OrderCancelReason.PERSONAL_REASON, OrderCancelReason.OTHER]) &&
+      !canceledImage
+    ) {
       throw new BadRequestException(
         'Cần phải có hình ảnh khi chọn lý do hủy không phải là lý do cá nhân'
       );
