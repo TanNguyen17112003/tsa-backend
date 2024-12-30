@@ -58,6 +58,12 @@ export class OrdersController {
   }
 
   @AllowAuthenticated()
+  @Get('stats')
+  getOrdersStats(@Query('type') type: 'week' | 'month' | 'year', @GetUser() user: GetUserType) {
+    return this.orderService.getOrdersStats(type, user);
+  }
+
+  @AllowAuthenticated()
   @ApiOkResponse({ type: OrderEntity })
   @Get(':id')
   findOne(@Param('id') id: string) {

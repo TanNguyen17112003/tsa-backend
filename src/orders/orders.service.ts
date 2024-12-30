@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotImplementedException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
@@ -9,6 +14,8 @@ import {
   CreateStudentOrderDto,
   OrderCancelReason,
   OrderQueryDto,
+  StaffOrdersStatsDto,
+  StudentOrdersStatsDto,
   UpdateStatusDto,
 } from './dtos';
 import { GetOrderResponseDto } from './dtos/response.dto';
@@ -424,6 +431,152 @@ export class OrderService {
     }
     const shippingFee = getShippingFee(room, building, dormitory, weight);
     return { shippingFee };
+  }
+
+  async getOrdersStats(
+    type: 'week' | 'month' | 'year',
+    user: GetUserType
+  ): Promise<StaffOrdersStatsDto | StudentOrdersStatsDto> {
+    if (user.role === 'ADMIN') {
+      throw new NotImplementedException();
+    }
+    if (user.role === 'STAFF') {
+      return this.getOrdersStatsForStaff(type, user);
+    }
+    return this.getOrdersStatsForStudent(user);
+  }
+
+  private async getOrdersStatsForStaff(
+    type: 'week' | 'month' | 'year',
+    user: GetUserType
+  ): Promise<StaffOrdersStatsDto> {
+    const now = Math.floor(Date.now() / 1000);
+    let startTime: number;
+
+    switch (type) {
+      case 'week':
+        startTime = now - 7 * 24 * 60 * 60;
+        break;
+      case 'month':
+        startTime = now - 30 * 24 * 60 * 60;
+        break;
+      case 'year':
+        startTime = now - 365 * 24 * 60 * 60;
+        break;
+      default:
+        throw new BadRequestException('Invalid type');
+    }
+
+    const stats = await this.prisma.order.aggregate({
+      _count: true,
+      _sum: {
+        shippingFee: true,
+      },
+      where: {
+        shipperId: user.id,
+        deliveryDate: {
+          gte: startTime.toString(),
+        },
+      },
+    });
+    console.log('Stats: ', stats);
+
+    const totalOrders = await this.prisma.order.count({
+      where: {
+        shipperId: user.id,
+        deliveryDate: {
+          gte: startTime.toString(),
+        },
+      },
+    });
+    let brandPercentages = [];
+    if (totalOrders > 0) {
+      // Group orders by brand and calculate counts
+      const ordersByBrand = await this.prisma.order.groupBy({
+        by: ['brand'],
+        _count: {
+          brand: true,
+        },
+        where: {
+          shipperId: user.id,
+          deliveryDate: {
+            gte: startTime.toString(),
+          },
+        },
+      });
+
+      // Calculate percentage for each brand
+      brandPercentages = ordersByBrand.map((entry) => ({
+        brand: entry.brand || 'Unknown',
+        count: entry._count.brand,
+        percentage: ((entry._count.brand / totalOrders) * 100).toFixed(2),
+      }));
+    }
+
+    return {
+      totalOrders: stats._count || 0,
+      totalShippingFee: stats._sum.shippingFee || 0,
+      brandPercentages,
+    };
+  }
+
+  private async getOrdersStatsForStudent(user: GetUserType): Promise<StudentOrdersStatsDto> {
+    const now = Math.floor(Date.now() / 1000);
+    const lastWeek = now - 7 * 24 * 60 * 60;
+    const lastMonth = now - 30 * 24 * 60 * 60;
+
+    const [totalOrdersLastWeek, totalOrdersLastMonth, totalOrders] = await this.prisma.$transaction(
+      [
+        this.prisma.order.count({
+          where: {
+            studentId: user.id,
+            deliveryDate: {
+              gte: lastWeek.toString(),
+            },
+          },
+        }),
+        this.prisma.order.count({
+          where: {
+            studentId: user.id,
+            deliveryDate: {
+              gte: lastMonth.toString(),
+            },
+          },
+        }),
+        this.prisma.order.count({
+          where: {
+            shipperId: user.id,
+          },
+        }),
+      ]
+    );
+
+    let brandPercentages = [];
+    if (totalOrders > 0) {
+      // Group orders by brand and calculate counts
+      const ordersByBrand = await this.prisma.order.groupBy({
+        by: ['brand'],
+        _count: {
+          brand: true,
+        },
+        where: {
+          shipperId: user.id,
+        },
+      });
+
+      // Calculate percentage for each brand
+      brandPercentages = ordersByBrand.map((entry) => ({
+        brand: entry.brand || 'Unknown',
+        count: entry._count.brand,
+        percentage: ((entry._count.brand / totalOrders) * 100).toFixed(2),
+      }));
+    }
+
+    return {
+      totalOrdersLastWeek,
+      totalOrdersLastMonth,
+      brandPercentages,
+    };
   }
 
   handleCancelDelivery = (
