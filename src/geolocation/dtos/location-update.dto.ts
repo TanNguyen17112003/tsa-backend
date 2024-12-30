@@ -1,4 +1,4 @@
-import { IsNumber, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsString } from 'class-validator';
 
 export class LocationUpdateDto {
   @IsString()
@@ -12,4 +12,7 @@ export class LocationUpdateDto {
 
   @IsNumber()
   longitude: number;
+
+  @IsBoolean()
+  isFinished: boolean;
 }
