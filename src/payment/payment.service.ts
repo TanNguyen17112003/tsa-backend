@@ -94,9 +94,13 @@ export class PaymentService {
     return { paymentLink };
   }
   async handleWebhook(body: any) {
+    console.log('Received webhook', body);
     const data = body.data;
     const { orderCode, amount, counterAccountName, counterAccountNumber, counterAccountBankName } =
       data;
+    if (orderCode === 123) {
+      return;
+    }
     const payment = await this.prisma.payment.findFirst({
       where: {
         orderCode: orderCode.toString(),

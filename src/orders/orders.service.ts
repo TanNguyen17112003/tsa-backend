@@ -156,22 +156,24 @@ export class OrderService {
           !existingOrder.building &&
           !existingOrder.dormitory
         ) {
+          const amount = getShippingFee(
+            (createOrderDto as CreateStudentOrderDto).room,
+            (createOrderDto as CreateStudentOrderDto).building,
+            (createOrderDto as CreateStudentOrderDto).dormitory,
+            (createOrderDto as CreateStudentOrderDto).weight
+          );
           await this.prisma.order.update({
             where: { id: existingOrder.id },
             data: {
               studentId: user.id,
-              shippingFee: getShippingFee(
-                (createOrderDto as CreateStudentOrderDto).room,
-                (createOrderDto as CreateStudentOrderDto).building,
-                (createOrderDto as CreateStudentOrderDto).dormitory,
-                (createOrderDto as CreateStudentOrderDto).weight
-              ),
+              shippingFee: amount,
               deliveryDate: convertToUnixTimestamp(
                 (createOrderDto as CreateStudentOrderDto).deliveryDate
               ),
               room: (createOrderDto as CreateStudentOrderDto).room,
               building: (createOrderDto as CreateStudentOrderDto).building,
               dormitory: (createOrderDto as CreateStudentOrderDto).dormitory,
+              remainingAmount: amount,
             },
           });
           await this.updateStatus(
@@ -203,6 +205,12 @@ export class OrderService {
           throw new BadRequestException('Bạn đã tạo đơn hàng này rồi!');
         }
       }
+      const amount = getShippingFee(
+        (createOrderDto as CreateStudentOrderDto).room,
+        (createOrderDto as CreateStudentOrderDto).building,
+        (createOrderDto as CreateStudentOrderDto).dormitory,
+        (createOrderDto as CreateStudentOrderDto).weight
+      );
       const newOrder = await this.prisma.order.create({
         data: {
           ...(createOrderDto as CreateStudentOrderDto),
@@ -211,12 +219,8 @@ export class OrderService {
           deliveryDate: convertToUnixTimestamp(
             (createOrderDto as CreateStudentOrderDto).deliveryDate
           ),
-          shippingFee: getShippingFee(
-            (createOrderDto as CreateStudentOrderDto).room,
-            (createOrderDto as CreateStudentOrderDto).building,
-            (createOrderDto as CreateStudentOrderDto).dormitory,
-            (createOrderDto as CreateStudentOrderDto).weight
-          ),
+          shippingFee: amount,
+          remainingAmount: amount,
         },
       });
       await createOrderStatusHistory(this.prisma, newOrder.id, 'PENDING');
@@ -541,12 +545,14 @@ export class OrderService {
         }),
         this.prisma.order.count({
           where: {
-            shipperId: user.id,
+            studentId: user.id,
+            latestStatus: {
+              in: ['ACCEPTED', 'DELIVERED'],
+            },
           },
         }),
       ]
     );
-
     let brandPercentages = [];
     if (totalOrders > 0) {
       // Group orders by brand and calculate counts
@@ -556,7 +562,10 @@ export class OrderService {
           brand: true,
         },
         where: {
-          shipperId: user.id,
+          studentId: user.id,
+          latestStatus: {
+            in: ['ACCEPTED', 'DELIVERED'],
+          },
         },
       });
 
