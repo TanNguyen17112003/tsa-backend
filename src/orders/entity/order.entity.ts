@@ -36,4 +36,7 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
   brand: string;
   @IsOptional()
   remainingAmount: number;
+
+  @IsOptional()
+  finishedImage: string;
 }

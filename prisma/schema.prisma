@@ -114,15 +114,17 @@ model Order {
   brand              String?              @db.VarChar(255)
   remainingAmount    Float?
   payment            Payment[]
+  finishedImage      String?              @db.VarChar(255)
 }
 
 model OrderStatusHistory {
-  id      String      @id @default(cuid())
-  orderId String      @db.VarChar(255)
-  order   Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  status  OrderStatus
-  reason  String?     @db.Text
-  time    String      @db.VarChar(255) // Unix timestamp for each time the status changes
+  id            String      @id @default(cuid())
+  orderId       String      @db.VarChar(255)
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status        OrderStatus
+  reason        String?     @db.Text
+  time          String      @db.VarChar(255) // Unix timestamp for each time the status changes
+  canceledImage String?     @db.VarChar(255)
 }
 
 model Delivery {
@@ -134,15 +136,18 @@ model Delivery {
   staff                 Staff?                  @relation(fields: [staffId], references: [staffId])
   DeliveryStatusHistory DeliveryStatusHistory[]
   Notification          Notification[]
+  latestStatus          DeliveryStatus          @default(PENDING)
+  numberOrder           Int                     @default(0)
 }
 
 model DeliveryStatusHistory {
-  id         String         @id @default(cuid())
-  deliveryId String         @db.VarChar(255)
-  delivery   Delivery       @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
-  status     DeliveryStatus
-  reason     String?        @db.Text
-  time       String         @db.VarChar(255) // Unix timestamp for each time the status changes
+  id            String         @id @default(cuid())
+  deliveryId    String         @db.VarChar(255)
+  delivery      Delivery       @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  status        DeliveryStatus
+  reason        String?        @db.Text
+  time          String         @db.VarChar(255) // Unix timestamp for each time the status changes
+  canceledImage String?        @db.VarChar(255)
 }
 
 model Report {

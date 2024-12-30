@@ -1,11 +1,23 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { $Enums } from '@prisma/client';
+import {
+  BadRequestException,
+  Injectable,
+  NotImplementedException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
-import { CreateAdminOrderDto, CreateStudentOrderDto, OrderQueryDto } from './dtos';
+import {
+  CreateAdminOrderDto,
+  CreateStudentOrderDto,
+  OrderCancelReason,
+  OrderQueryDto,
+  StaffOrdersStatsDto,
+  StudentOrdersStatsDto,
+  UpdateStatusDto,
+} from './dtos';
 import { GetOrderResponseDto } from './dtos/response.dto';
 import { ShippingFeeDto } from './dtos/shippingFee.dto';
 import {
@@ -15,6 +27,7 @@ import {
   getHistoryTimee,
   getLatestOrderStatus,
   getShippingFee,
+  shortenUUID,
   validateUserForOrder,
 } from './utils/order.util';
 
@@ -143,25 +156,33 @@ export class OrderService {
           !existingOrder.building &&
           !existingOrder.dormitory
         ) {
+          const amount = getShippingFee(
+            (createOrderDto as CreateStudentOrderDto).room,
+            (createOrderDto as CreateStudentOrderDto).building,
+            (createOrderDto as CreateStudentOrderDto).dormitory,
+            (createOrderDto as CreateStudentOrderDto).weight
+          );
           await this.prisma.order.update({
             where: { id: existingOrder.id },
             data: {
               studentId: user.id,
-              shippingFee: getShippingFee(
-                (createOrderDto as CreateStudentOrderDto).room,
-                (createOrderDto as CreateStudentOrderDto).building,
-                (createOrderDto as CreateStudentOrderDto).dormitory,
-                (createOrderDto as CreateStudentOrderDto).weight
-              ),
+              shippingFee: amount,
               deliveryDate: convertToUnixTimestamp(
                 (createOrderDto as CreateStudentOrderDto).deliveryDate
               ),
               room: (createOrderDto as CreateStudentOrderDto).room,
               building: (createOrderDto as CreateStudentOrderDto).building,
               dormitory: (createOrderDto as CreateStudentOrderDto).dormitory,
+              remainingAmount: amount,
             },
           });
-          await this.updateStatus(existingOrder.id, 'ACCEPTED', user);
+          await this.updateStatus(
+            existingOrder.id,
+            {
+              status: 'ACCEPTED',
+            },
+            user
+          );
           await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
 
           const historyTime = await getHistoryTimee(this.prisma, existingOrder.id);
@@ -184,6 +205,12 @@ export class OrderService {
           throw new BadRequestException('Bạn đã tạo đơn hàng này rồi!');
         }
       }
+      const amount = getShippingFee(
+        (createOrderDto as CreateStudentOrderDto).room,
+        (createOrderDto as CreateStudentOrderDto).building,
+        (createOrderDto as CreateStudentOrderDto).dormitory,
+        (createOrderDto as CreateStudentOrderDto).weight
+      );
       const newOrder = await this.prisma.order.create({
         data: {
           ...(createOrderDto as CreateStudentOrderDto),
@@ -192,12 +219,8 @@ export class OrderService {
           deliveryDate: convertToUnixTimestamp(
             (createOrderDto as CreateStudentOrderDto).deliveryDate
           ),
-          shippingFee: getShippingFee(
-            (createOrderDto as CreateStudentOrderDto).room,
-            (createOrderDto as CreateStudentOrderDto).building,
-            (createOrderDto as CreateStudentOrderDto).dormitory,
-            (createOrderDto as CreateStudentOrderDto).weight
-          ),
+          shippingFee: amount,
+          remainingAmount: amount,
         },
       });
       await createOrderStatusHistory(this.prisma, newOrder.id, 'PENDING');
@@ -206,7 +229,7 @@ export class OrderService {
         userId: user.id,
         message: {
           title: 'Tạo đơn hàng thành công',
-          message: `Đơn hàng ${newOrder.checkCode} của bạn đã được tạo thành công. Vui lòng chờ admin xác nhận`,
+          message: `Đơn hàng ${shortenUUID(newOrder.checkCode, 'ORDER')} của bạn đã được tạo thành công. Vui lòng chờ admin xác nhận`,
         },
       });
       return {
@@ -231,12 +254,18 @@ export class OrderService {
         ) {
           throw new BadRequestException('Đơn hàng này đã được tạo trước đó từ quản trị viên!');
         }
-        await this.updateStatus(existingOrder.id, 'ACCEPTED', user);
+        await this.updateStatus(
+          existingOrder.id,
+          {
+            status: 'ACCEPTED',
+          },
+          user
+        );
         await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
         await this.notificationService.sendNotification({
           type: 'ORDER',
           title: 'Xác nhận đơn hàng',
-          content: `Đơn hàng ${existingOrder.checkCode} của bạn đã được xác nhận`,
+          content: `Đơn hàng Đơn hàng ${shortenUUID(existingOrder.checkCode, 'ORDER')} của bạn đã được xác nhận`,
           orderId: existingOrder.id,
           userId: existingOrder.studentId,
           deliveryId: undefined,
@@ -309,10 +338,26 @@ export class OrderService {
     return { message: 'Order updated', data: { ...order, latestStatus, historyTime } };
   }
 
-  async updateStatus(id: string, status: $Enums.OrderStatus, user: GetUserType) {
+  async updateStatus(id: string, updateStatusDto: UpdateStatusDto, user: GetUserType) {
     const order = await this.prisma.order.findUnique({ where: { id } });
     if (!order) {
       throw new BadRequestException('Order not found');
+    }
+    const { status, canceledImage, reason, finishedImage, distance, cancelReasonType } =
+      updateStatusDto;
+    // Check if staff already in the acceptable zone of finish order
+    if (status === 'DELIVERED' && distance && distance < 150) {
+      throw new BadRequestException(
+        'Bạn cần phải ở trong vùng hoàn thành đơn hàng, tối thiểu 150m'
+      );
+    }
+    // Check if staff has already captured the image of the order when delivering
+    if (status === 'DELIVERED' && !finishedImage) {
+      throw new BadRequestException('Cần phải có hình ảnh khi giao hàng');
+    }
+
+    if (status === 'CANCELED') {
+      this.handleCancelDelivery(cancelReasonType, canceledImage, reason);
     }
     // For staff update status of order to DELIVERED and payment method is CASH
     if (user.role === 'STAFF' && status === 'DELIVERED' && order.paymentMethod === 'CASH') {
@@ -327,7 +372,7 @@ export class OrderService {
     await this.notificationService.sendNotification({
       type: 'ORDER',
       title: 'Thay đổi trạng thái đơn hàng',
-      content: `Đơn hàng ${order.checkCode} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
+      content: `Đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
       orderId: order.id,
       userId: order.studentId,
       deliveryId: undefined,
@@ -337,14 +382,21 @@ export class OrderService {
       userId: order.studentId,
       message: {
         title: 'Thay đổi trạng thái đơn hàng',
-        message: `Đơn hàng ${order.checkCode} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
+        message: `Đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
         body: {
           type: 'ORDER',
           orderId: order.id,
         },
       },
     });
-    await createOrderStatusHistory(this.prisma, id, status);
+    await createOrderStatusHistory(
+      this.prisma,
+      id,
+      status,
+      canceledImage,
+      this.mapTypeToReason(cancelReasonType, reason),
+      finishedImage
+    );
     return { message: 'Order status updated' };
   }
 
@@ -380,4 +432,193 @@ export class OrderService {
     const shippingFee = getShippingFee(room, building, dormitory, weight);
     return { shippingFee };
   }
+
+  async getOrdersStats(
+    type: 'week' | 'month' | 'year',
+    user: GetUserType
+  ): Promise<StaffOrdersStatsDto | StudentOrdersStatsDto> {
+    if (user.role === 'ADMIN') {
+      throw new NotImplementedException();
+    }
+    if (user.role === 'STAFF') {
+      return this.getOrdersStatsForStaff(type, user);
+    }
+    return this.getOrdersStatsForStudent(user);
+  }
+
+  private async getOrdersStatsForStaff(
+    type: 'week' | 'month' | 'year',
+    user: GetUserType
+  ): Promise<StaffOrdersStatsDto> {
+    const now = Math.floor(Date.now() / 1000);
+    let startTime: number;
+
+    switch (type) {
+      case 'week':
+        startTime = now - 7 * 24 * 60 * 60;
+        break;
+      case 'month':
+        startTime = now - 30 * 24 * 60 * 60;
+        break;
+      case 'year':
+        startTime = now - 365 * 24 * 60 * 60;
+        break;
+      default:
+        throw new BadRequestException('Invalid type');
+    }
+
+    const stats = await this.prisma.order.aggregate({
+      _count: true,
+      _sum: {
+        shippingFee: true,
+      },
+      where: {
+        shipperId: user.id,
+        deliveryDate: {
+          gte: startTime.toString(),
+        },
+      },
+    });
+    console.log('Stats: ', stats);
+
+    const totalOrders = await this.prisma.order.count({
+      where: {
+        shipperId: user.id,
+        deliveryDate: {
+          gte: startTime.toString(),
+        },
+      },
+    });
+    let brandPercentages = [];
+    if (totalOrders > 0) {
+      // Group orders by brand and calculate counts
+      const ordersByBrand = await this.prisma.order.groupBy({
+        by: ['brand'],
+        _count: {
+          brand: true,
+        },
+        where: {
+          shipperId: user.id,
+          deliveryDate: {
+            gte: startTime.toString(),
+          },
+        },
+      });
+
+      // Calculate percentage for each brand
+      brandPercentages = ordersByBrand.map((entry) => ({
+        brand: entry.brand || 'Unknown',
+        count: entry._count.brand,
+        percentage: ((entry._count.brand / totalOrders) * 100).toFixed(2),
+      }));
+    }
+
+    return {
+      totalOrders: stats._count || 0,
+      totalShippingFee: stats._sum.shippingFee || 0,
+      brandPercentages,
+    };
+  }
+
+  private async getOrdersStatsForStudent(user: GetUserType): Promise<StudentOrdersStatsDto> {
+    const now = Math.floor(Date.now() / 1000);
+    const lastWeek = now - 7 * 24 * 60 * 60;
+    const lastMonth = now - 30 * 24 * 60 * 60;
+
+    const [totalOrdersLastWeek, totalOrdersLastMonth, totalOrders] = await this.prisma.$transaction(
+      [
+        this.prisma.order.count({
+          where: {
+            studentId: user.id,
+            deliveryDate: {
+              gte: lastWeek.toString(),
+            },
+          },
+        }),
+        this.prisma.order.count({
+          where: {
+            studentId: user.id,
+            deliveryDate: {
+              gte: lastMonth.toString(),
+            },
+          },
+        }),
+        this.prisma.order.count({
+          where: {
+            shipperId: user.id,
+          },
+        }),
+      ]
+    );
+
+    let brandPercentages = [];
+    if (totalOrders > 0) {
+      // Group orders by brand and calculate counts
+      const ordersByBrand = await this.prisma.order.groupBy({
+        by: ['brand'],
+        _count: {
+          brand: true,
+        },
+        where: {
+          shipperId: user.id,
+        },
+      });
+
+      // Calculate percentage for each brand
+      brandPercentages = ordersByBrand.map((entry) => ({
+        brand: entry.brand || 'Unknown',
+        count: entry._count.brand,
+        percentage: ((entry._count.brand / totalOrders) * 100).toFixed(2),
+      }));
+    }
+
+    return {
+      totalOrdersLastWeek,
+      totalOrdersLastMonth,
+      brandPercentages,
+    };
+  }
+
+  handleCancelDelivery = (
+    cancelReasonType?: OrderCancelReason,
+    canceledImage?: string,
+    reason?: string
+  ) => {
+    if (!cancelReasonType) {
+      throw new BadRequestException('Cần phải có lý do khi hủy chuyến đi');
+    }
+    if (cancelReasonType === OrderCancelReason.OTHER && !reason) {
+      throw new BadRequestException('Cần phải có lý do khi chọn lý do hủy là khác');
+    }
+    if (
+      !(cancelReasonType in [OrderCancelReason.PERSONAL_REASON, OrderCancelReason.OTHER]) &&
+      !canceledImage
+    ) {
+      throw new BadRequestException(
+        'Cần phải có hình ảnh khi chọn lý do hủy không phải là lý do cá nhân'
+      );
+    }
+  };
+  mapTypeToReason = (cancelReasonType: OrderCancelReason, reason?: string) => {
+    switch (cancelReasonType) {
+      case OrderCancelReason.WRONG_ADDRESS:
+        return 'Sai địa chỉ';
+      case OrderCancelReason.CAN_NOT_CONTACT:
+        return 'Không liên lạc được';
+      case OrderCancelReason.PAYMENT_ISSUE:
+        return 'Vấn đề thanh toán';
+      case OrderCancelReason.DAMAGED_PRODUCT:
+        return 'Sản phẩm bị hỏng';
+      case OrderCancelReason.HEAVY_PRODUCT:
+        return 'Sản phẩm quá nặng';
+      case OrderCancelReason.PERSONAL_REASON:
+        return 'Lý do cá nhân';
+      case OrderCancelReason.DAMEGED_VEHICLE:
+        return 'Xe hỏng';
+      case OrderCancelReason.OTHER:
+        return reason;
+      default:
+        return 'Khác';
+    }
+  };
 }

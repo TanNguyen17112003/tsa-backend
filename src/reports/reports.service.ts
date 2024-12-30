@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { checkRowLevelPermission } from 'src/auth';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { NotificationsService } from 'src/notifications/notifications.service';
-import { convertToUnixTimestamp } from 'src/orders/utils/order.util';
+import { convertToUnixTimestamp, shortenUUID } from 'src/orders/utils/order.util';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
@@ -90,7 +90,7 @@ export class ReportsService {
       this.notificationsService.sendNotification({
         type: 'REPORT',
         title: 'Phản hồi khiếu nại',
-        content: `Khiếu nại cho đơn hàng ${order.checkCode} của bạn đã được phản hồi`,
+        content: `Khiếu nại cho đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã được phản hồi`,
         reportId: report.id,
         userId: report.studentId,
         deliveryId: undefined,

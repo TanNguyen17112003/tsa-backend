@@ -11,4 +11,6 @@ export class OrderStatusHistoryEntity
   @IsOptional()
   reason: string;
   time: string;
+  @IsOptional()
+  canceledImage: string;
 }
