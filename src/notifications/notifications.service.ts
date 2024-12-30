@@ -46,13 +46,24 @@ export class NotificationsService {
         uid: createNotificationDto.userId,
       },
     });
+    const targetUser = await this.prisma.user.findUnique({
+      where: {
+        id: createNotificationDto.userId,
+      },
+    });
     if (foundUser && foundUser.email) {
       const mailOptions = {
         from: `TSA <${process.env.SMTP_GMAIL}>`,
         to: foundUser.email,
         subject: createNotificationDto.title,
         html: `
-          <p>${createNotificationDto.content}</p>
+        <div>
+          <h2>Xin chào ${targetUser.lastName} ${targetUser.firstName}</h2>
+          <p>${createNotificationDto.content}!</p>
+          <p>Mọi thắc mắc xin vui lòng liên hệ qua <a href=${process.env.SMTP_GMAIL}>${process.env.SMTP_GMAIL}</a></p>
+          <p>Xin kính chức sức khỏe và may mắn!</p>
+          <p style="color:blue;font-weight:bold">TSA_ADMIN</p>
+        </div>
         `,
       };
       await this.transporter.sendMail(mailOptions);
