@@ -545,12 +545,14 @@ export class OrderService {
         }),
         this.prisma.order.count({
           where: {
-            shipperId: user.id,
+            studentId: user.id,
+            latestStatus: {
+              in: ['ACCEPTED', 'DELIVERED'],
+            },
           },
         }),
       ]
     );
-
     let brandPercentages = [];
     if (totalOrders > 0) {
       // Group orders by brand and calculate counts
@@ -560,7 +562,10 @@ export class OrderService {
           brand: true,
         },
         where: {
-          shipperId: user.id,
+          studentId: user.id,
+          latestStatus: {
+            in: ['ACCEPTED', 'DELIVERED'],
+          },
         },
       });
 
