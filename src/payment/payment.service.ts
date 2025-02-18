@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import PayOS from '@payos/node';
+import { WebhookType } from '@payos/node/lib/type';
 import axios from 'axios';
 import * as crypto from 'crypto';
 import moment from 'moment';
@@ -21,6 +22,7 @@ export class PaymentService {
   private readonly clientId: string;
   private readonly apiKey: string;
   private readonly checksumKey: string;
+  private readonly payOS: PayOS;
 
   constructor(
     private configService: ConfigService,
@@ -35,6 +37,8 @@ export class PaymentService {
     this.clientId = this.configService.get<string>('PAYOS_CLIENT_ID');
     this.apiKey = this.configService.get<string>('PAYOS_API_KEY');
     this.checksumKey = this.configService.get<string>('PAYOS_CHECKSUM_KEY');
+
+    this.payOS = new PayOS(this.clientId, this.apiKey, this.checksumKey);
   }
 
   async createMomoPayment(createPaymentDto: MomoRequestDto) {
@@ -74,7 +78,6 @@ export class PaymentService {
     if (!order) {
       throw new Error('Order not found');
     }
-    const payos = new PayOS(this.clientId, this.apiKey, this.checksumKey);
     const orderCode = Number(moment().format('X')) + Math.floor(Math.random() * 1000);
     const payOsOrder = {
       amount: createPaymentDto.amount,
@@ -83,7 +86,8 @@ export class PaymentService {
       returnUrl: createPaymentDto.returnUrl,
       cancelUrl: createPaymentDto.cancelUrl,
     };
-    const paymentLink = await payos.createPaymentLink(payOsOrder);
+
+    const paymentLink = await this.payOS.createPaymentLink(payOsOrder);
     await this.prisma.payment.create({
       data: {
         amount: createPaymentDto.amount,
@@ -93,14 +97,23 @@ export class PaymentService {
     });
     return { paymentLink };
   }
-  async handleWebhook(body: any) {
+
+  async handleWebhook(body: WebhookType) {
     console.log('Received webhook', body);
+    const isValid = this.payOS.verifyPaymentWebhookData(body);
+    if (!isValid) {
+      throw new Error('Invalid signature');
+    }
+
     const data = body.data;
+
     const { orderCode, amount, counterAccountName, counterAccountNumber, counterAccountBankName } =
       data;
+
     if (orderCode === 123) {
       return;
     }
+
     const payment = await this.prisma.payment.findFirst({
       where: {
         orderCode: orderCode.toString(),
