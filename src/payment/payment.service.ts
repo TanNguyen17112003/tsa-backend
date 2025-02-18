@@ -100,89 +100,93 @@ export class PaymentService {
 
   async handleWebhook(body: WebhookType) {
     console.log('Received webhook', body);
-    const isValid = this.payOS.verifyPaymentWebhookData(body);
-    if (!isValid) {
-      throw new Error('Invalid signature');
-    }
 
-    const data = body.data;
+    try {
+      const isValid = this.payOS.verifyPaymentWebhookData(body);
+      if (!isValid) {
+        console.error('Invalid signature in webhook:', body);
+        throw new Error('Invalid signature');
+      }
 
-    const { orderCode, amount, counterAccountName, counterAccountNumber, counterAccountBankName } =
-      data;
-
-    if (orderCode === 123) {
-      return;
-    }
-
-    const payment = await this.prisma.payment.findFirst({
-      where: {
-        orderCode: orderCode.toString(),
-      },
-    });
-    if (!payment) {
-      throw new Error('Payment not found');
-    }
-    const order = await this.prisma.order.findUnique({
-      where: {
-        id: payment.orderId,
-      },
-    });
-    if (!order) {
-      throw new Error('Order not found');
-    }
-    const updatedOrder = await this.prisma.order.update({
-      where: {
-        id: order.id,
-      },
-      data: {
-        remainingAmount: order.remainingAmount - amount,
-        isPaid: order.remainingAmount - amount <= 0,
-      },
-    });
-    await this.prisma.payment.update({
-      where: {
-        id: payment.id,
-      },
-      data: {
-        isPaid: true,
+      const {
+        orderCode,
+        amount,
         counterAccountName,
         counterAccountNumber,
         counterAccountBankName,
-      },
-    });
-    const title =
-      order.remainingAmount - amount <= 0 ? 'Thanh toán thành công' : 'Thanh toán một phần';
-    const content =
-      order.remainingAmount - amount <= 0
-        ? `Đơn hàng ${order.id} đã được thanh toán thành công`
-        : `Đã thanh toán ${amount.toLocaleString('vi-VN', {
-            style: 'currency',
-            currency: 'VND',
-          })} cho đơn hàng ${order.id}. Còn lại ${order.remainingAmount.toLocaleString('vi-VN', {
-            style: 'currency',
-            currency: 'VND',
-          })}`;
+      } = body.data;
 
-    await this.notificationService.sendNotification({
-      title,
-      type: 'ORDER',
-      content,
-      userId: order.studentId,
-      orderId: order.id,
-      deliveryId: null,
-      reportId: null,
-    });
-    await this.notificationService.sendPushNotification({
-      message: {
+      if (orderCode === 123) {
+        console.log('Ignoring test orderCode 123');
+        return;
+      }
+
+      // Start a transaction to prevent race conditions
+      const updatedOrder = await this.prisma.$transaction(async (tx) => {
+        const payment = await tx.payment.findFirst({
+          where: { orderCode: orderCode.toString() },
+        });
+        if (!payment) throw new Error('Payment not found');
+
+        const order = await tx.order.findUnique({
+          where: { id: payment.orderId },
+        });
+        if (!order) throw new Error('Order not found');
+
+        const newRemainingAmount = order.remainingAmount - amount;
+        const isPaid = newRemainingAmount <= 0;
+
+        const updatedOrder = await tx.order.update({
+          where: { id: order.id },
+          data: {
+            remainingAmount: newRemainingAmount,
+            isPaid,
+          },
+        });
+
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: {
+            isPaid: true,
+            counterAccountName,
+            counterAccountNumber,
+            counterAccountBankName,
+          },
+        });
+
+        return updatedOrder;
+      });
+
+      const title = updatedOrder.isPaid ? 'Thanh toán thành công' : 'Thanh toán một phần';
+      const content = updatedOrder.isPaid
+        ? `Đơn hàng ${updatedOrder.id} đã được thanh toán thành công`
+        : `Đã thanh toán ${amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })} 
+           cho đơn hàng ${updatedOrder.id}. Còn lại ${updatedOrder.remainingAmount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}`;
+
+      await this.notificationService.sendNotification({
         title,
-        message: content,
-      },
-      userId: order.studentId,
-    });
-    this.paymentGateway.notifyPaymentUpdate(order.id, {
-      orderId: order.id,
-      isPaid: updatedOrder.isPaid,
-      remainingAmount: updatedOrder.remainingAmount,
-    });
+        type: 'ORDER',
+        content,
+        userId: updatedOrder.studentId,
+        orderId: updatedOrder.id,
+        deliveryId: null,
+        reportId: null,
+      });
+
+      await this.notificationService.sendPushNotification({
+        message: { title, message: content },
+        userId: updatedOrder.studentId,
+      });
+
+      this.paymentGateway.notifyPaymentUpdate(updatedOrder.id, {
+        orderId: updatedOrder.id,
+        isPaid: updatedOrder.isPaid,
+        remainingAmount: updatedOrder.remainingAmount,
+      });
+
+      console.log(`Payment successfully processed for order ${updatedOrder.id}`);
+    } catch (error) {
+      console.error('Error processing webhook:', error);
+    }
   }
 }
