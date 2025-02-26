@@ -63,6 +63,13 @@ export class OrdersController {
     return this.orderService.getOrdersStats(type, user);
   }
 
+  @AllowAuthenticated('STAFF', 'STUDENT')
+  @ApiOkResponse({ type: OrderEntity })
+  @Get('current')
+  async getCurrentOrder(@GetUser() user: GetUserType) {
+    return this.orderService.getCurrentOrder(user);
+  }
+
   @AllowAuthenticated()
   @ApiOkResponse({ type: OrderEntity })
   @Get(':id')

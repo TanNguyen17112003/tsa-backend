@@ -12,7 +12,6 @@ import { GetUserType } from 'src/types';
 import {
   CreateAdminOrderDto,
   CreateStudentOrderDto,
-  OrderCancelReason,
   OrderQueryDto,
   StaffOrdersStatsDto,
   StudentOrdersStatsDto,
@@ -27,6 +26,8 @@ import {
   getHistoryTimee,
   getLatestOrderStatus,
   getShippingFee,
+  handleCancelDelivery,
+  mapTypeToReason,
   shortenUUID,
   validateUserForOrder,
 } from './utils/order.util';
@@ -357,7 +358,7 @@ export class OrderService {
     }
 
     if (status === 'CANCELED') {
-      this.handleCancelDelivery(cancelReasonType, canceledImage, reason);
+      handleCancelDelivery(cancelReasonType, canceledImage, reason);
     }
     // For staff update status of order to DELIVERED and payment method is CASH
     if (user.role === 'STAFF' && status === 'DELIVERED' && order.paymentMethod === 'CASH') {
@@ -394,7 +395,7 @@ export class OrderService {
       id,
       status,
       canceledImage,
-      this.mapTypeToReason(cancelReasonType, reason),
+      mapTypeToReason(cancelReasonType, reason),
       finishedImage
     );
     return { message: 'Order status updated' };
@@ -579,46 +580,22 @@ export class OrderService {
     };
   }
 
-  handleCancelDelivery = (
-    cancelReasonType?: OrderCancelReason,
-    canceledImage?: string,
-    reason?: string
-  ) => {
-    if (!cancelReasonType) {
-      throw new BadRequestException('Cần phải có lý do khi hủy chuyến đi');
-    }
-    if (cancelReasonType === OrderCancelReason.OTHER && !reason) {
-      throw new BadRequestException('Cần phải có lý do khi chọn lý do hủy là khác');
-    }
-    if (
-      !(cancelReasonType in [OrderCancelReason.PERSONAL_REASON, OrderCancelReason.OTHER]) &&
-      !canceledImage
-    ) {
-      throw new BadRequestException(
-        'Cần phải có hình ảnh khi chọn lý do hủy không phải là lý do cá nhân'
-      );
-    }
-  };
-  mapTypeToReason = (cancelReasonType: OrderCancelReason, reason?: string) => {
-    switch (cancelReasonType) {
-      case OrderCancelReason.WRONG_ADDRESS:
-        return 'Sai địa chỉ';
-      case OrderCancelReason.CAN_NOT_CONTACT:
-        return 'Không liên lạc được';
-      case OrderCancelReason.PAYMENT_ISSUE:
-        return 'Vấn đề thanh toán';
-      case OrderCancelReason.DAMAGED_PRODUCT:
-        return 'Sản phẩm bị hỏng';
-      case OrderCancelReason.HEAVY_PRODUCT:
-        return 'Sản phẩm quá nặng';
-      case OrderCancelReason.PERSONAL_REASON:
-        return 'Lý do cá nhân';
-      case OrderCancelReason.DAMEGED_VEHICLE:
-        return 'Xe hỏng';
-      case OrderCancelReason.OTHER:
-        return reason;
-      default:
-        return 'Khác';
-    }
-  };
+  async getCurrentOrder(user: GetUserType) {
+    const order = await this.prisma.order.findFirst({
+      where: {
+        OR: [
+          {
+            studentId: user.id,
+            latestStatus: 'IN_TRANSPORT',
+          },
+          {
+            shipperId: user.id,
+            latestStatus: 'IN_TRANSPORT',
+          },
+        ],
+      },
+    });
+    console.log('Current order: ', order);
+    return order || null;
+  }
 }
