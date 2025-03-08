@@ -346,7 +346,7 @@ export class OrderService {
     const { status, canceledImage, reason, finishedImage, distance, cancelReasonType } =
       updateStatusDto;
     // Check if staff already in the acceptable zone of finish order
-    if (status === 'DELIVERED' && distance && distance < 150) {
+    if (status === 'DELIVERED' && distance && distance > 150) {
       throw new BadRequestException(
         'Bạn cần phải ở trong vùng hoàn thành đơn hàng, tối thiểu 150m'
       );
@@ -545,12 +545,14 @@ export class OrderService {
         }),
         this.prisma.order.count({
           where: {
-            shipperId: user.id,
+            studentId: user.id,
+            latestStatus: {
+              in: ['ACCEPTED', 'DELIVERED'],
+            },
           },
         }),
       ]
     );
-
     let brandPercentages = [];
     if (totalOrders > 0) {
       // Group orders by brand and calculate counts
@@ -560,7 +562,10 @@ export class OrderService {
           brand: true,
         },
         where: {
-          shipperId: user.id,
+          studentId: user.id,
+          latestStatus: {
+            in: ['ACCEPTED', 'DELIVERED'],
+          },
         },
       });
 
