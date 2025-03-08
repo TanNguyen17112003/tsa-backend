@@ -8,19 +8,18 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
-import { AllowAuthenticated } from 'src/auth';
+import { Auth } from 'src/auth';
 
 import { CloudinaryService } from './cloudinary.service';
 
-@ApiTags('Cloud')
-@ApiBearerAuth('JWT-Auth')
 @Controller('api/cloudinary')
+@ApiTags('Cloud')
 export class CloudinaryController {
   constructor(private readonly cloudinaryService: CloudinaryService) {}
 
-  @AllowAuthenticated('STUDENT', 'STAFF')
+  @Auth('STUDENT', 'STAFF')
   @ApiOperation({ summary: 'Upload image to Cloudinary' })
   @Post('')
   @UseInterceptors(FileInterceptor('image', { storage: memoryStorage() }))
@@ -34,7 +33,7 @@ export class CloudinaryController {
     }
   }
 
-  @AllowAuthenticated('STUDENT')
+  @Auth('STUDENT')
   @ApiOperation({ summary: 'Update new image to Cloudinary' })
   @Put(':id')
   @UseInterceptors(FileInterceptor('image', { storage: memoryStorage() }))
@@ -48,7 +47,7 @@ export class CloudinaryController {
     }
   }
 
-  @AllowAuthenticated('STUDENT')
+  @Auth('STUDENT')
   @ApiOperation({ summary: 'Delete image from Cloudinary' })
   @Delete(':id')
   async deleteImage(@Param('id') id: string) {
