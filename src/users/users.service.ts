@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UserRole, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma';
@@ -8,7 +9,10 @@ import { StudentEntity, UserEntity } from './entities';
 
 @Injectable()
 export class UsersService {
-  constructor(private prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly configService: ConfigService
+  ) {}
 
   async getUsers(): Promise<UserEntity[]> {
     const users = await this.prismaService.user.findMany({
@@ -96,53 +100,45 @@ export class UsersService {
     return updatedUser;
   }
 
-  async findByEmail(email: string): Promise<UserEntity | null> {
-    const credential = await this.prismaService.credentials.findUnique({ where: { email } });
-    if (!credential) {
-      return null;
-    }
+  // async findByEmail(email: string): Promise<UserEntity | null> {
+  //   const credential = await this.prismaService.credentials.findUnique({ where: { email } });
+  //   if (!credential) {
+  //     return null;
+  //   }
 
-    const user = await this.prismaService.user.findUnique({
-      where: { id: credential.uid },
-    });
-    return {
-      ...user,
-      email: credential.email,
-    };
-  }
+  //   const user = await this.prismaService.user.findUnique({
+  //     where: { id: credential.uid },
+  //   });
+  //   return {
+  //     ...user,
+  //     email: credential.email,
+  //   };
+  // }
 
-  async findById(id: string): Promise<UserEntity | null> {
+  async findById(id: string): Promise<UserEntity> {
     const user = await this.prismaService.user.findUnique({
       where: { id },
     });
     if (!user) {
-      return null;
+      throw new NotFoundException('User not found');
     }
-    const credentials = await this.prismaService.credentials.findUnique({
-      where: { uid: id },
-    });
-    return {
-      ...user,
-      email: credentials?.email || null,
-    };
-  }
 
-  async findStudentById(id: string): Promise<StudentEntity | null> {
-    const user = await this.findById(id);
-    if (!user) {
-      return null;
+    const { password, ...userInfo } = user;
+    let studentAdditionalInfo = null;
+    if (user.role === UserRole.STUDENT) {
+      const student = await this.prismaService.student.findUnique({
+        where: { studentId: id },
+      });
+      studentAdditionalInfo = {
+        dormitory: student.dormitory,
+        building: student.building,
+        room: student.room,
+      };
     }
-    const student = await this.prismaService.student.findUnique({
-      where: { studentId: id },
-    });
     return {
-      ...user,
-      ...student,
+      ...userInfo,
+      ...studentAdditionalInfo,
     };
-  }
-
-  async findAll(): Promise<UserEntity[]> {
-    return this.prismaService.user.findMany();
   }
 
   async updateStudentById(id: string, data: UpdateStudentDto): Promise<StudentEntity> {
@@ -173,24 +169,24 @@ export class UsersService {
   }
 
   async updatePassword(userId: string, updatePasswordDto: UpdatePasswordDto): Promise<void> {
-    const currentCredential = await this.prismaService.credentials.findUnique({
-      where: { uid: userId },
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
     });
-    if (!currentCredential) {
+    if (!user) {
       throw new BadRequestException('Người dùng không tồn tại');
     }
 
-    const comparison = await bcrypt.compare(
-      updatePasswordDto.currentPassword,
-      currentCredential.password
-    );
+    const comparison = await bcrypt.compare(updatePasswordDto.currentPassword, user.password);
     if (!comparison) {
       throw new BadRequestException('Mật khẩu hiện tại không đúng');
     }
 
-    const hash = await bcrypt.hash(updatePasswordDto.newPassword, Number(process.env.SALT_ROUNDS));
-    await this.prismaService.credentials.update({
-      where: { uid: userId },
+    const hash = await bcrypt.hash(
+      updatePasswordDto.newPassword,
+      Number(this.configService.get('SALT_ROUNDS'))
+    );
+    await this.prismaService.user.update({
+      where: { id: userId },
       data: { password: hash },
     });
   }

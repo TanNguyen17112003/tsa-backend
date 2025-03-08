@@ -17,35 +17,29 @@ datasource db {
 
 model User {
   id                String             @id @default(cuid())
+  email             String             @unique @db.VarChar(50)
+  password          String?            @db.VarChar(255)
   firstName         String?            @db.VarChar(50)
   lastName          String?            @db.VarChar(50)
   phoneNumber       String?            @unique @db.VarChar(15)
+  photoUrl          String?            @db.VarChar(500)
   role              UserRole           @default(STUDENT)
-  createdAt         String             @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
+  verified          Boolean            @default(false)
+  createdAt         DateTime           @default(now()) @db.Timestamptz(3)
   student           Student?
   staff             Staff?
   admin             Admin?
-  verified          Boolean            @default(false)
   verificationEmail VerificationEmail?
-  Credentials       Credentials?
   AuthProvider      AuthProvider?
   refreshTokens     RefreshToken[]
-  photoUrl          String?            @db.VarChar(500)
   Notification      Notification[]
   DeviceToken       DeviceToken[]
-}
-
-model Credentials {
-  uid      String  @id @default(cuid())
-  user     User    @relation(fields: [uid], references: [id], onDelete: Cascade)
-  email    String  @unique @db.VarChar(50)
-  password String? @db.VarChar(255)
 }
 
 model RefreshToken {
   id        String   @id @default(uuid())
   token     String   @unique
-  expiresAt DateTime
+  expiresAt DateTime @db.Timestamptz(3)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -84,9 +78,9 @@ model Admin {
 model VerificationEmail {
   id        String   @id @default(cuid())
   userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String
-  expiresAt DateTime @default(dbgenerated("now() + interval '3 minutes'"))
+  expiresAt DateTime @default(dbgenerated("now() + interval '3 minutes'")) @db.Timestamptz(3)
 }
 
 model Order {

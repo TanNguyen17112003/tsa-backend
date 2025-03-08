@@ -1,43 +1,42 @@
 // src/reports/reports.controller.ts
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { AllowAuthenticated, GetUser } from 'src/auth';
+import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Auth, GetUser } from 'src/auth';
 import { GetUserType } from 'src/types';
 
 import { CreateReport, ReportQueryDto, UpdateReport } from './dtos';
 import { ReportEntity } from './entity/report.entity';
 import { ReportsService } from './reports.service';
 
-@ApiTags('Reports')
 @Controller('api/reports')
-@ApiBearerAuth('JWT-Auth')
+@ApiTags('Reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
-  @AllowAuthenticated('STUDENT')
-  @ApiCreatedResponse({ type: ReportEntity })
   @Post()
+  @Auth('STUDENT')
+  @ApiCreatedResponse({ type: ReportEntity })
   create(@Body() createReportDto: CreateReport, @GetUser() user: GetUserType) {
     return this.reportsService.createReport(createReportDto, user);
   }
 
-  @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiOkResponse({ type: [ReportEntity] })
   @Get()
+  @Auth('ADMIN', 'STUDENT')
+  @ApiOkResponse({ type: [ReportEntity] })
   findAll(@Query() query: ReportQueryDto, @GetUser() user: GetUserType) {
     return this.reportsService.getReports(query, user);
   }
 
-  @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiOkResponse({ type: ReportEntity })
   @Get(':id')
+  @Auth('ADMIN', 'STUDENT')
+  @ApiOkResponse({ type: ReportEntity })
   findOne(@Param('id') id: string) {
     return this.reportsService.getReport(id);
   }
 
-  @ApiOkResponse({ type: ReportEntity })
-  @AllowAuthenticated()
   @Patch(':id')
+  @Auth()
+  @ApiOkResponse({ type: ReportEntity })
   async update(
     @Param('id') id: string,
     @Body() updateReportDto: UpdateReport,
@@ -46,8 +45,8 @@ export class ReportsController {
     return this.reportsService.updateReport(id, updateReportDto, user);
   }
 
-  @AllowAuthenticated('ADMIN', 'STUDENT')
   @Delete(':id')
+  @Auth('ADMIN', 'STUDENT')
   async remove(@Param('id') id: string, @GetUser() user: GetUserType) {
     return this.reportsService.deleteReport(id, user);
   }

@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { AllowAuthenticated, GetUser } from 'src/auth';
+import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Auth, GetUser } from 'src/auth';
 import { GetUserType } from 'src/types';
 
 import { DeliveriesService } from './deliveries.service';
@@ -13,36 +13,35 @@ import {
 } from './dtos';
 import { DeliveryEntity } from './entities';
 
-@ApiTags('Deliveries')
-@ApiBearerAuth('JWT-Auth')
 @Controller('api/deliveries')
+@ApiTags('Deliveries')
 export class DeliveriesController {
   constructor(private readonly deliveriesService: DeliveriesService) {}
 
-  @AllowAuthenticated('ADMIN')
-  @ApiCreatedResponse({ type: DeliveryEntity })
   @Post()
+  @Auth('ADMIN')
+  @ApiCreatedResponse({ type: DeliveryEntity })
   createDelivery(@Body() createDeliveryDto: CreateDeliveryDto): Promise<DeliveryEntity> {
     return this.deliveriesService.createDelivery(createDeliveryDto);
   }
 
-  @AllowAuthenticated('ADMIN', 'STAFF')
-  @ApiOkResponse({ type: [GetDeliveryDto] })
   @Get()
+  @Auth('ADMIN', 'STAFF')
+  @ApiOkResponse({ type: [GetDeliveryDto] })
   findAllDeliveries(@GetUser() user: GetUserType): Promise<GetDeliveriesDto[]> {
     return this.deliveriesService.getDeliveries(user);
   }
 
-  @AllowAuthenticated()
-  @ApiOkResponse({ type: GetDeliveryDto })
   @Get(':id')
+  @Auth()
+  @ApiOkResponse({ type: GetDeliveryDto })
   findOneDelivery(@Param('id') id: string): Promise<GetDeliveryDto> {
     return this.deliveriesService.getDelivery(id);
   }
 
-  @AllowAuthenticated('ADMIN')
-  @ApiOkResponse({ type: DeliveryEntity })
   @Patch(':id')
+  @Auth('ADMIN')
+  @ApiOkResponse({ type: DeliveryEntity })
   async updateInfo(
     @Param('id') id: string,
     @Body() updateDeliveryDto: UpdateDeliveryDto
@@ -50,9 +49,9 @@ export class DeliveriesController {
     return this.deliveriesService.updateDelivery(id, updateDeliveryDto);
   }
 
-  @AllowAuthenticated('ADMIN', 'STAFF')
-  @ApiOkResponse({ type: DeliveryEntity })
   @Patch('status/:id')
+  @Auth('ADMIN', 'STAFF')
+  @ApiOkResponse({ type: DeliveryEntity })
   async updateStatus(
     @Param('id') id: string,
     @Body() updateStatusDto: UpdateStatusDto,
@@ -61,9 +60,9 @@ export class DeliveriesController {
     return this.deliveriesService.updateDeliveryStatus(id, updateStatusDto, user);
   }
 
-  @AllowAuthenticated('ADMIN')
-  @ApiOkResponse({ type: DeliveryEntity })
   @Delete(':id')
+  @Auth('ADMIN')
+  @ApiOkResponse({ type: DeliveryEntity })
   async remove(@Param('id') id: string): Promise<DeliveryEntity> {
     return this.deliveriesService.deleteDelivery(id);
   }

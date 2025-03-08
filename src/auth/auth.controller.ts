@@ -1,17 +1,29 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { User } from '@prisma/client';
 import { Response } from 'express';
 
 import { AuthService } from './auth.service';
+import { GetUser } from './decorators';
 import {
+  GoogleSignInDto,
   RefreshTokenDto,
   RefreshTokenResultDto,
-  SignInDto,
   SignInResultDto,
   SignUpDto,
-  SignUpDtoInit,
+  SignUpInitDto,
 } from './dto';
-import { GoogleSignInDto } from './dto/google-signin.dto';
+import { LocalAuthGuard } from './guards';
 
 @Controller('api/auth')
 @ApiTags('Auth')
@@ -23,7 +35,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Initiate the Sign up process with user (student) email' })
   @ApiResponse({ status: 201, description: 'Request success' })
   @ApiResponse({ status: 400, description: 'Email already registered' })
-  initiateRegistration(@Body() body: SignUpDtoInit, @Query('mobile') mobile: boolean = false) {
+  initiateRegistration(@Body() body: SignUpInitDto, @Query('mobile') mobile: boolean = false) {
     return this.authService.initiateRegistration(body.email, mobile);
   }
 
@@ -44,16 +56,17 @@ export class AuthController {
   @ApiOperation({ summary: 'Complete the registration process' })
   @ApiResponse({ status: 200, description: 'Registration completed' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
-  completeRegistration(@Body() userData: SignUpDto) {
-    return this.authService.completeRegistration(userData);
+  completeRegistration(@Body() dto: SignUpDto) {
+    return this.authService.completeRegistration(dto);
   }
 
   @Post('signin')
+  @UseGuards(LocalAuthGuard)
   @ApiOperation({ summary: 'Sign in with email and password' })
   @ApiResponse({ status: 200, description: 'OK' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  signIn(@Body() user: SignInDto): Promise<SignInResultDto> {
-    return this.authService.signin(user.email, user.password);
+  signIn(@GetUser() user: User): Promise<SignInResultDto> {
+    return this.authService.signin(user);
   }
 
   @Post('signin/google')

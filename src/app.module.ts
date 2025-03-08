@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { LoggerMiddleware } from 'src/common';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -8,7 +9,6 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { DateModule } from './date/date.module';
 import { DeliveriesModule } from './deliveries';
 import { EmailModule } from './email/email.module';
-import { FirebaseAdminConfigService } from './firebase-admin.config';
 import { GeolocationModule } from './geolocation';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
@@ -34,6 +34,10 @@ import { UsersModule } from './users/users.module';
     GeolocationModule,
   ],
   controllers: [AppController],
-  providers: [AppService, FirebaseAdminConfigService],
+  providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}

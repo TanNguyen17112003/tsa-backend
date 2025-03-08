@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { AllowAuthenticated, GetUser } from 'src/auth';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Auth, GetUser } from 'src/auth';
 import { GetUserType } from 'src/types';
 
 import { CheckPushNotificationDto } from './dto/check-pushNoti.dto';
@@ -11,8 +11,7 @@ import { NotificationsService } from './notifications.service';
 
 @Controller('api/notifications')
 @ApiTags('Notifications')
-@ApiBearerAuth('JWT-Auth')
-@AllowAuthenticated()
+@Auth()
 export class NotificationsController {
   constructor(private notificationsService: NotificationsService) {}
 
