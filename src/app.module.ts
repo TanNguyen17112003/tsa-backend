@@ -5,17 +5,18 @@ import { LoggerMiddleware } from 'src/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { CloudinaryModule } from './cloudinary';
 import { DateModule } from './date/date.module';
 import { DeliveriesModule } from './deliveries';
-import { EmailModule } from './email/email.module';
+import { EmailModule } from './email';
 import { GeolocationModule } from './geolocation';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentModule } from './payment/payment.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReportsModule } from './reports';
-import { UsersModule } from './users/users.module';
+import { TicketsModule } from './tickets';
+import { UsersModule } from './users';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { UsersModule } from './users/users.module';
     PaymentModule,
     NotificationsModule,
     GeolocationModule,
+    TicketsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
