@@ -3,7 +3,14 @@ import { CloudinaryService } from 'src/cloudinary';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
-import { CreateTicketDto, TicketQueryDto, TicketResponseDto } from './dto';
+import {
+  CreateTicketDto,
+  ReplyResponseDto,
+  ReplyTicketDto,
+  TicketQueryDto,
+  TicketResponseDto,
+  UpdateTicketStatusDto,
+} from './dto';
 
 @Injectable()
 export class TicketsService {
@@ -17,11 +24,7 @@ export class TicketsService {
     dto: CreateTicketDto,
     userId: string
   ): Promise<TicketResponseDto> {
-    const savedAttachments = await Promise.all(
-      attachments.map((attachment) =>
-        this.cloudinaryService.uploadImage(attachment.buffer, 'tsa_image/ticket_attachments')
-      )
-    );
+    const savedAttachments = await this.saveTicketAttachments(attachments);
 
     const ticket = await this.prisma.ticket.create({
       data: {
@@ -47,12 +50,16 @@ export class TicketsService {
         attachments: {
           select: {
             fileUrl: true,
+            uploadedAt: true,
           },
         },
       },
     });
 
-    return ticket;
+    return {
+      ...ticket,
+      replies: [],
+    };
   }
 
   findAllTickets(query: TicketQueryDto, user: GetUserType): Promise<TicketResponseDto[]> {
@@ -71,6 +78,21 @@ export class TicketsService {
         attachments: {
           select: {
             fileUrl: true,
+            uploadedAt: true,
+          },
+        },
+        replies: {
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            userId: true,
+            attachments: {
+              select: {
+                fileUrl: true,
+                uploadedAt: true,
+              },
+            },
           },
         },
       },
@@ -98,6 +120,21 @@ export class TicketsService {
         attachments: {
           select: {
             fileUrl: true,
+            uploadedAt: true,
+          },
+        },
+        replies: {
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            userId: true,
+            attachments: {
+              select: {
+                fileUrl: true,
+                uploadedAt: true,
+              },
+            },
           },
         },
       },
@@ -112,5 +149,88 @@ export class TicketsService {
     }
 
     return ticket;
+  }
+
+  async replyToTicket(
+    id: string,
+    attachments: Express.Multer.File[],
+    dto: ReplyTicketDto,
+    user: GetUserType
+  ): Promise<ReplyResponseDto> {
+    if (!(await this.prisma.ticket.findUnique({ where: { id } }))) {
+      throw new NotFoundException('Ticket not found');
+    }
+
+    const savedAttachments = await this.saveTicketAttachments(attachments);
+
+    const reply = await this.prisma.ticketReply.create({
+      data: {
+        content: dto.content,
+        attachments: {
+          create: savedAttachments.map((result) => ({
+            fileUrl: result.secure_url,
+          })),
+        },
+        ticket: {
+          connect: {
+            id,
+          },
+        },
+        user: {
+          connect: {
+            id: user.id,
+          },
+        },
+      },
+      include: {
+        attachments: {
+          select: {
+            fileUrl: true,
+            uploadedAt: true,
+          },
+        },
+      },
+    });
+
+    return reply;
+  }
+
+  updateTicketStatus(id: string, dto: UpdateTicketStatusDto): Promise<TicketResponseDto> {
+    return this.prisma.ticket.update({
+      where: { id },
+      data: {
+        status: dto.status,
+      },
+      include: {
+        attachments: {
+          select: {
+            fileUrl: true,
+            uploadedAt: true,
+          },
+        },
+        replies: {
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            userId: true,
+            attachments: {
+              select: {
+                fileUrl: true,
+                uploadedAt: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  private saveTicketAttachments(attachments: Express.Multer.File[]) {
+    return Promise.all(
+      attachments.map((attachment) =>
+        this.cloudinaryService.uploadImage(attachment.buffer, 'tsa_image/ticket_attachments')
+      )
+    );
   }
 }
