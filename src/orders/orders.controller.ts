@@ -1,13 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import {
-  ApiBearerAuth,
   ApiCreatedResponse,
   ApiExtraModels,
   ApiOkResponse,
   ApiTags,
   getSchemaPath,
 } from '@nestjs/swagger';
-import { AllowAuthenticated, checkRowLevelPermission, GetUser } from 'src/auth';
+import { Auth, checkRowLevelPermission, GetUser } from 'src/auth';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { GetUserType } from 'src/types';
 
@@ -16,27 +15,29 @@ import { ShippingFeeDto } from './dtos/shippingFee.dto';
 import { OrderEntity } from './entity';
 import { OrderService } from './orders.service';
 
-@ApiTags('Orders')
 @Controller('api/orders')
-@ApiBearerAuth('JWT-Auth')
+@ApiTags('Orders')
 @ApiExtraModels(PageResponseDto, GetOrderResponseDto)
 export class OrdersController {
   constructor(private readonly orderService: OrderService) {}
 
-  @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiCreatedResponse({ type: OrderEntity })
   @Post()
+  @Auth('ADMIN', 'STUDENT')
+  @ApiCreatedResponse({ type: OrderEntity })
   create(@Body() createOrderDto: CreateOrderDto, @GetUser() user: GetUserType) {
     checkRowLevelPermission(user, createOrderDto.studentId); // || createOrderDto.adminId
     return this.orderService.createOrder(createOrderDto, user);
   }
-  @AllowAuthenticated()
-  @ApiOkResponse({ type: OrderEntity })
+
   @Get('shipping-fee')
+  @Auth()
+  @ApiOkResponse({ type: OrderEntity })
   async getShippingFee(@Query() query: ShippingFeeDto) {
     return this.orderService.getShippingFee(query);
   }
-  @AllowAuthenticated()
+
+  @Get()
+  @Auth()
   @ApiOkResponse({
     schema: {
       allOf: [
@@ -52,34 +53,33 @@ export class OrdersController {
       ],
     },
   })
-  @Get()
   async findAll(@Query() query: OrderQueryDto, @GetUser() user: GetUserType) {
     return this.orderService.getOrders(query, user);
   }
 
-  @AllowAuthenticated()
   @Get('stats')
+  @Auth()
   getOrdersStats(@Query('type') type: 'week' | 'month' | 'year', @GetUser() user: GetUserType) {
     return this.orderService.getOrdersStats(type, user);
   }
 
-  @AllowAuthenticated('STAFF', 'STUDENT')
-  @ApiOkResponse({ type: OrderEntity })
   @Get('current')
+  @Auth('STAFF', 'STUDENT')
+  @ApiOkResponse({ type: OrderEntity })
   async getCurrentOrder(@GetUser() user: GetUserType) {
     return this.orderService.getCurrentOrder(user);
   }
 
-  @AllowAuthenticated()
-  @ApiOkResponse({ type: OrderEntity })
   @Get(':id')
+  @Auth()
+  @ApiOkResponse({ type: OrderEntity })
   findOne(@Param('id') id: string) {
     return this.orderService.getOrder(id);
   }
 
-  @AllowAuthenticated('ADMIN', 'STUDENT')
-  @ApiOkResponse({ type: OrderEntity })
   @Patch(':id')
+  @Auth('ADMIN', 'STUDENT')
+  @ApiOkResponse({ type: OrderEntity })
   async updateInfo(
     @Param('id') id: string,
     @Body() updateOrderDto: CreateOrderDto,
@@ -88,9 +88,9 @@ export class OrdersController {
     return this.orderService.updateOrderInfo(id, updateOrderDto, user);
   }
 
-  @AllowAuthenticated('ADMIN', 'STAFF')
-  @ApiOkResponse({ type: OrderEntity })
   @Patch('status/:id')
+  @Auth('ADMIN', 'STAFF')
+  @ApiOkResponse({ type: OrderEntity })
   async updateStatus(
     @Param('id') id: string,
     @Body() updateStatusDto: UpdateStatusDto,
@@ -99,8 +99,8 @@ export class OrdersController {
     return this.orderService.updateStatus(id, updateStatusDto, user);
   }
 
-  @AllowAuthenticated('ADMIN', 'STUDENT')
   @Delete(':id')
+  @Auth('ADMIN', 'STUDENT')
   async remove(@Param('id') id: string, @GetUser() user: GetUserType) {
     return this.orderService.deleteOrder(id, user);
   }

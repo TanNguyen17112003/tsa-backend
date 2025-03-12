@@ -1,21 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UploadApiErrorResponse, UploadApiResponse, v2 } from 'cloudinary';
 
 @Injectable()
 export class CloudinaryService {
-  constructor() {
+  private readonly logger = new Logger(CloudinaryService.name);
+
+  constructor(private readonly configService: ConfigService) {
     v2.config({
-      cloud_name: process.env.CLOUD_NAME,
-      api_key: process.env.CLOUD_API_KEY,
-      api_secret: process.env.CLOUD_API_SECRET,
+      cloud_name: this.configService.get<string>('CLOUD_NAME'),
+      api_key: this.configService.get<string>('CLOUD_API_KEY'),
+      api_secret: this.configService.get<string>('CLOUD_API_SECRET'),
     });
   }
 
-  async uploadImage(fileBuffer: Buffer): Promise<UploadApiResponse | UploadApiErrorResponse> {
+  async uploadImage(fileBuffer: Buffer, folder = 'tsa_image'): Promise<UploadApiResponse> {
     return new Promise((resolve, reject) => {
       v2.uploader
-        .upload_stream({ folder: 'tsa_image' }, (error, result) => {
+        .upload_stream({ folder }, (error, result) => {
           if (error) {
+            this.logger.error('Error uploading image', error);
             reject(error);
           } else {
             resolve(result);

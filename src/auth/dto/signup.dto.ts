@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Dormitory } from '@prisma/client';
 import { IsIn, IsOptional, IsString } from 'class-validator';
 
-export class SignUpDtoInit {
+export class SignUpInitDto {
   @IsString()
   @ApiProperty({ example: 'user@example.com', description: 'Email of user' })
   readonly email: string;
