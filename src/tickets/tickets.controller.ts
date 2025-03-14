@@ -10,7 +10,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
 import { Auth, GetUser } from 'src/auth';
 import { GetUserType } from 'src/types';
@@ -33,6 +33,7 @@ export class TicketsController {
   @Post()
   @Auth('STUDENT')
   @UseInterceptors(FilesInterceptor('attachments', 10, { storage: memoryStorage() }))
+  @ApiConsumes('multipart/form-data')
   createTicket(
     @UploadedFiles() attachments: Array<Express.Multer.File>,
     @Body() dto: CreateTicketDto,
@@ -74,6 +75,7 @@ export class TicketsController {
   @Post(':id/replies')
   @Auth('ADMIN', 'STUDENT')
   @UseInterceptors(FilesInterceptor('attachments', 10, { storage: memoryStorage() }))
+  @ApiConsumes('multipart/form-data')
   replyToTicket(
     @Param('id') id: string,
     @UploadedFiles() attachments: Array<Express.Multer.File>,

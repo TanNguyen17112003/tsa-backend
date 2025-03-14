@@ -24,6 +24,10 @@ export class TicketsService {
     dto: CreateTicketDto,
     userId: string
   ): Promise<TicketResponseDto> {
+    if (!(await this.prisma.ticketCategory.findUnique({ where: { id: dto.categoryId } }))) {
+      throw new NotFoundException('Category not found');
+    }
+
     const savedAttachments = await this.saveTicketAttachments(attachments);
 
     const ticket = await this.prisma.ticket.create({

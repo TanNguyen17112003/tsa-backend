@@ -13,4 +13,7 @@ export class CreateTicketDto {
   @IsString()
   @ApiProperty({ name: 'categoryId', description: 'Ticket category ID' })
   readonly categoryId: string;
+
+  @ApiProperty({ type: 'array', items: { type: 'string', format: 'binary' } })
+  readonly attachments: any[];
 }

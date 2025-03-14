@@ -9,7 +9,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { User } from '@prisma/client';
 import { Response } from 'express';
 
@@ -19,6 +19,7 @@ import {
   GoogleSignInDto,
   RefreshTokenDto,
   RefreshTokenResultDto,
+  SignInDto,
   SignInResultDto,
   SignUpDto,
   SignUpInitDto,
@@ -63,6 +64,7 @@ export class AuthController {
   @Post('signin')
   @UseGuards(LocalAuthGuard)
   @ApiOperation({ summary: 'Sign in with email and password' })
+  @ApiBody({ type: SignInDto })
   @ApiResponse({ status: 200, description: 'OK' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   signIn(@GetUser() user: User): Promise<SignInResultDto> {
