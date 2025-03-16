@@ -8,6 +8,16 @@ export class TicketResponseDto {
   @ApiProperty({ name: 'studentId', description: 'Student ID', example: 'efgh5678' })
   readonly studentId: string;
 
+  @ApiProperty({
+    name: 'photoUrl',
+    description: 'Student photo URL',
+    example: 'https://example.com/photo.jpg',
+  })
+  readonly photoUrl: string;
+
+  @ApiProperty({ name: 'studentName', description: 'Student name', example: 'John Doe' })
+  readonly userName: string;
+
   @ApiProperty({ name: 'Ticket title', description: 'Ticket title' })
   readonly title: string;
 
@@ -50,6 +60,16 @@ export class ReplyResponseDto {
 
   @ApiProperty({ name: 'userId', description: 'User ID', example: 'qrst5678' })
   readonly userId: string;
+
+  @ApiProperty({
+    name: 'photoUrl',
+    description: 'User photo URL',
+    example: 'https://example.com/photo.jpg',
+  })
+  readonly photoUrl: string;
+
+  @ApiProperty({ name: 'userName', description: 'User name', example: 'Jane Doe' })
+  readonly userName: string;
 
   @ApiProperty({ name: 'attachments', description: 'Reply attachments' })
   readonly attachments: AttachmentResponseDto[];
