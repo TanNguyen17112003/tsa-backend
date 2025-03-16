@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { omit } from 'lodash';
 import { CloudinaryService } from 'src/cloudinary';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
@@ -27,7 +28,14 @@ export class TicketsService {
     if (!(await this.prisma.ticketCategory.findUnique({ where: { id: dto.categoryId } }))) {
       throw new NotFoundException('Category not found');
     }
-
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
     const savedAttachments = await this.saveTicketAttachments(attachments);
 
     const ticket = await this.prisma.ticket.create({
@@ -62,11 +70,13 @@ export class TicketsService {
 
     return {
       ...ticket,
+      photoUrl: user.photoUrl,
+      userName: user.lastName + ' ' + user.firstName,
       replies: [],
     };
   }
 
-  findAllTickets(query: TicketQueryDto, user: GetUserType): Promise<TicketResponseDto[]> {
+  async findAllTickets(query: TicketQueryDto, user: GetUserType): Promise<TicketResponseDto[]> {
     const filter = {};
 
     if (user.role === 'STUDENT') {
@@ -76,7 +86,7 @@ export class TicketsService {
       filter['status'] = query.status;
     }
 
-    return this.prisma.ticket.findMany({
+    const tickets = await this.prisma.ticket.findMany({
       where: filter,
       include: {
         attachments: {
@@ -91,6 +101,13 @@ export class TicketsService {
             content: true,
             createdAt: true,
             userId: true,
+            user: {
+              select: {
+                photoUrl: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
             attachments: {
               select: {
                 fileUrl: true,
@@ -99,7 +116,32 @@ export class TicketsService {
             },
           },
         },
+        student: {
+          select: {
+            user: {
+              select: {
+                photoUrl: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
       },
+    });
+
+    return tickets.map((ticket) => {
+      const ticketWithUserDetails = {
+        ...ticket,
+        userName: `${ticket.student.user.firstName} ${ticket.student.user.lastName}`,
+        photoUrl: ticket.student.user.photoUrl,
+        replies: ticket.replies.map((reply) => ({
+          ...reply,
+          userName: `${reply.user.firstName} ${reply.user.lastName}`,
+          photoUrl: reply.user.photoUrl,
+        })),
+      };
+      return omit(ticketWithUserDetails, ['student', 'replies.user']);
     });
   }
 
@@ -133,10 +175,28 @@ export class TicketsService {
             content: true,
             createdAt: true,
             userId: true,
+            user: {
+              select: {
+                photoUrl: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
             attachments: {
               select: {
                 fileUrl: true,
                 uploadedAt: true,
+              },
+            },
+          },
+        },
+        student: {
+          select: {
+            user: {
+              select: {
+                photoUrl: true,
+                firstName: true,
+                lastName: true,
               },
             },
           },
@@ -152,7 +212,18 @@ export class TicketsService {
       throw new NotFoundException('Ticket not found');
     }
 
-    return ticket;
+    const ticketWithUserDetails = {
+      ...ticket,
+      userName: `${ticket.student.user.firstName} ${ticket.student.user.lastName}`,
+      photoUrl: ticket.student.user.photoUrl,
+      replies: ticket.replies.map((reply) => ({
+        ...reply,
+        userName: `${reply.user.firstName} ${reply.user.lastName}`,
+        photoUrl: reply.user.photoUrl,
+      })),
+    };
+
+    return omit(ticketWithUserDetails, ['student', 'replies.user']);
   }
 
   async replyToTicket(
@@ -166,6 +237,11 @@ export class TicketsService {
     }
 
     const savedAttachments = await this.saveTicketAttachments(attachments);
+    const foundUser = await this.prisma.user.findUnique({
+      where: {
+        id: user.id,
+      },
+    });
 
     const reply = await this.prisma.ticketReply.create({
       data: {
@@ -196,11 +272,15 @@ export class TicketsService {
       },
     });
 
-    return reply;
+    return {
+      ...reply,
+      userName: foundUser.lastName + ' ' + foundUser.firstName,
+      photoUrl: foundUser.photoUrl,
+    };
   }
 
-  updateTicketStatus(id: string, dto: UpdateTicketStatusDto): Promise<TicketResponseDto> {
-    return this.prisma.ticket.update({
+  async updateTicketStatus(id: string, dto: UpdateTicketStatusDto): Promise<TicketResponseDto> {
+    const ticket = await this.prisma.ticket.update({
       where: { id },
       data: {
         status: dto.status,
@@ -218,6 +298,13 @@ export class TicketsService {
             content: true,
             createdAt: true,
             userId: true,
+            user: {
+              select: {
+                photoUrl: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
             attachments: {
               select: {
                 fileUrl: true,
@@ -226,8 +313,32 @@ export class TicketsService {
             },
           },
         },
+        student: {
+          select: {
+            user: {
+              select: {
+                photoUrl: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
       },
     });
+
+    const ticketWithUserDetails = {
+      ...ticket,
+      userName: `${ticket.student.user.firstName} ${ticket.student.user.lastName}`,
+      photoUrl: ticket.student.user.photoUrl,
+      replies: ticket.replies.map((reply) => ({
+        ...reply,
+        userName: `${reply.user.firstName} ${reply.user.lastName}`,
+        photoUrl: reply.user.photoUrl,
+      })),
+    };
+
+    return omit(ticketWithUserDetails, ['student', 'replies.user']);
   }
 
   private saveTicketAttachments(attachments: Express.Multer.File[]) {
