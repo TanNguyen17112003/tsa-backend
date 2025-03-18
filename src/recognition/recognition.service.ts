@@ -17,6 +17,7 @@ export class RecognitionService {
     };
 
     const text = await tesseract.recognize(file.path, config);
+    await this.prisma.recognition.create({ data: { text } });
     const isBelongedToShopee = text.includes('SPX');
     const isBelongedToSendo = text.includes('Sendo');
     if (!isBelongedToSendo && !isBelongedToShopee) {
