@@ -4,7 +4,7 @@ import { ApiBody, ApiConsumes, ApiCreatedResponse, ApiOkResponse, ApiTags } from
 import { diskStorage } from 'multer';
 import { Auth } from 'src/auth';
 
-import { CreateRecognitionDto, RecognitionQueryDto } from './dtos';
+import { CreateRecognitionDto, RecognitionQueryDto, RecognitionResponseDto } from './dtos';
 import { RecognitionEntity } from './entities/recognition.entity';
 import { RecognitionService } from './recognition.service';
 
@@ -22,7 +22,7 @@ export class RecognitionController {
     type: CreateRecognitionDto,
   })
   @ApiCreatedResponse({ type: RecognitionEntity })
-  create(@UploadedFile() file: Express.Multer.File) {
+  create(@UploadedFile() file: Express.Multer.File): Promise<RecognitionResponseDto> {
     return this.recognitionService.createRecognition(file);
   }
 

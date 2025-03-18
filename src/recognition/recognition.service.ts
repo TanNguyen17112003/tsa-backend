@@ -2,14 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import * as tesseract from 'node-tesseract-ocr';
 import { PrismaService } from 'src/prisma';
 
-import { RecognitionQueryDto } from './dtos';
+import { RecognitionQueryDto, RecognitionResponseDto } from './dtos';
 import { RecognitionEntity } from './entities/recognition.entity';
 
 @Injectable()
 export class RecognitionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createRecognition(file: Express.Multer.File): Promise<RecognitionEntity> {
+  async createRecognition(file: Express.Multer.File): Promise<RecognitionResponseDto> {
     const config = {
       lang: 'vie',
       oem: 1,
@@ -17,14 +17,24 @@ export class RecognitionService {
     };
 
     const text = await tesseract.recognize(file.path, config);
+    const isBelongedToShopee = text.includes('SPX');
+    const isBelongedToSendo = text.includes('Sendo');
+    if (!isBelongedToSendo && !isBelongedToShopee) {
+      throw new NotFoundException('This image is not belonged to Sendo or Shopee');
+    }
 
-    const recognition = await this.prisma.recognition.create({
-      data: {
-        text,
-      },
-    });
+    const orderIdPattern = /Mã.*hàng:\s*([^\r\n\t]+)/;
+    const match = text.match(orderIdPattern);
+    if (!match) {
+      throw new NotFoundException('Order ID not found');
+    }
 
-    return recognition;
+    const orderId = match[1].replace(/\s+/g, '').trim();
+
+    return {
+      orderId,
+      brand: isBelongedToSendo ? 'Sendo' : 'Shopee',
+    };
   }
 
   async getRecognitions(query: RecognitionQueryDto): Promise<RecognitionEntity[]> {
