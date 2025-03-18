@@ -202,6 +202,12 @@ model Payment {
   counterAccountBankName String? @db.VarChar(255)
 }
 
+model Recognition {
+  id        String   @id @default(cuid())
+  text      String   @db.Text
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+}
+
 model Ticket {
   id          String             @id @default(cuid())
   studentId   String
