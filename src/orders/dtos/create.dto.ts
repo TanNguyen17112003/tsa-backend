@@ -16,9 +16,4 @@ export class CreateStudentOrderDto extends PickType(CreateOrderDto, [
   'paymentMethod',
 ]) {}
 
-export class CreateAdminOrderDto extends PickType(CreateOrderDto, [
-  'checkCode',
-  'brand',
-  'product',
-  'weight',
-]) {}
+export class CreateAdminOrderDto extends PickType(CreateOrderDto, ['checkCode', 'brand']) {}
