@@ -14,6 +14,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentModule } from './payment/payment.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RecognitionModule } from './recognition/recognition.module';
 import { ReportsModule } from './reports';
 import { TicketsModule } from './tickets';
 import { UsersModule } from './users';
@@ -34,6 +35,7 @@ import { UsersModule } from './users';
     NotificationsModule,
     GeolocationModule,
     TicketsModule,
+    RecognitionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
