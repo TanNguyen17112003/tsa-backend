@@ -52,18 +52,16 @@ export class DeliveriesService {
     const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
     // update field attribute shipperId in each order of orders
     const newDelivery = await this.prisma.$transaction(async (tx) => {
-      if (deliveryData.staffId) {
-        await Promise.all(
-          orders.map((order) =>
-            tx.order.update({
-              where: { id: order.id },
-              data: {
-                shipperId: deliveryData.staffId,
-              },
-            })
-          )
-        );
-      }
+      await Promise.all(
+        orders.map((order) =>
+          tx.order.update({
+            where: { id: order.id },
+            data: {
+              shipperId: deliveryData.staffId,
+            },
+          })
+        )
+      );
 
       const createdDelivery = await tx.delivery.create({
         data: {
@@ -77,7 +75,12 @@ export class DeliveriesService {
           },
           latestStatus: DeliveryStatus.PENDING,
           orders: {
-            connect: orderIds.map((id) => ({ id })),
+            createMany: {
+              data: orderIds.map((orderId, index) => ({
+                orderId,
+                orderSequence: index + 1,
+              })),
+            },
           },
           numberOrder: orderIds.length,
         },
@@ -112,14 +115,18 @@ export class DeliveriesService {
         DeliveryStatusHistory: true,
         orders: {
           include: {
-            student: {
+            order: {
               include: {
-                user: {
-                  select: {
-                    lastName: true,
-                    firstName: true,
-                    phoneNumber: true,
-                    photoUrl: true,
+                student: {
+                  include: {
+                    user: {
+                      select: {
+                        lastName: true,
+                        firstName: true,
+                        phoneNumber: true,
+                        photoUrl: true,
+                      },
+                    },
                   },
                 },
               },
@@ -134,10 +141,11 @@ export class DeliveriesService {
     }
     return {
       ...delivery,
-      orders: delivery.orders.map((order) => ({
-        ...order,
-        studentInfo: order.student.user,
+      orders: delivery.orders.map((ordersOnDelivey) => ({
+        ...ordersOnDelivey.order,
+        studentInfo: ordersOnDelivey.order.student.user,
         student: undefined,
+        orderSequence: ordersOnDelivey.orderSequence,
       })),
     };
   }
@@ -173,7 +181,12 @@ export class DeliveriesService {
         limitTime: deliveryData.limitTime,
         staffId: deliveryData.staffId,
         orders: {
-          set: orderIds.map((id) => ({ id })),
+          createMany: {
+            data: orderIds.map((orderId, index) => ({
+              orderId,
+              orderSequence: index + 1,
+            })),
+          },
         },
       },
     });
@@ -194,7 +207,11 @@ export class DeliveriesService {
     const delivery = await this.prisma.delivery.findUnique({
       where: { id },
       include: {
-        orders: true,
+        orders: {
+          include: {
+            order: true,
+          },
+        },
       },
     });
     if (!delivery) {
@@ -204,9 +221,9 @@ export class DeliveriesService {
     if (status === DeliveryStatus.CANCELED) {
       if (
         delivery.orders.some(
-          (order) =>
-            order.latestStatus === OrderStatus.CANCELED ||
-            order.latestStatus === OrderStatus.DELIVERED
+          (ordersOnDelivey) =>
+            ordersOnDelivey.order.latestStatus === OrderStatus.CANCELED ||
+            ordersOnDelivey.order.latestStatus === OrderStatus.DELIVERED
         )
       ) {
         throw new BadRequestException(
@@ -225,10 +242,10 @@ export class DeliveriesService {
           userId: delivery.staffId,
         });
         await Promise.all(
-          delivery.orders.map((order) =>
+          delivery.orders.map((ordersOnDelivey) =>
             createOrderStatusHistory(
               this.prisma,
-              order.id,
+              ordersOnDelivey.orderId,
               OrderStatus.CANCELED,
               this.mapTypeToReason(cancelReasonType, reason),
               canceledImage
@@ -268,7 +285,7 @@ export class DeliveriesService {
     if (status === DeliveryStatus.ACCEPTED) {
       await Promise.all(
         delivery.orders.map((order) =>
-          createOrderStatusHistory(this.prisma, order.id, OrderStatus.IN_TRANSPORT)
+          createOrderStatusHistory(this.prisma, order.orderId, OrderStatus.IN_TRANSPORT)
         )
       );
     }
