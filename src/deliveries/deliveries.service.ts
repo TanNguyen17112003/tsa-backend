@@ -51,41 +51,51 @@ export class DeliveriesService {
 
     const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
     // update field attribute shipperId in each order of orders
-    orders.forEach(async (order) => {
-      await this.prisma.order.update({
-        where: { id: order.id },
+    const newDelivery = await this.prisma.$transaction(async (tx) => {
+      if (deliveryData.staffId) {
+        await Promise.all(
+          orders.map((order) =>
+            tx.order.update({
+              where: { id: order.id },
+              data: {
+                shipperId: deliveryData.staffId,
+              },
+            })
+          )
+        );
+      }
+
+      const createdDelivery = await tx.delivery.create({
         data: {
-          shipperId: deliveryData.staffId,
+          ...deliveryData,
+          createdAt,
+          DeliveryStatusHistory: {
+            create: {
+              status: DeliveryStatus.PENDING,
+              time: createdAt,
+            },
+          },
+          latestStatus: DeliveryStatus.PENDING,
+          orders: {
+            connect: orderIds.map((id) => ({ id })),
+          },
+          numberOrder: orderIds.length,
         },
       });
+      return createdDelivery;
     });
 
-    const newDelivery = await this.prisma.delivery.create({
-      data: {
-        ...deliveryData,
-        createdAt,
-        DeliveryStatusHistory: {
-          create: {
-            status: DeliveryStatus.PENDING,
-            time: createdAt,
-          },
-        },
-        latestStatus: DeliveryStatus.PENDING,
-        orders: {
-          connect: orderIds.map((id) => ({ id })),
-        },
-        numberOrder: orderIds.length,
-      },
-    });
-    await this.notificationService.sendNotification({
-      type: 'DELIVERY',
-      title: 'Chuyến đi mới vừa được tạo',
-      content: `Chuyến đi ${shortenUUID(newDelivery.id, 'DELIVERY')} đã được tạo`,
-      deliveryId: newDelivery.id,
-      orderId: undefined,
-      reportId: undefined,
-      userId: deliveryData.staffId,
-    });
+    if (deliveryData.staffId) {
+      await this.notificationService.sendNotification({
+        type: 'DELIVERY',
+        title: 'Chuyến đi mới vừa được tạo',
+        content: `Chuyến đi ${shortenUUID(newDelivery.id, 'DELIVERY')} đã được tạo`,
+        deliveryId: newDelivery.id,
+        orderId: undefined,
+        reportId: undefined,
+        userId: deliveryData.staffId,
+      });
+    }
     return newDelivery;
   }
 
