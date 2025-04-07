@@ -12,7 +12,9 @@ import { GroupOrdersResponseDto } from 'src/python-api/python-api.dto';
 import { GetUserType } from 'src/types';
 
 import { CreateOrderDto, GetOrderResponseDto, OrderQueryDto, UpdateStatusDto } from './dtos';
+import { DelayOrdersDto } from './dtos/delay.dto';
 import { GroupOrdersDto } from './dtos/group.dto';
+import { RouteOrdersDto } from './dtos/route.dto';
 import { ShippingFeeDto } from './dtos/shippingFee.dto';
 import { OrderEntity } from './entity';
 import { OrderService } from './orders.service';
@@ -28,6 +30,18 @@ export class OrdersController {
   @ApiCreatedResponse({ type: GroupOrdersResponseDto })
   async group(@Body() groupOrdersDto: GroupOrdersDto) {
     return this.orderService.groupOrders(groupOrdersDto);
+  }
+
+  @Post('/delay')
+  @Auth('ADMIN')
+  async delay(@Body() delayOrdersDto: DelayOrdersDto) {
+    return this.orderService.delayOrders(delayOrdersDto);
+  }
+
+  @Post('/route')
+  @Auth('ADMIN')
+  async route(@Body() routeOrdersDto: RouteOrdersDto) {
+    return this.orderService.routeOrders(routeOrdersDto);
   }
 
   @Post()

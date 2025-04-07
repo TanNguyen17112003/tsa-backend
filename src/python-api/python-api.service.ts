@@ -2,8 +2,9 @@ import { BadRequestException, Injectable, InternalServerErrorException } from '@
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { GroupOrdersDto } from 'src/orders/dtos/group.dto';
+import { RouteOrdersDto } from 'src/orders/dtos/route.dto';
 
-import { GroupOrdersResponseDto } from './python-api.dto';
+import { GroupOrdersResponseDto, RouteOrdersResponseDto } from './python-api.dto';
 
 @Injectable()
 export class PythonApiService {
@@ -29,6 +30,26 @@ export class PythonApiService {
 
       throw new InternalServerErrorException(
         response?.data?.message || 'Lỗi khi gọi server gom đơn hàng'
+      );
+    }
+  }
+  async routeOrders(routeOrders: RouteOrdersDto): Promise<RouteOrdersResponseDto> {
+    try {
+      const { data } = await axios.post(`${this.baseUrl}/route-orders`, routeOrders, {
+        timeout: 10000,
+      });
+      return data as RouteOrdersResponseDto;
+    } catch (error: any) {
+      const response = error.response;
+
+      if (response?.data?.code === 'NOT_SAME_DORMITORY') {
+        throw new BadRequestException(response.data.message);
+      }
+
+      console.error('Python server error:', response?.data || error.message);
+
+      throw new InternalServerErrorException(
+        response?.data?.message || 'Lỗi khi gọi server điều hướng đơn hàng'
       );
     }
   }
