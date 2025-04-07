@@ -141,12 +141,16 @@ export class DeliveriesService {
     }
     return {
       ...delivery,
-      orders: delivery.orders.map((ordersOnDelivey) => ({
-        ...ordersOnDelivey.order,
-        studentInfo: ordersOnDelivey.order.student.user,
-        student: undefined,
-        orderSequence: ordersOnDelivey.orderSequence,
-      })),
+      orders: delivery.orders
+        .sort((a, b) => a.orderSequence - b.orderSequence)
+        .map((ordersOnDelivery) => {
+          const { order } = ordersOnDelivery;
+          return {
+            ...order,
+            studentInfo: order.student?.user,
+            student: undefined,
+          };
+        }),
     };
   }
 
