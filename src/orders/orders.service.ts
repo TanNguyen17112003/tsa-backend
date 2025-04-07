@@ -7,6 +7,7 @@ import {
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
+import { PythonApiService } from 'src/python-api/python-api.service';
 import { GetUserType } from 'src/types';
 
 import {
@@ -17,6 +18,7 @@ import {
   StudentOrdersStatsDto,
   UpdateStatusDto,
 } from './dtos';
+import { GroupOrdersDto } from './dtos/group.dto';
 import { GetOrderResponseDto } from './dtos/response.dto';
 import { ShippingFeeDto } from './dtos/shippingFee.dto';
 import {
@@ -36,7 +38,8 @@ import {
 export class OrderService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notificationService: NotificationsService
+    private readonly notificationService: NotificationsService,
+    private readonly pythonApi: PythonApiService
   ) {}
 
   async getOrders(
@@ -602,5 +605,9 @@ export class OrderService {
     });
     console.log('Current order: ', order);
     return order || null;
+  }
+
+  async groupOrders(groupOrdersDto: GroupOrdersDto) {
+    return this.pythonApi.groupOrders(groupOrdersDto);
   }
 }

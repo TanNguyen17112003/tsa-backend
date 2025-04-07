@@ -8,9 +8,11 @@ import {
 } from '@nestjs/swagger';
 import { Auth, checkRowLevelPermission, GetUser } from 'src/auth';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
+import { GroupOrdersResponseDto } from 'src/python-api/python-api.dto';
 import { GetUserType } from 'src/types';
 
 import { CreateOrderDto, GetOrderResponseDto, OrderQueryDto, UpdateStatusDto } from './dtos';
+import { GroupOrdersDto } from './dtos/group.dto';
 import { ShippingFeeDto } from './dtos/shippingFee.dto';
 import { OrderEntity } from './entity';
 import { OrderService } from './orders.service';
@@ -20,6 +22,13 @@ import { OrderService } from './orders.service';
 @ApiExtraModels(PageResponseDto, GetOrderResponseDto)
 export class OrdersController {
   constructor(private readonly orderService: OrderService) {}
+
+  @Post('/group')
+  @Auth('ADMIN')
+  @ApiCreatedResponse({ type: GroupOrdersResponseDto })
+  async group(@Body() groupOrdersDto: GroupOrdersDto) {
+    return this.orderService.groupOrders(groupOrdersDto);
+  }
 
   @Post()
   @Auth('ADMIN', 'STUDENT')
