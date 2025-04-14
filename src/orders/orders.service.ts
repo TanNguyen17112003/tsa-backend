@@ -4,9 +4,11 @@ import {
   NotImplementedException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { OrderStatus } from '@prisma/client';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
+import { PythonApiService } from 'src/python-api/python-api.service';
 import { GetUserType } from 'src/types';
 
 import {
@@ -17,7 +19,10 @@ import {
   StudentOrdersStatsDto,
   UpdateStatusDto,
 } from './dtos';
+import { DelayOrdersDto } from './dtos/delay.dto';
+import { GroupOrdersDto } from './dtos/group.dto';
 import { GetOrderResponseDto } from './dtos/response.dto';
+import { RouteOrdersDto } from './dtos/route.dto';
 import { ShippingFeeDto } from './dtos/shippingFee.dto';
 import {
   convertToUnixTimestamp,
@@ -36,7 +41,8 @@ import {
 export class OrderService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notificationService: NotificationsService
+    private readonly notificationService: NotificationsService,
+    private readonly pythonApi: PythonApiService
   ) {}
 
   async getOrders(
@@ -602,5 +608,59 @@ export class OrderService {
     });
     console.log('Current order: ', order);
     return order || null;
+  }
+
+  async groupOrders(groupOrdersDto: GroupOrdersDto) {
+    return this.pythonApi.groupOrders(groupOrdersDto);
+  }
+
+  async delayOrders(delayOrdersDto: DelayOrdersDto) {
+    const { orderIds, timeslot } = delayOrdersDto;
+
+    // Check existence of orders
+    const orders = await this.prisma.order.findMany({
+      where: {
+        id: { in: orderIds },
+      },
+      include: {
+        deliveries: true,
+      },
+    });
+
+    if (orders.length !== orderIds.length) {
+      throw new BadRequestException('One or more orders do not exist');
+    }
+
+    // Check if there exists an order that is put into some delivery but is not canceled
+    if (
+      orders.some(
+        (order) => order.deliveries.length > 0 && order.latestStatus !== OrderStatus.CANCELED
+      )
+    ) {
+      throw new BadRequestException('One or more orders are already in a delivery');
+    }
+
+    if (orders.some((order) => Number(order.deliveryDate) > Number(timeslot))) {
+      throw new BadRequestException('One or more orders has delayed time smaller than before');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      // Tạo các promises cho các cập nhật đồng thời
+      const updatePromises = orders.map((order) =>
+        tx.order.update({
+          where: { id: order.id },
+          data: {
+            deliveryDate: timeslot, // Cập nhật lại deliveryDate
+          },
+        })
+      );
+      // Chờ tất cả các promise cập nhật hoàn thành trong giao dịch
+      await Promise.all(updatePromises);
+    });
+
+    return { message: 'Orders successfully delayed' };
+  }
+  async routeOrders(routeOrdersDto: RouteOrdersDto) {
+    return this.pythonApi.routeOrders(routeOrdersDto);
   }
 }

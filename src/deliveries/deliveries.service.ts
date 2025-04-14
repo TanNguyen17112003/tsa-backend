@@ -51,41 +51,54 @@ export class DeliveriesService {
 
     const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
     // update field attribute shipperId in each order of orders
-    orders.forEach(async (order) => {
-      await this.prisma.order.update({
-        where: { id: order.id },
+    const newDelivery = await this.prisma.$transaction(async (tx) => {
+      await Promise.all(
+        orders.map((order) =>
+          tx.order.update({
+            where: { id: order.id },
+            data: {
+              shipperId: deliveryData.staffId,
+            },
+          })
+        )
+      );
+
+      const createdDelivery = await tx.delivery.create({
         data: {
-          shipperId: deliveryData.staffId,
+          ...deliveryData,
+          createdAt,
+          DeliveryStatusHistory: {
+            create: {
+              status: DeliveryStatus.PENDING,
+              time: createdAt,
+            },
+          },
+          latestStatus: DeliveryStatus.PENDING,
+          orders: {
+            createMany: {
+              data: orderIds.map((orderId, index) => ({
+                orderId,
+                orderSequence: index + 1,
+              })),
+            },
+          },
+          numberOrder: orderIds.length,
         },
       });
+      return createdDelivery;
     });
 
-    const newDelivery = await this.prisma.delivery.create({
-      data: {
-        ...deliveryData,
-        createdAt,
-        DeliveryStatusHistory: {
-          create: {
-            status: DeliveryStatus.PENDING,
-            time: createdAt,
-          },
-        },
-        latestStatus: DeliveryStatus.PENDING,
-        orders: {
-          connect: orderIds.map((id) => ({ id })),
-        },
-        numberOrder: orderIds.length,
-      },
-    });
-    await this.notificationService.sendNotification({
-      type: 'DELIVERY',
-      title: 'Chuyến đi mới vừa được tạo',
-      content: `Chuyến đi ${shortenUUID(newDelivery.id, 'DELIVERY')} đã được tạo`,
-      deliveryId: newDelivery.id,
-      orderId: undefined,
-      reportId: undefined,
-      userId: deliveryData.staffId,
-    });
+    if (deliveryData.staffId) {
+      await this.notificationService.sendNotification({
+        type: 'DELIVERY',
+        title: 'Chuyến đi mới vừa được tạo',
+        content: `Chuyến đi ${shortenUUID(newDelivery.id, 'DELIVERY')} đã được tạo`,
+        deliveryId: newDelivery.id,
+        orderId: undefined,
+        reportId: undefined,
+        userId: deliveryData.staffId,
+      });
+    }
     return newDelivery;
   }
 
@@ -102,14 +115,18 @@ export class DeliveriesService {
         DeliveryStatusHistory: true,
         orders: {
           include: {
-            student: {
+            order: {
               include: {
-                user: {
-                  select: {
-                    lastName: true,
-                    firstName: true,
-                    phoneNumber: true,
-                    photoUrl: true,
+                student: {
+                  include: {
+                    user: {
+                      select: {
+                        lastName: true,
+                        firstName: true,
+                        phoneNumber: true,
+                        photoUrl: true,
+                      },
+                    },
                   },
                 },
               },
@@ -124,11 +141,16 @@ export class DeliveriesService {
     }
     return {
       ...delivery,
-      orders: delivery.orders.map((order) => ({
-        ...order,
-        studentInfo: order.student.user,
-        student: undefined,
-      })),
+      orders: delivery.orders
+        .sort((a, b) => a.orderSequence - b.orderSequence)
+        .map((ordersOnDelivery) => {
+          const { order } = ordersOnDelivery;
+          return {
+            ...order,
+            studentInfo: order.student?.user,
+            student: undefined,
+          };
+        }),
     };
   }
 
@@ -163,7 +185,12 @@ export class DeliveriesService {
         limitTime: deliveryData.limitTime,
         staffId: deliveryData.staffId,
         orders: {
-          set: orderIds.map((id) => ({ id })),
+          createMany: {
+            data: orderIds.map((orderId, index) => ({
+              orderId,
+              orderSequence: index + 1,
+            })),
+          },
         },
       },
     });
@@ -184,7 +211,11 @@ export class DeliveriesService {
     const delivery = await this.prisma.delivery.findUnique({
       where: { id },
       include: {
-        orders: true,
+        orders: {
+          include: {
+            order: true,
+          },
+        },
       },
     });
     if (!delivery) {
@@ -194,9 +225,9 @@ export class DeliveriesService {
     if (status === DeliveryStatus.CANCELED) {
       if (
         delivery.orders.some(
-          (order) =>
-            order.latestStatus === OrderStatus.CANCELED ||
-            order.latestStatus === OrderStatus.DELIVERED
+          (ordersOnDelivey) =>
+            ordersOnDelivey.order.latestStatus === OrderStatus.CANCELED ||
+            ordersOnDelivey.order.latestStatus === OrderStatus.DELIVERED
         )
       ) {
         throw new BadRequestException(
@@ -215,10 +246,10 @@ export class DeliveriesService {
           userId: delivery.staffId,
         });
         await Promise.all(
-          delivery.orders.map((order) =>
+          delivery.orders.map((ordersOnDelivey) =>
             createOrderStatusHistory(
               this.prisma,
-              order.id,
+              ordersOnDelivey.orderId,
               OrderStatus.CANCELED,
               this.mapTypeToReason(cancelReasonType, reason),
               canceledImage
@@ -258,7 +289,7 @@ export class DeliveriesService {
     if (status === DeliveryStatus.ACCEPTED) {
       await Promise.all(
         delivery.orders.map((order) =>
-          createOrderStatusHistory(this.prisma, order.id, OrderStatus.IN_TRANSPORT)
+          createOrderStatusHistory(this.prisma, order.orderId, OrderStatus.IN_TRANSPORT)
         )
       );
     }

@@ -103,7 +103,7 @@ model Order {
   paymentMethod      PaymentMethod?
   phone              String?              @db.VarChar(15)
   latestStatus       OrderStatus?
-  deliveries         Delivery[]
+  deliveries         OrdersOnDeliveries[]
   report             Report[]
   orderStatusHistory OrderStatusHistory[]
   Notification       Notification[]
@@ -127,7 +127,7 @@ model Delivery {
   id                    String                  @id @default(cuid())
   createdAt             String                  @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
   limitTime             Int // Thời gian giới hạn để nhận đơn hàng (giây)
-  orders                Order[]
+  orders                OrdersOnDeliveries[]
   staffId               String?                 @db.VarChar(255) // Staft who takes responsible for the delivery
   staff                 Staff?                  @relation(fields: [staffId], references: [staffId])
   DeliveryStatusHistory DeliveryStatusHistory[]
@@ -144,6 +144,16 @@ model DeliveryStatusHistory {
   reason        String?        @db.Text
   time          String         @db.VarChar(255) // Unix timestamp for each time the status changes
   canceledImage String?        @db.VarChar(255)
+}
+
+model OrdersOnDeliveries {
+  order         Order    @relation(fields: [orderId], references: [id])
+  orderId       String
+  delivery      Delivery @relation(fields: [deliveryId], references: [id])
+  deliveryId    String
+  orderSequence Int
+
+  @@id([deliveryId, orderId])
 }
 
 model Report {
