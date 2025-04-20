@@ -60,6 +60,7 @@ jobs:
       - name: Restart the server
         run: |
           ssh $AWS_EC2_USER@$AWS_EC2_HOST <<EOF
+            export PATH="$PATH:/home/$AWS_EC2_USER/.nvm/versions/node/v22.14.0/bin"
             set -e
             cd /home/$AWS_EC2_USER/$APP_NAME
             yarn install --frozen-lockfile
