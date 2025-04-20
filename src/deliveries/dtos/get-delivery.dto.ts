@@ -19,6 +19,9 @@ export class GetDeliveriesDto {
 
   @ApiProperty({ example: '3', description: 'Number of orders in delivery' })
   numberOrder: number;
+
+  @ApiProperty({ example: 'DEL-123456789', description: 'Display ID of delivery' })
+  displayId: string;
 }
 export class GetDeliveryDto {
   @ApiProperty({ example: '123456789', description: 'Id of delivery' })
@@ -36,6 +39,9 @@ export class GetDeliveryDto {
   DeliveryStatusHistory: GetDeliveryStatusDto[];
 
   orders: DeliveryOrderDto[];
+
+  @ApiProperty({ example: 'DEL-123456789', description: 'Display ID of delivery' })
+  displayId: string;
 }
 
 export class GetDeliveryStatusDto {

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { omit } from 'lodash';
 import { CloudinaryService } from 'src/cloudinary';
+import { IdGeneratorService } from 'src/id-generator';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
@@ -17,7 +18,8 @@ import {
 export class TicketsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly cloudinaryService: CloudinaryService
+    private readonly cloudinaryService: CloudinaryService,
+    private readonly idGeneratorService: IdGeneratorService
   ) {}
 
   async createTicket(
@@ -36,12 +38,14 @@ export class TicketsService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
+    const displayId = await this.idGeneratorService.generateUniqueId('ticket', 'displayId', 'TKT');
     const savedAttachments = await this.saveTicketAttachments(attachments);
 
     const ticket = await this.prisma.ticket.create({
       data: {
         title: dto.title,
         content: dto.content,
+        displayId: displayId,
         attachments: {
           create: savedAttachments.map((result) => ({
             fileUrl: result.secure_url,
@@ -88,6 +92,11 @@ export class TicketsService {
 
     const tickets = await this.prisma.ticket.findMany({
       where: filter,
+      orderBy: [
+        {
+          createdAt: 'desc',
+        },
+      ],
       include: {
         attachments: {
           select: {

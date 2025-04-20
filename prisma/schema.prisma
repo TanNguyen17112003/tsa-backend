@@ -134,6 +134,7 @@ model Delivery {
   Notification          Notification[]
   latestStatus          DeliveryStatus          @default(PENDING)
   numberOrder           Int                     @default(0)
+  displayId             String                  @unique
 }
 
 model DeliveryStatusHistory {
@@ -228,6 +229,7 @@ model Ticket {
   categoryId  String
   category    TicketCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   createdAt   DateTime           @default(now()) @db.Timestamptz(3)
+  displayId   String             @unique
   attachments TicketAttachment[]
   replies     TicketReply[]
 }

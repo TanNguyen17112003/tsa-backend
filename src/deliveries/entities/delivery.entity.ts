@@ -28,4 +28,7 @@ export class DeliveryEntity implements RestrictProperties<DeliveryEntity, Delive
   @ApiProperty({ example: '3', description: 'Number of orders in delivery' })
   @IsInt()
   numberOrder: number;
+
+  @IsString()
+  displayId: string;
 }
