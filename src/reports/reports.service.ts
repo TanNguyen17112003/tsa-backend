@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { checkRowLevelPermission } from 'src/auth';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { NotificationsService } from 'src/notifications/notifications.service';
@@ -18,7 +18,17 @@ export class ReportsService {
 
   async createReport(createReportDto: CreateReport, user: GetUserType) {
     checkRowLevelPermission(user, createReportDto.studentId);
-    return this.prisma.report.create({ data: createReportDto });
+    const { orderId } = createReportDto;
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findFirst({
+        where: { id: orderId },
+      });
+      if (!order) throw new BadRequestException('Không tìm thấy đơn hàng dưới hệ thống');
+      const report = await tx.report.create({
+        data: createReportDto,
+      });
+      return report;
+    });
   }
 
   async getReports(
