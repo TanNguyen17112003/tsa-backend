@@ -37,6 +37,9 @@ export class TicketResponseDto {
   })
   readonly createdAt: Date;
 
+  @ApiProperty({ name: 'displayId', description: 'Ticket display ID', example: 'TKT-1234' })
+  readonly displayId: string;
+
   @ApiProperty({ name: 'attachments', description: 'Ticket attachments' })
   readonly attachments: AttachmentResponseDto[];
 

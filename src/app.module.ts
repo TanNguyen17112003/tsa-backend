@@ -10,6 +10,7 @@ import { DateModule } from './date/date.module';
 import { DeliveriesModule } from './deliveries';
 import { EmailModule } from './email';
 import { GeolocationModule } from './geolocation';
+import { IdGeneratorModule } from './id-generator';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentModule } from './payment/payment.module';
@@ -36,6 +37,7 @@ import { UsersModule } from './users';
     GeolocationModule,
     TicketsModule,
     RecognitionModule,
+    IdGeneratorModule,
   ],
   controllers: [AppController],
   providers: [AppService],

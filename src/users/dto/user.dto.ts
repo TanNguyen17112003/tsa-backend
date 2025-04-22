@@ -10,6 +10,10 @@ export class UpdateStudentDto extends PartialType(OmitType(SignUpDto, ['token', 
     description: 'URL to the avatar of user',
   })
   readonly photoUrl?: string;
+
+  @IsOptional()
+  @ApiProperty({ type: 'string', format: 'binary' })
+  readonly avatar?: any;
 }
 
 export class UpdatePasswordDto {

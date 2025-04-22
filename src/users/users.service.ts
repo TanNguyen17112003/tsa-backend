@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { ConfigService } from '@nestjs/config';
 import { UserRole, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { CloudinaryService } from 'src/cloudinary';
 import { PrismaService } from 'src/prisma';
 
 import { UpdatePasswordDto, UpdateStudentDto } from './dto';
@@ -11,7 +12,8 @@ import { StudentEntity, UserEntity } from './entities';
 export class UsersService {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly cloudinaryService: CloudinaryService
   ) {}
 
   async getUsers(): Promise<UserEntity[]> {
@@ -141,14 +143,24 @@ export class UsersService {
     };
   }
 
-  async updateStudentById(id: string, data: UpdateStudentDto): Promise<StudentEntity> {
+  async updateStudentById(
+    id: string,
+    data: UpdateStudentDto,
+    avatar?: Express.Multer.File
+  ): Promise<StudentEntity> {
+    let photoUrl = data.photoUrl;
+    if (avatar) {
+      const { secure_url } = await this.cloudinaryService.uploadImage(avatar.buffer);
+      photoUrl = secure_url;
+    }
+
     const user = await this.prismaService.user.update({
       where: { id },
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
         phoneNumber: data.phoneNumber,
-        photoUrl: data.photoUrl,
+        photoUrl: photoUrl,
       },
     });
     let student;

@@ -1,6 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Patch, Put } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseFilePipe,
+  Patch,
+  Put,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
+import { memoryStorage } from 'multer';
 import { Auth, GetUser } from 'src/auth';
 import { GetUserType } from 'src/types';
 
@@ -31,10 +44,21 @@ export class UsersController {
 
   @Patch('/profile')
   @Auth()
+  @UseInterceptors(FileInterceptor('avatar', { storage: memoryStorage() }))
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update profile of current logged in student' })
   @ApiResponse({ status: 200, description: 'OK.', type: UserEntity })
-  update(@GetUser() user: GetUserType, @Body() updateStudentDto: UpdateStudentDto) {
-    return this.usersService.updateStudentById(user.id, updateStudentDto);
+  update(
+    @Body() updateStudentDto: UpdateStudentDto,
+    @GetUser() user: GetUserType,
+    @UploadedFile(
+      new ParseFilePipe({
+        fileIsRequired: false,
+      })
+    )
+    avatar?: Express.Multer.File
+  ) {
+    return this.usersService.updateStudentById(user.id, updateStudentDto, avatar);
   }
 
   @Put('/password')
