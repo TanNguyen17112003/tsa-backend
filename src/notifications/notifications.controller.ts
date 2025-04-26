@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Auth, GetUser } from 'src/auth';
+import { Auth, GetUser } from 'src/auth/decorators';
 import { GetUserType } from 'src/types';
 
 import { CheckPushNotificationDto } from './dto/check-pushNoti.dto';
