@@ -8,6 +8,7 @@ export class CreateDeliveryDto extends OmitType(DeliveryEntity, [
   'createdAt',
   'latestStatus',
   'numberOrder',
+  'displayId',
 ]) {
   @ApiProperty({ example: ['123456789', '123456788'], description: 'Order IDs' })
   @IsArray()
