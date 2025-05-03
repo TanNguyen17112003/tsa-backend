@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { DeliveryStatus, OrderStatus } from '@prisma/client';
 import { DateService } from 'src/date';
+import { IdGeneratorService } from 'src/id-generator';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { createOrderStatusHistory, shortenUUID } from 'src/orders/utils/order.util';
 import { PrismaService } from 'src/prisma';
@@ -20,7 +21,8 @@ export class DeliveriesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly dateService: DateService,
-    private readonly notificationService: NotificationsService
+    private readonly notificationService: NotificationsService,
+    private readonly idGeneratorService: IdGeneratorService
   ) {}
 
   async createDelivery(createDeliveryDto: CreateDeliveryDto) {
@@ -50,6 +52,11 @@ export class DeliveriesService {
     }
 
     const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
+    const displayId = await this.idGeneratorService.generateUniqueId(
+      'delivery',
+      'displayId',
+      'DEL'
+    );
     // update field attribute shipperId in each order of orders
     const newDelivery = await this.prisma.$transaction(async (tx) => {
       await Promise.all(
@@ -66,6 +73,7 @@ export class DeliveriesService {
       const createdDelivery = await tx.delivery.create({
         data: {
           ...deliveryData,
+          displayId,
           createdAt,
           DeliveryStatusHistory: {
             create: {
@@ -325,7 +333,7 @@ export class DeliveriesService {
     return this.prisma.delivery.delete({ where: { id } });
   }
 
-  handleCancelDelivery = (
+  private handleCancelDelivery = (
     cancelReasonType?: DeliveryCancelReason,
     canceledImage?: string,
     reason?: string
@@ -342,7 +350,7 @@ export class DeliveriesService {
       );
     }
   };
-  mapTypeToReason = (cancelReasonType: DeliveryCancelReason, reason?: string) => {
+  private mapTypeToReason = (cancelReasonType: DeliveryCancelReason, reason?: string) => {
     switch (cancelReasonType) {
       case DeliveryCancelReason.DAMEGED_VEHICLE:
         return 'Phương tiện giao hàng bị hỏng';

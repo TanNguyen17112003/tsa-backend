@@ -148,13 +148,20 @@ export class UsersService {
     data: UpdateStudentDto,
     avatar?: Express.Multer.File
   ): Promise<StudentEntity> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new NotFoundException('Người dùng không tồn tại');
+    }
     let photoUrl = data.photoUrl;
     if (avatar) {
       const { secure_url } = await this.cloudinaryService.uploadImage(avatar.buffer);
       photoUrl = secure_url;
     }
 
-    const user = await this.prismaService.user.update({
+    const updatedUser = await this.prismaService.user.update({
       where: { id },
       data: {
         firstName: data.firstName,
@@ -164,7 +171,7 @@ export class UsersService {
       },
     });
     let student;
-    if (user.role === 'STUDENT') {
+    if (updatedUser.role === 'STUDENT') {
       student = await this.prismaService.student.update({
         where: { studentId: id },
         data: {
@@ -175,7 +182,7 @@ export class UsersService {
       });
     }
     return {
-      ...user,
+      ...updatedUser,
       ...student,
     };
   }

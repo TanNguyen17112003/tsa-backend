@@ -1,10 +1,8 @@
-// src/notification/notification.service.ts
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { JWT } from 'google-auth-library';
-import * as nodemailer from 'nodemailer';
-import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { DateService } from 'src/date';
+import { EmailService } from 'src/email';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
@@ -15,21 +13,11 @@ import { UnregisterPushNotificationDto } from './dto/unregister-pushNoti.dto';
 
 @Injectable()
 export class NotificationsService {
-  private transporter: nodemailer.Transporter<SMTPTransport.SentMessageInfo>;
   constructor(
     private readonly prisma: PrismaService,
-    private readonly dateService: DateService
-  ) {
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      auth: {
-        user: process.env.SMTP_GMAIL,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-  }
+    private readonly dateService: DateService,
+    private readonly emailService: EmailService
+  ) {}
 
   async sendNotification(createNotificationDto: CreateNotificationDto) {
     const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
@@ -47,21 +35,11 @@ export class NotificationsService {
       },
     });
     if (user) {
-      const mailOptions = {
-        from: `TSA <${process.env.SMTP_GMAIL}>`,
-        to: user.email,
-        subject: createNotificationDto.title,
-        html: `
-        <div>
-          <h2>Xin chào ${user.lastName} ${user.firstName}</h2>
-          <p>${createNotificationDto.content}!</p>
-          <p>Mọi thắc mắc xin vui lòng liên hệ qua <a href=${process.env.SMTP_GMAIL}>${process.env.SMTP_GMAIL}</a></p>
-          <p>Xin kính chức sức khỏe và may mắn!</p>
-          <p style="color:blue;font-weight:bold">TSA_ADMIN</p>
-        </div>
-        `,
-      };
-      await this.transporter.sendMail(mailOptions);
+      await this.emailService.sendNotificationEmail(
+        user,
+        createNotificationDto.title,
+        createNotificationDto.content
+      );
     }
     return newNotification;
   }
