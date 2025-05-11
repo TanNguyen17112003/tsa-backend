@@ -371,17 +371,16 @@ export class OrderService {
       if (!canceledImage) {
         throw new BadRequestException('Cần phải có ảnh minh chứng khi huỷ đơn hàng');
       }
-      const student = await this.prisma.student.findUnique({
-        where: {
-          studentId: user.id,
-        },
-      });
+      if (cancelReasonType === OrderCancelType.FROM_STUDENT) {
+        const student = await this.prisma.student.findUnique({
+          where: {
+            studentId: order.studentId,
+          },
+        });
 
-      if (!student) {
-        throw new NotFoundException('Không tìm thấy người dùng');
-      }
-
-      if (cancelReasonType === OrderCancelType.FROM_USER) {
+        if (!student) {
+          throw new NotFoundException('Không tìm thấy người dùng');
+        }
         const oldFailedCount = student.numberFault;
         const newFailedCount = oldFailedCount + 1;
 
@@ -439,8 +438,8 @@ export class OrderService {
       this.prisma,
       id,
       status,
-      canceledImage,
       mapReason(cancelReasonType, reason),
+      canceledImage,
       finishedImage
     );
     return { message: 'Order status updated' };

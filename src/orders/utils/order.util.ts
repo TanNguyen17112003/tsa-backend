@@ -203,6 +203,6 @@ export const mapReason = (type?: OrderCancelType, reason?: string) => {
   if (type === OrderCancelType.FROM_STAFF) {
     return `Lí do xuất phát từ nhân viên: ${reason}`;
   } else {
-    return `Lí do xuất phát từ người dùng: ${reason}`;
+    return `Lí do xuất phát từ sinh viên: ${reason}`;
   }
 };

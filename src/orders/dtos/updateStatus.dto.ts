@@ -2,7 +2,7 @@ import { OrderStatus } from '@prisma/client';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export enum OrderCancelType {
-  FROM_USER = 'FROM_USER',
+  FROM_STUDENT = 'FROM_STUDENT',
   FROM_STAFF = 'FROM_STAFF',
 }
 

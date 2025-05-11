@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DeliveryStatus, OrderStatus } from '@prisma/client';
 import { DateService } from 'src/date';
 import { IdGeneratorService } from 'src/id-generator';
@@ -215,7 +220,6 @@ export class DeliveriesService {
       throw new BadRequestException('Bạn chỉ có thể nhận một chuyến đi tại một thời điểm');
     }
     const { status, reason, canceledImage } = updateStatusDto;
-
     const delivery = await this.prisma.delivery.findUnique({
       where: { id },
       include: {
@@ -247,15 +251,17 @@ export class DeliveriesService {
         userId: delivery.staffId,
       });
       await Promise.all(
-        delivery.orders.map((ordersOnDelivey) =>
-          createOrderStatusHistory(
-            this.prisma,
-            ordersOnDelivey.orderId,
-            OrderStatus.CANCELED,
-            mapReason(OrderCancelType.FROM_STAFF, reason),
-            canceledImage
+        delivery.orders
+          .filter((ordersOnDelivey) => ordersOnDelivey.order.latestStatus === 'IN_TRANSPORT')
+          .map((ordersOnDelivey) =>
+            createOrderStatusHistory(
+              this.prisma,
+              ordersOnDelivey.orderId,
+              OrderStatus.CANCELED,
+              mapReason(OrderCancelType.FROM_STAFF, reason),
+              canceledImage
+            )
           )
-        )
       );
       return this.prisma.delivery.update({
         where: { id },
@@ -271,6 +277,14 @@ export class DeliveriesService {
           latestStatus: status,
         },
       });
+    }
+
+    if (status === DeliveryStatus.PENDING || status === DeliveryStatus.ACCEPTED) {
+      if (reason || canceledImage) {
+        throw new ConflictException(
+          'Không thể cập nhật lí do hoặc hình ảnh huỷ cho trạng thái của chuyến đi này'
+        );
+      }
     }
 
     await this.notificationService.sendNotification({
@@ -293,14 +307,23 @@ export class DeliveriesService {
         )
       );
     }
+
+    const isAllOrdersCanceled = delivery.orders.every(
+      (orderOnDelivery) => orderOnDelivery.order.latestStatus === OrderStatus.CANCELED
+    );
+    if (isAllOrdersCanceled && (!reason || !canceledImage)) {
+      throw new BadRequestException('Cần phải có lí do hoặc hình ảnh minh chứng khi huỷ chuyến đi');
+    }
+
     return this.prisma.delivery.update({
       where: { id },
       data: {
         DeliveryStatusHistory: {
           create: {
-            status,
+            status: isAllOrdersCanceled ? DeliveryStatus.CANCELED : status,
             time: this.dateService.getCurrentUnixTimestamp().toString(),
             reason,
+            canceledImage,
           },
         },
         latestStatus: status,
