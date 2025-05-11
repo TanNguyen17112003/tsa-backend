@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Dormitory, Student, UserStatus } from '@prisma/client';
-import { IsIn, IsString } from 'class-validator';
+import { IsIn, IsNumber, IsString } from 'class-validator';
 
 import { UserEntity } from './user.entity';
 
@@ -24,4 +24,8 @@ export class StudentEntity extends UserEntity implements Student {
   @IsString()
   @ApiProperty({ example: 'A101', description: 'Room of student' })
   room: string;
+
+  @IsNumber()
+  @ApiProperty({ example: '1', description: 'Fault Number of Student' })
+  numberFault: number;
 }

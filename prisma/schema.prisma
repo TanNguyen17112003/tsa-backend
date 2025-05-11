@@ -1,12 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x"] // Target for Vercel
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -17,24 +11,24 @@ datasource db {
 
 model User {
   id                String             @id @default(cuid())
-  email             String             @unique @db.VarChar(50)
-  password          String?            @db.VarChar(255)
   firstName         String?            @db.VarChar(50)
   lastName          String?            @db.VarChar(50)
-  phoneNumber       String?            @unique @db.VarChar(15)
-  photoUrl          String?            @db.VarChar(500)
   role              UserRole           @default(STUDENT)
   verified          Boolean            @default(false)
+  phoneNumber       String?            @unique @db.VarChar(15)
+  photoUrl          String?            @db.VarChar(500)
+  email             String             @unique @db.VarChar(50)
+  password          String?            @db.VarChar(255)
   createdAt         DateTime           @default(now()) @db.Timestamptz(3)
-  student           Student?
-  staff             Staff?
   admin             Admin?
-  verificationEmail VerificationEmail?
   AuthProvider      AuthProvider?
-  refreshTokens     RefreshToken[]
-  Notification      Notification[]
   DeviceToken       DeviceToken[]
+  Notification      Notification[]
+  refreshTokens     RefreshToken[]
+  staff             Staff?
+  student           Student?
   ticketReplies     TicketReply[]
+  verificationEmail VerificationEmail?
 }
 
 model RefreshToken {
@@ -47,28 +41,29 @@ model RefreshToken {
 
 model AuthProvider {
   uid  String           @id @default(cuid())
-  user User             @relation(fields: [uid], references: [id], onDelete: Cascade)
   type AuthProviderType
+  user User             @relation(fields: [uid], references: [id], onDelete: Cascade)
 }
 
 model Student {
-  studentId String     @id @unique
-  user      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  status    UserStatus @default(OFFLINE)
-  dormitory Dormitory?
-  building  String?
-  room      String?
-  orders    Order[]
-  reports   Report[]
-  tickets   Ticket[]
+  studentId   String     @id @unique
+  status      UserStatus @default(OFFLINE)
+  building    String?
+  dormitory   Dormitory?
+  room        String?
+  numberFault Int        @default(0)
+  orders      Order[]
+  reports     Report[]
+  user        User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  tickets     Ticket[]
 }
 
 model Staff {
   staffId    String     @id @unique
-  user       User       @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  deliveries Delivery[]
   status     UserStatus @default(OFFLINE)
+  deliveries Delivery[]
   orders     Order[]
+  user       User       @relation(fields: [staffId], references: [id], onDelete: Cascade)
 }
 
 model Admin {
@@ -80,98 +75,98 @@ model Admin {
 model VerificationEmail {
   id        String   @id @default(cuid())
   userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @default(dbgenerated("(now() + '00:03:00'::interval)")) @db.Timestamptz(3)
   token     String
-  expiresAt DateTime @default(dbgenerated("now() + interval '3 minutes'")) @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Order {
   id                 String               @id @default(cuid())
-  studentId          String?
-  student            Student?             @relation(fields: [studentId], references: [studentId])
   shippingFee        Float?
-  deliveryDate       String?
-  isPaid             Boolean              @default(false)
-  room               String?              @db.VarChar(255)
-  dormitory          Dormitory?
-  building           String?              @db.VarChar(255)
+  studentId          String?
   checkCode          String               @db.VarChar(255)
-  product            String?              @db.VarChar(255) // Các sản phẩm để tăng tính xác thực khi admin xác nhận đơn hàng
   weight             Float?
-  shipperId          String?              @db.VarChar(255) // Staff who takes responsibility for the delivery
-  staff              Staff?               @relation(fields: [shipperId], references: [staffId])
+  shipperId          String?              @db.VarChar(255)
+  isPaid             Boolean              @default(false)
   paymentMethod      PaymentMethod?
+  building           String?              @db.VarChar(255)
+  deliveryDate       String?
+  dormitory          Dormitory?
   phone              String?              @db.VarChar(15)
+  product            String?              @db.VarChar(255)
+  room               String?              @db.VarChar(255)
   latestStatus       OrderStatus?
-  deliveries         OrdersOnDeliveries[]
-  report             Report[]
-  orderStatusHistory OrderStatusHistory[]
-  Notification       Notification[]
   brand              String?              @db.VarChar(255)
   remainingAmount    Float?
-  payment            Payment[]
   finishedImage      String?              @db.VarChar(255)
+  Notification       Notification[]
+  staff              Staff?               @relation(fields: [shipperId], references: [staffId])
+  student            Student?             @relation(fields: [studentId], references: [studentId])
+  orderStatusHistory OrderStatusHistory[]
+  deliveries         OrdersOnDeliveries[]
+  payment            Payment[]
+  report             Report[]
 }
 
 model OrderStatusHistory {
   id            String      @id @default(cuid())
   orderId       String      @db.VarChar(255)
-  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
   status        OrderStatus
-  reason        String?     @db.Text
-  time          String      @db.VarChar(255) // Unix timestamp for each time the status changes
+  reason        String?
+  time          String      @db.VarChar(255)
   canceledImage String?     @db.VarChar(255)
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model Delivery {
+  createdAt             String                  @db.VarChar(255)
   id                    String                  @id @default(cuid())
-  createdAt             String                  @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
-  limitTime             Int // Thời gian giới hạn để nhận đơn hàng (giây)
-  orders                OrdersOnDeliveries[]
-  staffId               String?                 @db.VarChar(255) // Staft who takes responsible for the delivery
-  staff                 Staff?                  @relation(fields: [staffId], references: [staffId])
-  DeliveryStatusHistory DeliveryStatusHistory[]
-  Notification          Notification[]
+  staffId               String?                 @db.VarChar(255)
+  limitTime             Int
   latestStatus          DeliveryStatus          @default(PENDING)
   numberOrder           Int                     @default(0)
   displayId             String                  @unique
+  staff                 Staff?                  @relation(fields: [staffId], references: [staffId])
+  DeliveryStatusHistory DeliveryStatusHistory[]
+  Notification          Notification[]
+  orders                OrdersOnDeliveries[]
 }
 
 model DeliveryStatusHistory {
   id            String         @id @default(cuid())
   deliveryId    String         @db.VarChar(255)
-  delivery      Delivery       @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
   status        DeliveryStatus
-  reason        String?        @db.Text
-  time          String         @db.VarChar(255) // Unix timestamp for each time the status changes
+  reason        String?
+  time          String         @db.VarChar(255)
   canceledImage String?        @db.VarChar(255)
+  delivery      Delivery       @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
 }
 
 model OrdersOnDeliveries {
-  order         Order    @relation(fields: [orderId], references: [id])
   orderId       String
-  delivery      Delivery @relation(fields: [deliveryId], references: [id])
   deliveryId    String
   orderSequence Int
+  delivery      Delivery @relation(fields: [deliveryId], references: [id])
+  order         Order    @relation(fields: [orderId], references: [id])
 
   @@id([deliveryId, orderId])
 }
 
 model Report {
-  id           String         @id @default(cuid())
   orderId      String         @db.VarChar(255)
-  order        Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  content      String         @db.Text
-  reportedAt   String         @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
-  proof        String         @db.VarChar(255) // URL to image or video
-  reply        String?        @db.Text
-  repliedAt    String?        @db.VarChar(255) // Unix timestamp for easy calculating between database datetime with js one
+  content      String
+  reportedAt   String         @db.VarChar(255)
+  proof        String         @db.VarChar(255)
+  reply        String?
   status       ReportStatus   @default(PENDING)
-  replierId    String?        @db.VarChar(255) // Admin who replies the report
-  admin        Admin?         @relation(fields: [replierId], references: [adminId])
-  studentId    String         @db.VarChar(255) // Student who reports the order
-  student      Student        @relation(fields: [studentId], references: [studentId])
+  id           String         @id @default(cuid())
+  repliedAt    String?        @db.VarChar(255)
+  replierId    String?        @db.VarChar(255)
+  studentId    String         @db.VarChar(255)
   Notification Notification[]
+  order        Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  admin        Admin?         @relation(fields: [replierId], references: [adminId])
+  student      Student        @relation(fields: [studentId], references: [studentId])
 }
 
 model Notification {
@@ -184,52 +179,52 @@ model Notification {
   deliveryId String?         @db.VarChar(255)
   reportId   String?         @db.VarChar(255)
   userId     String
-  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  order      Order?          @relation(fields: [orderId], references: [id])
-  delivery   Delivery?       @relation(fields: [deliveryId], references: [id])
-  report     Report?         @relation(fields: [reportId], references: [id])
   isRead     Boolean         @default(false)
+  delivery   Delivery?       @relation(fields: [deliveryId], references: [id])
+  order      Order?          @relation(fields: [orderId], references: [id])
+  report     Report?         @relation(fields: [reportId], references: [id])
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model DeviceToken {
   id           String       @id @default(cuid())
   userId       String
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   token        String       @unique
   platform     Platform
   pushNotiType PushNotiType
   createdAt    String       @db.VarChar(255)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Payment {
   id                     String  @id @default(cuid())
   orderId                String  @db.VarChar(255)
-  orderCode              String  @unique @db.VarChar(255)
-  order                  Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   amount                 Float
   isPaid                 Boolean @default(false)
+  orderCode              String  @unique @db.VarChar(255)
+  counterAccountBankName String? @db.VarChar(255)
   counterAccountName     String? @db.VarChar(255)
   counterAccountNumber   String? @db.VarChar(255)
-  counterAccountBankName String? @db.VarChar(255)
+  order                  Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model Recognition {
   id        String   @id @default(cuid())
-  text      String   @db.Text
+  text      String
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 }
 
 model Ticket {
   id          String             @id @default(cuid())
   studentId   String
-  student     Student            @relation(fields: [studentId], references: [studentId], onDelete: Cascade)
   title       String
-  content     String             @db.Text
+  content     String
   status      TicketStatus       @default(PENDING)
   categoryId  String
-  category    TicketCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   createdAt   DateTime           @default(now()) @db.Timestamptz(3)
   displayId   String             @unique
+  category    TicketCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  student     Student            @relation(fields: [studentId], references: [studentId], onDelete: Cascade)
   attachments TicketAttachment[]
   replies     TicketReply[]
 }
@@ -237,22 +232,22 @@ model Ticket {
 model TicketReply {
   id          String             @id @default(cuid())
   ticketId    String
-  ticket      Ticket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   userId      String
-  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content     String             @db.Text
+  content     String
   createdAt   DateTime           @default(now()) @db.Timestamptz(3)
   attachments TicketAttachment[]
+  ticket      Ticket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model TicketAttachment {
   id         String       @id @default(cuid())
   ticketId   String?
-  ticket     Ticket?      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   replyId    String?
-  reply      TicketReply? @relation(fields: [replyId], references: [id], onDelete: Cascade)
   fileUrl    String       @db.VarChar(255)
   uploadedAt DateTime     @default(now()) @db.Timestamptz(3)
+  reply      TicketReply? @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  ticket     Ticket?      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 }
 
 model TicketCategory {
@@ -292,6 +287,7 @@ enum UserStatus {
   AVAILABLE
   BUSY
   OFFLINE
+  BANNED
 }
 
 enum ReportStatus {

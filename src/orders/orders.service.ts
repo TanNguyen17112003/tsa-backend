@@ -1,10 +1,11 @@
 import {
   BadRequestException,
   Injectable,
+  NotFoundException,
   NotImplementedException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, Prisma } from '@prisma/client';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
@@ -14,6 +15,7 @@ import { GetUserType } from 'src/types';
 import {
   CreateAdminOrderDto,
   CreateStudentOrderDto,
+  OrderCancelType,
   OrderQueryDto,
   StaffOrdersStatsDto,
   StudentOrdersStatsDto,
@@ -31,8 +33,7 @@ import {
   getHistoryTimee,
   getLatestOrderStatus,
   getShippingFee,
-  handleCancelDelivery,
-  mapTypeToReason,
+  mapReason,
   shortenUUID,
   validateUserForOrder,
 } from './utils/order.util';
@@ -269,10 +270,10 @@ export class OrderService {
           user
         );
         await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
-        await this.notificationService.sendNotification({
+        await this.notificationService.sendFullNotification({
           type: 'ORDER',
           title: 'Xác nhận đơn hàng',
-          content: `Đơn hàng Đơn hàng ${shortenUUID(existingOrder.checkCode, 'ORDER')} của bạn đã được xác nhận`,
+          message: `Đơn hàng Đơn hàng ${shortenUUID(existingOrder.checkCode, 'ORDER')} của bạn đã được xác nhận`,
           orderId: existingOrder.id,
           userId: existingOrder.studentId,
           deliveryId: undefined,
@@ -364,7 +365,44 @@ export class OrderService {
     }
 
     if (status === 'CANCELED') {
-      handleCancelDelivery(cancelReasonType, canceledImage, reason);
+      if (!cancelReasonType || !reason) {
+        throw new BadRequestException('Cần phải có lý do khi hủy chuyến đi');
+      }
+      if (!canceledImage) {
+        throw new BadRequestException('Cần phải có ảnh minh chứng khi huỷ đơn hàng');
+      }
+      if (cancelReasonType === OrderCancelType.FROM_STUDENT) {
+        const student = await this.prisma.student.findUnique({
+          where: {
+            studentId: order.studentId,
+          },
+        });
+
+        if (!student) {
+          throw new NotFoundException('Không tìm thấy người dùng');
+        }
+        const oldFailedCount = student.numberFault;
+        const newFailedCount = oldFailedCount + 1;
+
+        // Chuẩn bị dữ liệu cập nhật
+        const updateData: Prisma.StudentUpdateInput = {
+          numberFault: newFailedCount,
+        };
+
+        const bannedThreshold = Number(process.env.BANNED_STUDENT_NUMBER);
+        if (newFailedCount === bannedThreshold) {
+          updateData.status = 'BANNED';
+        }
+
+        await this.prisma.$transaction(async (tx) => {
+          await tx.student.update({
+            where: {
+              studentId: student.studentId,
+            },
+            data: updateData,
+          });
+        });
+      }
     }
     // For staff update status of order to DELIVERED and payment method is CASH
     if (user.role === 'STAFF' && status === 'DELIVERED' && order.paymentMethod === 'CASH') {
@@ -376,32 +414,22 @@ export class OrderService {
       });
     }
 
-    await this.notificationService.sendNotification({
+    await this.notificationService.sendFullNotification({
       type: 'ORDER',
       title: 'Thay đổi trạng thái đơn hàng',
-      content: `Đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
-      orderId: order.id,
+      message: `Đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
       userId: order.studentId,
+      orderId: order.id,
       deliveryId: undefined,
       reportId: undefined,
     });
-    await this.notificationService.sendPushNotification({
-      userId: order.studentId,
-      message: {
-        title: 'Thay đổi trạng thái đơn hàng',
-        message: `Đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
-        body: {
-          type: 'ORDER',
-          orderId: order.id,
-        },
-      },
-    });
+
     await createOrderStatusHistory(
       this.prisma,
       id,
       status,
+      mapReason(cancelReasonType, reason),
       canceledImage,
-      mapTypeToReason(cancelReasonType, reason),
       finishedImage
     );
     return { message: 'Order status updated' };

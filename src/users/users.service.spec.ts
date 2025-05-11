@@ -60,6 +60,7 @@ describe('UsersService', () => {
     dormitory: 'A',
     building: '1',
     room: '101',
+    numberFault: 0,
   };
   const mockStaffInfo: Staff = {
     staffId: '2',

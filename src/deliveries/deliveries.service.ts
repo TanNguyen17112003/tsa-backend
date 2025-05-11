@@ -1,15 +1,20 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DeliveryStatus, OrderStatus } from '@prisma/client';
 import { DateService } from 'src/date';
 import { IdGeneratorService } from 'src/id-generator';
 import { NotificationsService } from 'src/notifications/notifications.service';
-import { createOrderStatusHistory, shortenUUID } from 'src/orders/utils/order.util';
+import { OrderCancelType } from 'src/orders/dtos';
+import { createOrderStatusHistory, mapReason, shortenUUID } from 'src/orders/utils/order.util';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
 import {
   CreateDeliveryDto,
-  DeliveryCancelReason,
   GetDeliveriesDto,
   GetDeliveryDto,
   UpdateDeliveryDto,
@@ -97,10 +102,10 @@ export class DeliveriesService {
     });
 
     if (deliveryData.staffId) {
-      await this.notificationService.sendNotification({
+      await this.notificationService.sendFullNotification({
         type: 'DELIVERY',
         title: 'Chuyến đi mới vừa được tạo',
-        content: `Chuyến đi ${shortenUUID(newDelivery.id, 'DELIVERY')} đã được tạo`,
+        message: `Chuyến đi ${shortenUUID(newDelivery.id, 'DELIVERY')} đã được tạo`,
         deliveryId: newDelivery.id,
         orderId: undefined,
         reportId: undefined,
@@ -214,8 +219,7 @@ export class DeliveriesService {
     if (isGoingDelivery && updateStatusDto.status === DeliveryStatus.ACCEPTED) {
       throw new BadRequestException('Bạn chỉ có thể nhận một chuyến đi tại một thời điểm');
     }
-    const { status, reason, canceledImage, cancelReasonType } = updateStatusDto;
-
+    const { status, reason, canceledImage } = updateStatusDto;
     const delivery = await this.prisma.delivery.findUnique({
       where: { id },
       include: {
@@ -231,68 +235,73 @@ export class DeliveriesService {
     }
 
     if (status === DeliveryStatus.CANCELED) {
-      if (
-        delivery.orders.some(
-          (ordersOnDelivey) =>
-            ordersOnDelivey.order.latestStatus === OrderStatus.CANCELED ||
-            ordersOnDelivey.order.latestStatus === OrderStatus.DELIVERED
-        )
-      ) {
+      if (!reason || !canceledImage) {
         throw new BadRequestException(
-          'Chuyến đi không thể bị hủy khi có ít nhất một đơn hàng đã được hủy hoặc đã được giao'
+          'Cần phải có lí do hoặc hình ảnh minh chứng khi huỷ chuyến đi'
         );
-      } else {
-        this.handleCancelDelivery(cancelReasonType, canceledImage, reason);
-
-        await this.notificationService.sendNotification({
-          type: 'DELIVERY',
-          title: 'Thay đổi trạng thái chuyến đi',
-          content: `Chuyến đi ${shortenUUID(delivery.id, 'DELIVERY')} đã bị hủy, lý do: ${this.mapTypeToReason(cancelReasonType)}`,
-          deliveryId: delivery.id,
-          orderId: undefined,
-          reportId: undefined,
-          userId: delivery.staffId,
-        });
-        await Promise.all(
-          delivery.orders.map((ordersOnDelivey) =>
-            createOrderStatusHistory(
-              this.prisma,
-              ordersOnDelivey.orderId,
-              OrderStatus.CANCELED,
-              this.mapTypeToReason(cancelReasonType, reason),
-              canceledImage
-            )
-          )
-        );
-        return this.prisma.delivery.update({
-          where: { id },
-          data: {
-            DeliveryStatusHistory: {
-              create: {
-                status,
-                time: this.dateService.getCurrentUnixTimestamp().toString(),
-                reason: this.mapTypeToReason(cancelReasonType),
-                canceledImage,
-              },
-            },
-            latestStatus: status,
-          },
-        });
       }
+
+      const inTransportOrders = delivery.orders.filter(
+        (ordersOnDelivery) => ordersOnDelivery.order.latestStatus === 'IN_TRANSPORT'
+      );
+
+      // Cập nhật trạng thái và gửi noti song song cho từng đơn
+      await Promise.all(
+        inTransportOrders.map(async (ordersOnDelivery) => {
+          await createOrderStatusHistory(
+            this.prisma,
+            ordersOnDelivery.orderId,
+            OrderStatus.CANCELED,
+            mapReason(OrderCancelType.FROM_STAFF, reason),
+            canceledImage
+          );
+
+          await this.notificationService.sendFullNotification({
+            type: 'ORDER',
+            title: 'Đơn hàng bị hủy',
+            message: `Đơn hàng ${shortenUUID(ordersOnDelivery.order.checkCode, 'ORDER')} đã bị hủy vì: ${reason}`,
+            deliveryId: delivery.id,
+            orderId: ordersOnDelivery.orderId,
+            reportId: undefined,
+            userId: ordersOnDelivery.order.studentId,
+          });
+        })
+      );
+
+      // Gửi noti cho shipper
+      await this.notificationService.sendFullNotification({
+        type: 'DELIVERY',
+        title: 'Thay đổi trạng thái chuyến đi',
+        message: `Chuyến đi ${delivery.displayId} đã bị hủy, lý do: ${reason}`,
+        deliveryId: delivery.id,
+        orderId: undefined,
+        reportId: undefined,
+        userId: delivery.staffId,
+      });
+
+      return this.prisma.delivery.update({
+        where: { id },
+        data: {
+          DeliveryStatusHistory: {
+            create: {
+              status,
+              time: this.dateService.getCurrentUnixTimestamp().toString(),
+              reason,
+              canceledImage,
+            },
+          },
+          latestStatus: status,
+        },
+      });
     }
 
-    await this.notificationService.sendNotification({
-      type: 'DELIVERY',
-      title: 'Thay đổi trạng thái chuyến đi',
-      content:
-        status === 'FINISHED'
-          ? `Chuyến đi ${shortenUUID(delivery.id, 'DELIVERY')} đã hoàn thành`
-          : `Chuyến đi ${shortenUUID(delivery.id, 'DELIVERY')} đã được nhận`,
-      deliveryId: delivery.id,
-      orderId: undefined,
-      reportId: undefined,
-      userId: delivery.staffId,
-    });
+    if (status === DeliveryStatus.PENDING || status === DeliveryStatus.ACCEPTED) {
+      if (reason || canceledImage) {
+        throw new ConflictException(
+          'Không thể cập nhật lí do hoặc hình ảnh huỷ cho trạng thái của chuyến đi này'
+        );
+      }
+    }
 
     if (status === DeliveryStatus.ACCEPTED) {
       await Promise.all(
@@ -301,17 +310,50 @@ export class DeliveriesService {
         )
       );
     }
+
+    const isAllOrdersCanceled = delivery.orders.every(
+      (orderOnDelivery) => orderOnDelivery.order.latestStatus === OrderStatus.CANCELED
+    );
+    if (isAllOrdersCanceled && (!reason || !canceledImage)) {
+      throw new BadRequestException('Cần phải có lí do hoặc hình ảnh minh chứng khi huỷ chuyến đi');
+    }
+
+    let title = '';
+    let message = '';
+
+    if (status === 'PENDING') {
+      title = 'Chuyến đi đang chờ nhận';
+      message = `Chuyến đi ${delivery.displayId} đang chờ shipper nhận`;
+    } else if (status === 'ACCEPTED') {
+      title = 'Chuyến đi đã được nhận';
+      message = `Chuyến đi ${delivery.displayId} đã được shipper nhận`;
+    } else if (status === 'FINISHED') {
+      title = 'Chuyến đi đã hoàn thành';
+      message = `Chuyến đi ${delivery.displayId} đã hoàn thành`;
+    }
+
+    await this.notificationService.sendFullNotification({
+      type: 'DELIVERY',
+      title,
+      message,
+      deliveryId: delivery.id,
+      orderId: undefined,
+      reportId: undefined,
+      userId: delivery.staffId,
+    });
+
     return this.prisma.delivery.update({
       where: { id },
       data: {
         DeliveryStatusHistory: {
           create: {
-            status,
+            status: isAllOrdersCanceled ? DeliveryStatus.CANCELED : status,
             time: this.dateService.getCurrentUnixTimestamp().toString(),
             reason,
+            canceledImage,
           },
         },
-        latestStatus: status,
+        latestStatus: isAllOrdersCanceled ? DeliveryStatus.CANCELED : status,
       },
     });
   }
@@ -332,34 +374,4 @@ export class DeliveriesService {
 
     return this.prisma.delivery.delete({ where: { id } });
   }
-
-  private handleCancelDelivery = (
-    cancelReasonType?: DeliveryCancelReason,
-    canceledImage?: string,
-    reason?: string
-  ) => {
-    if (!cancelReasonType) {
-      throw new BadRequestException('Cần phải có lý do khi hủy chuyến đi');
-    }
-    if (cancelReasonType === DeliveryCancelReason.OTHER && !reason) {
-      throw new BadRequestException('Cần phải có lý do khi chọn lý do hủy là khác');
-    }
-    if (cancelReasonType === DeliveryCancelReason.DAMEGED_VEHICLE && !canceledImage) {
-      throw new BadRequestException(
-        'Cần phải có hình ảnh khi chọn lý do hủy là hỏng phương tiện giao hàng'
-      );
-    }
-  };
-  private mapTypeToReason = (cancelReasonType: DeliveryCancelReason, reason?: string) => {
-    switch (cancelReasonType) {
-      case DeliveryCancelReason.DAMEGED_VEHICLE:
-        return 'Phương tiện giao hàng bị hỏng';
-      case DeliveryCancelReason.PERSONAL_REASON:
-        return 'Lý do cá nhân';
-      case DeliveryCancelReason.OTHER:
-        return reason;
-      default:
-        return 'Khác';
-    }
-  };
 }
