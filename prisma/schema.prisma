@@ -292,6 +292,7 @@ enum UserStatus {
   AVAILABLE
   BUSY
   OFFLINE
+  BANNED
 }
 
 enum ReportStatus {

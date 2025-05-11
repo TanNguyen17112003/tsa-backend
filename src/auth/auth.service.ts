@@ -196,9 +196,9 @@ export class AuthService {
         dormitory: studentInfo.dormitory,
         building: studentInfo.building,
         room: studentInfo.room,
+        status: studentInfo.status || 'AVAILABLE',
       };
     }
-
     const payload: GetUserType = {
       email: user.email,
       role: user.role,
@@ -221,6 +221,7 @@ export class AuthService {
       refreshToken,
       userInfo: {
         ...userInfo,
+        status: studentAdditionalInfo ? studentAdditionalInfo.status : 'AVAILABLE',
         ...studentAdditionalInfo,
       },
     };

@@ -1,9 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotAcceptableException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserRole, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { CloudinaryService } from 'src/cloudinary';
 import { PrismaService } from 'src/prisma';
+import { GetUserType } from 'src/types';
 
 import { UpdatePasswordDto, UpdateStudentDto } from './dto';
 import { StudentEntity, UserEntity } from './entities';
@@ -39,7 +45,10 @@ export class UsersService {
           status: user.staff.status,
         };
       } else {
-        return user;
+        return {
+          ...user,
+          status: UserStatus.OFFLINE, // Default status for users without specific roles
+        };
       }
     });
   }
@@ -99,7 +108,37 @@ export class UsersService {
       });
     }
 
-    return updatedUser;
+    return {
+      ...updatedUser,
+      status: UserStatus.OFFLINE,
+    };
+  }
+
+  async updateUserStatus(
+    user: GetUserType,
+    status: UserStatus,
+    userId: string
+  ): Promise<UserEntity> {
+    if (user.role !== 'ADMIN') {
+      throw new NotAcceptableException();
+    }
+    const userToUpdate = await this.prismaService.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!userToUpdate) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updatedUser = await this.prismaService.user.update({
+      where: { id: userId },
+      data: { student: { update: { status } } },
+    });
+
+    return {
+      ...updatedUser,
+      status,
+    };
   }
 
   // async findByEmail(email: string): Promise<UserEntity | null> {
@@ -135,10 +174,15 @@ export class UsersService {
         dormitory: student.dormitory,
         building: student.building,
         room: student.room,
+        status: student.status,
       };
     }
     return {
       ...userInfo,
+      status:
+        studentAdditionalInfo && studentAdditionalInfo.status
+          ? studentAdditionalInfo.status
+          : UserStatus.OFFLINE,
       ...studentAdditionalInfo,
     };
   }

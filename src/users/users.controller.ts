@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
+import { UserRole, UserStatus } from '@prisma/client';
 import { memoryStorage } from 'multer';
 import { Auth, GetUser } from 'src/auth';
 import { GetUserType } from 'src/types';
@@ -59,6 +59,18 @@ export class UsersController {
     avatar?: Express.Multer.File
   ) {
     return this.usersService.updateStudentById(user.id, updateStudentDto, avatar);
+  }
+
+  @Patch('/status/:id/:status')
+  @Auth()
+  @ApiOperation({ summary: 'Update status of current logged in user' })
+  @ApiResponse({ status: 200, description: 'OK.', type: UserEntity })
+  async updateStatus(
+    @GetUser() user: GetUserType,
+    @Param('id') id: string,
+    @Param('status') status: UserStatus
+  ) {
+    return this.usersService.updateUserStatus(user, status, id);
   }
 
   @Put('/password')
