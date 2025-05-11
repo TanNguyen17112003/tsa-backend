@@ -7,7 +7,6 @@ import { NotificationsService } from 'src/notifications';
 import { PrismaService } from 'src/prisma';
 
 import { DeliveriesService } from './deliveries.service';
-import { DeliveryCancelReason } from './dtos';
 
 describe('DeliveriesService', () => {
   let service: DeliveriesService;
@@ -289,7 +288,12 @@ describe('DeliveriesService', () => {
       await expect(
         service.updateDeliveryStatus(
           'delivery1',
-          { status: 'CANCELED', cancelReasonType: DeliveryCancelReason.PERSONAL_REASON },
+          {
+            status: 'CANCELED',
+            canceledImage:
+              'http://res.cloudinary.com/diceqlufb/image/upload/v1746938054/tsa_image/ukbbpfdgrrkiwhunbapc.jpg',
+            reason: 'Hư xe',
+          },
           { id: 'staffId', role: 'STAFF', email: 'test@example.com' }
         )
       ).rejects.toThrow(BadRequestException);
@@ -340,7 +344,12 @@ describe('DeliveriesService', () => {
 
       const result = await service.updateDeliveryStatus(
         'delivery1',
-        { status: 'CANCELED', cancelReasonType: DeliveryCancelReason.PERSONAL_REASON },
+        {
+          status: 'CANCELED',
+          canceledImage:
+            'http://res.cloudinary.com/diceqlufb/image/upload/v1746938054/tsa_image/ukbbpfdgrrkiwhunbapc.jpg',
+          reason: 'Hư xe',
+        },
         { id: 'staffId', role: 'STAFF', email: 'test@example.com' }
       );
 
