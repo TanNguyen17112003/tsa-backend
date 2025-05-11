@@ -1,10 +1,11 @@
 import {
   BadRequestException,
   Injectable,
+  NotFoundException,
   NotImplementedException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, Prisma } from '@prisma/client';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
@@ -14,6 +15,7 @@ import { GetUserType } from 'src/types';
 import {
   CreateAdminOrderDto,
   CreateStudentOrderDto,
+  OrderCancelType,
   OrderQueryDto,
   StaffOrdersStatsDto,
   StudentOrdersStatsDto,
@@ -31,8 +33,7 @@ import {
   getHistoryTimee,
   getLatestOrderStatus,
   getShippingFee,
-  handleCancelDelivery,
-  mapTypeToReason,
+  mapReason,
   shortenUUID,
   validateUserForOrder,
 } from './utils/order.util';
@@ -364,7 +365,45 @@ export class OrderService {
     }
 
     if (status === 'CANCELED') {
-      handleCancelDelivery(cancelReasonType, canceledImage, reason);
+      if (!cancelReasonType || !reason) {
+        throw new BadRequestException('Cần phải có lý do khi hủy chuyến đi');
+      }
+      if (!canceledImage) {
+        throw new BadRequestException('Cần phải có ảnh minh chứng khi huỷ đơn hàng');
+      }
+      const student = await this.prisma.student.findUnique({
+        where: {
+          studentId: user.id,
+        },
+      });
+
+      if (!student) {
+        throw new NotFoundException('Không tìm thấy người dùng');
+      }
+
+      if (cancelReasonType === OrderCancelType.FROM_USER) {
+        const oldFailedCount = student.numberFault;
+        const newFailedCount = oldFailedCount + 1;
+
+        // Chuẩn bị dữ liệu cập nhật
+        const updateData: Prisma.StudentUpdateInput = {
+          numberFault: newFailedCount,
+        };
+
+        const bannedThreshold = Number(process.env.BANNED_STUDENT_NUMBER);
+        if (newFailedCount === bannedThreshold) {
+          updateData.status = 'BANNED';
+        }
+
+        await this.prisma.$transaction(async (tx) => {
+          await tx.student.update({
+            where: {
+              studentId: student.studentId,
+            },
+            data: updateData,
+          });
+        });
+      }
     }
     // For staff update status of order to DELIVERED and payment method is CASH
     if (user.role === 'STAFF' && status === 'DELIVERED' && order.paymentMethod === 'CASH') {
@@ -401,7 +440,7 @@ export class OrderService {
       id,
       status,
       canceledImage,
-      mapTypeToReason(cancelReasonType, reason),
+      mapReason(cancelReasonType, reason),
       finishedImage
     );
     return { message: 'Order status updated' };

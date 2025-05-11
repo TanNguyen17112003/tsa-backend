@@ -1,9 +1,9 @@
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
 import { $Enums } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GetUserType } from 'src/types';
 
-import { OrderCancelReason } from '../dtos';
+import { OrderCancelType } from '../dtos';
 
 export const findExistingOrder = async (
   prisma: PrismaService,
@@ -196,45 +196,13 @@ export const shortenUUID = (uuid: string, type: 'ORDER' | 'DELIVERY') => {
   return `#${type === 'ORDER' ? 'TSA' : 'DELI'}${uuid.slice(uuid.length - 6, uuid.length).toUpperCase()}`;
 };
 
-export const handleCancelDelivery = (
-  cancelReasonType?: OrderCancelReason,
-  canceledImage?: string,
-  reason?: string
-) => {
-  if (!cancelReasonType) {
-    throw new BadRequestException('Cần phải có lý do khi hủy chuyến đi');
+export const mapReason = (type?: OrderCancelType, reason?: string) => {
+  if (!type || !reason) {
+    return null;
   }
-  if (cancelReasonType === OrderCancelReason.OTHER && !reason) {
-    throw new BadRequestException('Cần phải có lý do khi chọn lý do hủy là khác');
-  }
-  if (
-    !(cancelReasonType in [OrderCancelReason.PERSONAL_REASON, OrderCancelReason.OTHER]) &&
-    !canceledImage
-  ) {
-    throw new BadRequestException(
-      'Cần phải có hình ảnh khi chọn lý do hủy không phải là lý do cá nhân'
-    );
-  }
-};
-export const mapTypeToReason = (cancelReasonType: OrderCancelReason, reason?: string) => {
-  switch (cancelReasonType) {
-    case OrderCancelReason.WRONG_ADDRESS:
-      return 'Sai địa chỉ';
-    case OrderCancelReason.CAN_NOT_CONTACT:
-      return 'Không liên lạc được';
-    case OrderCancelReason.PAYMENT_ISSUE:
-      return 'Vấn đề thanh toán';
-    case OrderCancelReason.DAMAGED_PRODUCT:
-      return 'Sản phẩm bị hỏng';
-    case OrderCancelReason.HEAVY_PRODUCT:
-      return 'Sản phẩm quá nặng';
-    case OrderCancelReason.PERSONAL_REASON:
-      return 'Lý do cá nhân';
-    case OrderCancelReason.DAMEGED_VEHICLE:
-      return 'Xe hỏng';
-    case OrderCancelReason.OTHER:
-      return reason;
-    default:
-      return 'Khác';
+  if (type === OrderCancelType.FROM_STAFF) {
+    return `Lí do xuất phát từ nhân viên: ${reason}`;
+  } else {
+    return `Lí do xuất phát từ người dùng: ${reason}`;
   }
 };
