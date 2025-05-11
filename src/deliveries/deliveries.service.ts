@@ -102,10 +102,10 @@ export class DeliveriesService {
     });
 
     if (deliveryData.staffId) {
-      await this.notificationService.sendNotification({
+      await this.notificationService.sendFullNotification({
         type: 'DELIVERY',
         title: 'Chuyến đi mới vừa được tạo',
-        content: `Chuyến đi ${shortenUUID(newDelivery.id, 'DELIVERY')} đã được tạo`,
+        message: `Chuyến đi ${shortenUUID(newDelivery.id, 'DELIVERY')} đã được tạo`,
         deliveryId: newDelivery.id,
         orderId: undefined,
         reportId: undefined,
@@ -241,28 +241,44 @@ export class DeliveriesService {
         );
       }
 
-      await this.notificationService.sendNotification({
+      const inTransportOrders = delivery.orders.filter(
+        (ordersOnDelivery) => ordersOnDelivery.order.latestStatus === 'IN_TRANSPORT'
+      );
+
+      // Cập nhật trạng thái và gửi noti song song cho từng đơn
+      await Promise.all(
+        inTransportOrders.map(async (ordersOnDelivery) => {
+          await createOrderStatusHistory(
+            this.prisma,
+            ordersOnDelivery.orderId,
+            OrderStatus.CANCELED,
+            mapReason(OrderCancelType.FROM_STAFF, reason),
+            canceledImage
+          );
+
+          await this.notificationService.sendFullNotification({
+            type: 'ORDER',
+            title: 'Đơn hàng bị hủy',
+            message: `Đơn hàng ${shortenUUID(ordersOnDelivery.order.checkCode, 'ORDER')} đã bị hủy vì: ${reason}`,
+            deliveryId: delivery.id,
+            orderId: ordersOnDelivery.orderId,
+            reportId: undefined,
+            userId: ordersOnDelivery.order.studentId,
+          });
+        })
+      );
+
+      // Gửi noti cho shipper
+      await this.notificationService.sendFullNotification({
         type: 'DELIVERY',
         title: 'Thay đổi trạng thái chuyến đi',
-        content: `Chuyến đi ${shortenUUID(delivery.id, 'DELIVERY')} đã bị hủy, lý do: ${reason}`,
+        message: `Chuyến đi ${delivery.displayId} đã bị hủy, lý do: ${reason}`,
         deliveryId: delivery.id,
         orderId: undefined,
         reportId: undefined,
         userId: delivery.staffId,
       });
-      await Promise.all(
-        delivery.orders
-          .filter((ordersOnDelivey) => ordersOnDelivey.order.latestStatus === 'IN_TRANSPORT')
-          .map((ordersOnDelivey) =>
-            createOrderStatusHistory(
-              this.prisma,
-              ordersOnDelivey.orderId,
-              OrderStatus.CANCELED,
-              mapReason(OrderCancelType.FROM_STAFF, reason),
-              canceledImage
-            )
-          )
-      );
+
       return this.prisma.delivery.update({
         where: { id },
         data: {
@@ -287,19 +303,6 @@ export class DeliveriesService {
       }
     }
 
-    await this.notificationService.sendNotification({
-      type: 'DELIVERY',
-      title: 'Thay đổi trạng thái chuyến đi',
-      content:
-        status === 'FINISHED'
-          ? `Chuyến đi ${shortenUUID(delivery.id, 'DELIVERY')} đã hoàn thành`
-          : `Chuyến đi ${shortenUUID(delivery.id, 'DELIVERY')} đã được nhận`,
-      deliveryId: delivery.id,
-      orderId: undefined,
-      reportId: undefined,
-      userId: delivery.staffId,
-    });
-
     if (status === DeliveryStatus.ACCEPTED) {
       await Promise.all(
         delivery.orders.map((order) =>
@@ -315,6 +318,30 @@ export class DeliveriesService {
       throw new BadRequestException('Cần phải có lí do hoặc hình ảnh minh chứng khi huỷ chuyến đi');
     }
 
+    let title = '';
+    let message = '';
+
+    if (status === 'PENDING') {
+      title = 'Chuyến đi đang chờ nhận';
+      message = `Chuyến đi ${delivery.displayId} đang chờ shipper nhận`;
+    } else if (status === 'ACCEPTED') {
+      title = 'Chuyến đi đã được nhận';
+      message = `Chuyến đi ${delivery.displayId} đã được shipper nhận`;
+    } else if (status === 'FINISHED') {
+      title = 'Chuyến đi đã hoàn thành';
+      message = `Chuyến đi ${delivery.displayId} đã hoàn thành`;
+    }
+
+    await this.notificationService.sendFullNotification({
+      type: 'DELIVERY',
+      title,
+      message,
+      deliveryId: delivery.id,
+      orderId: undefined,
+      reportId: undefined,
+      userId: delivery.staffId,
+    });
+
     return this.prisma.delivery.update({
       where: { id },
       data: {
@@ -326,7 +353,7 @@ export class DeliveriesService {
             canceledImage,
           },
         },
-        latestStatus: status,
+        latestStatus: isAllOrdersCanceled ? DeliveryStatus.CANCELED : status,
       },
     });
   }

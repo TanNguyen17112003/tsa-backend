@@ -97,10 +97,10 @@ export class ReportsService {
     });
     checkRowLevelPermission(user, report.replierId);
     if (user.role === 'ADMIN' && updateReportDto.reply) {
-      this.notificationsService.sendNotification({
+      this.notificationsService.sendFullNotification({
         type: 'REPORT',
         title: 'Phản hồi khiếu nại',
-        content: `Khiếu nại cho đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã được phản hồi`,
+        message: `Khiếu nại cho đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã được phản hồi`,
         reportId: report.id,
         userId: report.studentId,
         deliveryId: undefined,

@@ -6,6 +6,7 @@ import axios from 'axios';
 import * as crypto from 'crypto';
 import moment from 'moment';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { shortenUUID } from 'src/orders/utils/order.util';
 import { PrismaService } from 'src/prisma';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -159,23 +160,18 @@ export class PaymentService {
 
       const title = updatedOrder.isPaid ? 'Thanh toán thành công' : 'Thanh toán một phần';
       const content = updatedOrder.isPaid
-        ? `Đơn hàng ${updatedOrder.id} đã được thanh toán thành công`
+        ? `Đơn hàng ${shortenUUID(updatedOrder.checkCode, 'ORDER')} đã được thanh toán thành công`
         : `Đã thanh toán ${amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })} 
-           cho đơn hàng ${updatedOrder.id}. Còn lại ${updatedOrder.remainingAmount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}`;
+           cho đơn hàng ${shortenUUID(updatedOrder.checkCode, 'ORDER')}. Còn lại ${updatedOrder.remainingAmount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}`;
 
-      await this.notificationService.sendNotification({
+      await this.notificationService.sendFullNotification({
+        message: content,
         title,
         type: 'ORDER',
-        content,
         userId: updatedOrder.studentId,
         orderId: updatedOrder.id,
         deliveryId: null,
         reportId: null,
-      });
-
-      await this.notificationService.sendPushNotification({
-        message: { title, message: content },
-        userId: updatedOrder.studentId,
       });
 
       this.paymentGateway.notifyPaymentUpdate(updatedOrder.id, {

@@ -270,10 +270,10 @@ export class OrderService {
           user
         );
         await createOrderStatusHistory(this.prisma, existingOrder.id, 'ACCEPTED');
-        await this.notificationService.sendNotification({
+        await this.notificationService.sendFullNotification({
           type: 'ORDER',
           title: 'Xác nhận đơn hàng',
-          content: `Đơn hàng Đơn hàng ${shortenUUID(existingOrder.checkCode, 'ORDER')} của bạn đã được xác nhận`,
+          message: `Đơn hàng Đơn hàng ${shortenUUID(existingOrder.checkCode, 'ORDER')} của bạn đã được xác nhận`,
           orderId: existingOrder.id,
           userId: existingOrder.studentId,
           deliveryId: undefined,
@@ -414,26 +414,16 @@ export class OrderService {
       });
     }
 
-    await this.notificationService.sendNotification({
+    await this.notificationService.sendFullNotification({
       type: 'ORDER',
       title: 'Thay đổi trạng thái đơn hàng',
-      content: `Đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
-      orderId: order.id,
+      message: `Đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
       userId: order.studentId,
+      orderId: order.id,
       deliveryId: undefined,
       reportId: undefined,
     });
-    await this.notificationService.sendPushNotification({
-      userId: order.studentId,
-      message: {
-        title: 'Thay đổi trạng thái đơn hàng',
-        message: `Đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
-        body: {
-          type: 'ORDER',
-          orderId: order.id,
-        },
-      },
-    });
+
     await createOrderStatusHistory(
       this.prisma,
       id,

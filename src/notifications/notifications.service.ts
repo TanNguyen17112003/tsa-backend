@@ -242,4 +242,40 @@ export class NotificationsService {
       pusNotiType: foundDevices?.pushNotiType || null,
     };
   }
+  async sendFullNotification({
+    userId,
+    type,
+    title,
+    message,
+    orderId,
+    deliveryId,
+    reportId,
+  }: {
+    userId: string;
+    type: 'ORDER' | 'DELIVERY' | 'REPORT'; // mở rộng nếu cần
+    title: string;
+    message: string;
+    orderId?: string;
+    deliveryId?: string;
+    reportId?: string;
+  }) {
+    await Promise.all([
+      this.sendNotification({
+        type,
+        title,
+        content: message,
+        orderId,
+        userId,
+        deliveryId,
+        reportId,
+      }),
+      this.sendPushNotification({
+        userId,
+        message: {
+          title,
+          message,
+        },
+      }),
+    ]);
+  }
 }
