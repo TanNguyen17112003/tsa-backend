@@ -28,6 +28,7 @@ describe('UsersService', () => {
       photoUrl: 'http://example.com/photo1.jpg',
       verified: true,
       createdAt: new Date(),
+      status: UserStatus.AVAILABLE,
     },
     {
       id: '2',
@@ -40,6 +41,7 @@ describe('UsersService', () => {
       photoUrl: 'http://example.com/photo2.jpg',
       verified: true,
       createdAt: new Date(),
+      status: UserStatus.AVAILABLE,
     },
     {
       id: '3',
@@ -52,11 +54,11 @@ describe('UsersService', () => {
       photoUrl: 'http://example.com/photo3.jpg',
       verified: true,
       createdAt: new Date(),
+      status: UserStatus.AVAILABLE,
     },
   ];
   const mockStudentInfo: Student = {
     studentId: '1',
-    status: UserStatus.AVAILABLE,
     dormitory: 'A',
     building: '1',
     room: '101',
@@ -64,7 +66,6 @@ describe('UsersService', () => {
   };
   const mockStaffInfo: Staff = {
     staffId: '2',
-    status: UserStatus.AVAILABLE,
   };
 
   beforeEach(async () => {
@@ -142,7 +143,6 @@ describe('UsersService', () => {
         {
           ...mockUsers[0],
           student: mockStudentInfo,
-          status: mockStudentInfo.status,
           dormitory: mockStudentInfo.dormitory,
           building: mockStudentInfo.building,
           room: mockStudentInfo.room,
@@ -150,7 +150,6 @@ describe('UsersService', () => {
         {
           ...mockUsers[1],
           staff: mockStaffInfo,
-          status: mockStaffInfo.status,
         },
         {
           ...mockUsers[2],
@@ -179,6 +178,7 @@ describe('UsersService', () => {
         photoUrl: 'http://example.com/photo.jpg',
         verified: true,
         createdAt: new Date(),
+        status: UserStatus.AVAILABLE,
       };
       const mockStudent = { dormitory: 'A', building: '1', room: '101' };
 
@@ -210,6 +210,7 @@ describe('UsersService', () => {
         photoUrl: 'http://example.com/photo.jpg',
         verified: true,
         createdAt: new Date(),
+        status: UserStatus.AVAILABLE,
       };
 
       (prismaService.user.findUnique as jest.Mock).mockResolvedValueOnce(mockUser);

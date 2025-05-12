@@ -57,6 +57,7 @@ describe('EmailService', () => {
       role: 'STAFF',
       createdAt: new Date(),
       verified: true,
+      status: 'AVAILABLE',
     };
     const subject = 'Test Subject';
     const content = 'Test Content';
