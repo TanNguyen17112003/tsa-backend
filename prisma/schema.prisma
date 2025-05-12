@@ -20,15 +20,16 @@ model User {
   email             String             @unique @db.VarChar(50)
   password          String?            @db.VarChar(255)
   createdAt         DateTime           @default(now()) @db.Timestamptz(3)
+  status            UserStatus         @default(AVAILABLE)
   admin             Admin?
+  staff             Staff?
+  student           Student?
   AuthProvider      AuthProvider?
+  verificationEmail VerificationEmail?
   DeviceToken       DeviceToken[]
   Notification      Notification[]
   refreshTokens     RefreshToken[]
-  staff             Staff?
-  student           Student?
   ticketReplies     TicketReply[]
-  verificationEmail VerificationEmail?
 }
 
 model RefreshToken {
@@ -47,7 +48,6 @@ model AuthProvider {
 
 model Student {
   studentId   String     @id @unique
-  status      UserStatus @default(OFFLINE)
   building    String?
   dormitory   Dormitory?
   room        String?
@@ -60,7 +60,6 @@ model Student {
 
 model Staff {
   staffId    String     @id @unique
-  status     UserStatus @default(OFFLINE)
   deliveries Delivery[]
   orders     Order[]
   user       User       @relation(fields: [staffId], references: [id], onDelete: Cascade)
@@ -285,8 +284,7 @@ enum DeliveryStatus {
 
 enum UserStatus {
   AVAILABLE
-  BUSY
-  OFFLINE
+  DEACTIVATED
   BANNED
 }
 
