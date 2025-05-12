@@ -41,6 +41,7 @@ describe('DeliveriesService', () => {
   };
   const mockNotificationsService = {
     sendNotification: jest.fn(),
+    sendFullNotification: jest.fn(),
   };
   const mockIdGeneratorService = {
     generateUniqueId: jest.fn(() => 'uniqueId'),
@@ -124,7 +125,7 @@ describe('DeliveriesService', () => {
 
       expect(result).toEqual({ id: 'delivery1' });
       expect(prismaService.delivery.create).toHaveBeenCalled();
-      expect(notificationService.sendNotification).toHaveBeenCalled();
+      expect(notificationService.sendFullNotification).toHaveBeenCalled();
       expect(dateService.getCurrentUnixTimestamp).toHaveBeenCalled();
       expect(idGeneratorService.generateUniqueId).toHaveBeenCalled();
     });
