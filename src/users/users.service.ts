@@ -1,15 +1,9 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotAcceptableException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserRole, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { CloudinaryService } from 'src/cloudinary';
 import { PrismaService } from 'src/prisma';
-import { GetUserType } from 'src/types';
 
 import { UpdatePasswordDto, UpdateStudentDto } from './dto';
 import { StudentEntity, UserEntity } from './entities';
@@ -34,21 +28,12 @@ export class UsersService {
       if (user.role === 'STUDENT' && user.student) {
         return {
           ...user,
-          status: user.student.status,
           dormitory: user.student.dormitory,
           building: user.student.building,
           room: user.student.room,
         };
-      } else if (user.role === 'STAFF' && user.staff) {
-        return {
-          ...user,
-          status: user.staff.status,
-        };
       } else {
-        return {
-          ...user,
-          status: UserStatus.OFFLINE, // Default status for users without specific roles
-        };
+        return user;
       }
     });
   }
@@ -90,14 +75,12 @@ export class UsersService {
       await this.prismaService.student.create({
         data: {
           user: { connect: { id } },
-          status: UserStatus.OFFLINE,
         },
       });
     } else if (newRole === UserRole.STAFF) {
       await this.prismaService.staff.create({
         data: {
           user: { connect: { id } },
-          status: UserStatus.OFFLINE,
         },
       });
     } else if (newRole === UserRole.ADMIN) {
@@ -108,20 +91,10 @@ export class UsersService {
       });
     }
 
-    return {
-      ...updatedUser,
-      status: UserStatus.OFFLINE,
-    };
+    return updatedUser;
   }
 
-  async updateUserStatus(
-    user: GetUserType,
-    status: UserStatus,
-    userId: string
-  ): Promise<UserEntity> {
-    if (user.role !== 'ADMIN') {
-      throw new NotAcceptableException();
-    }
+  async updateUserStatus(userId: string, status: UserStatus): Promise<UserEntity> {
     const userToUpdate = await this.prismaService.user.findUnique({
       where: { id: userId },
     });
@@ -132,13 +105,12 @@ export class UsersService {
 
     const updatedUser = await this.prismaService.user.update({
       where: { id: userId },
-      data: { student: { update: { status } } },
+      data: {
+        status,
+      },
     });
 
-    return {
-      ...updatedUser,
-      status,
-    };
+    return updatedUser;
   }
 
   // async findByEmail(email: string): Promise<UserEntity | null> {
@@ -174,15 +146,10 @@ export class UsersService {
         dormitory: student.dormitory,
         building: student.building,
         room: student.room,
-        status: student.status,
       };
     }
     return {
       ...userInfo,
-      status:
-        studentAdditionalInfo && studentAdditionalInfo.status
-          ? studentAdditionalInfo.status
-          : UserStatus.OFFLINE,
       ...studentAdditionalInfo,
     };
   }

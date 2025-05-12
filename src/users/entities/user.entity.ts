@@ -45,6 +45,6 @@ export class UserEntity implements Omit<User, 'password'> {
 
   @IsOptional()
   @IsIn(Object.values(UserStatus))
-  @ApiPropertyOptional({ example: 'OFFLINE', description: 'Status of user' })
+  @ApiPropertyOptional({ example: UserStatus.AVAILABLE, description: 'Status of user' })
   readonly status: UserStatus;
 }
