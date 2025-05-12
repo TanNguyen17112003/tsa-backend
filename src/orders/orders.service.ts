@@ -5,7 +5,7 @@ import {
   NotImplementedException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { OrderStatus, Prisma } from '@prisma/client';
+import { OrderStatus } from '@prisma/client';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
@@ -318,19 +318,16 @@ export class OrderService {
     user: GetUserType
   ) {
     const order = await this.prisma.order.findUnique({ where: { id } });
-    const latestOrderStatus = await this.prisma.orderStatusHistory.findFirst({
-      where: { orderId: id },
-      orderBy: { time: 'desc' },
-    });
+
     if (!order) {
       throw new BadRequestException('Order not found');
     }
 
     validateUserForOrder(user, order, user.role);
 
-    if (latestOrderStatus.status !== 'PENDING') {
-      throw new UnauthorizedException('You can only update orders that are pending');
-    }
+    // if (latestOrderStatus.status !== 'PENDING') {
+    //   throw new UnauthorizedException('You can only update orders that are pending');
+    // }
 
     await this.prisma.order.update({
       where: { id },
@@ -384,24 +381,23 @@ export class OrderService {
         const oldFailedCount = student.numberFault;
         const newFailedCount = oldFailedCount + 1;
 
-        // Chuẩn bị dữ liệu cập nhật
-        const updateData: Prisma.StudentUpdateInput = {
-          numberFault: newFailedCount,
-        };
-
         const bannedThreshold = Number(process.env.BANNED_STUDENT_NUMBER);
-        if (newFailedCount === bannedThreshold) {
-          updateData.status = 'BANNED';
-        }
+        const shouldBan = newFailedCount === bannedThreshold;
 
-        await this.prisma.$transaction(async (tx) => {
-          await tx.student.update({
-            where: {
-              studentId: student.studentId,
-            },
-            data: updateData,
-          });
-        });
+        await this.prisma.$transaction([
+          this.prisma.student.update({
+            where: { studentId: student.studentId },
+            data: { numberFault: newFailedCount },
+          }),
+          ...(shouldBan
+            ? [
+                this.prisma.user.update({
+                  where: { id: student.studentId },
+                  data: { status: 'BANNED' },
+                }),
+              ]
+            : []),
+        ]);
       }
     }
     // For staff update status of order to DELIVERED and payment method is CASH
