@@ -390,9 +390,6 @@ export class OrderService {
         };
 
         const bannedThreshold = Number(process.env.BANNED_STUDENT_NUMBER);
-        if (newFailedCount === bannedThreshold) {
-          updateData.status = 'BANNED';
-        }
 
         await this.prisma.$transaction(async (tx) => {
           await tx.student.update({
@@ -401,6 +398,16 @@ export class OrderService {
             },
             data: updateData,
           });
+          if (newFailedCount === bannedThreshold) {
+            await tx.user.update({
+              where: {
+                id: student.studentId,
+              },
+              data: {
+                status: 'BANNED',
+              },
+            });
+          }
         });
       }
     }

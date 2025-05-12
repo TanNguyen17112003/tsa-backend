@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { User, UserRole } from '@prisma/client';
+import { User, UserRole, UserStatus } from '@prisma/client';
 import { IsBoolean, IsEmail, IsIn, IsOptional, IsString } from 'class-validator';
 
 export class UserEntity implements Omit<User, 'password'> {
@@ -42,4 +42,9 @@ export class UserEntity implements Omit<User, 'password'> {
     description: 'Unix timestamp of when the user was created',
   })
   readonly createdAt: Date;
+
+  @IsOptional()
+  @IsIn(Object.values(UserStatus))
+  @ApiPropertyOptional({ example: UserStatus.AVAILABLE, description: 'Status of user' })
+  readonly status: UserStatus;
 }

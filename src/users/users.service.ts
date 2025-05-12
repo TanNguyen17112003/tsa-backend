@@ -28,15 +28,9 @@ export class UsersService {
       if (user.role === 'STUDENT' && user.student) {
         return {
           ...user,
-          status: user.student.status,
           dormitory: user.student.dormitory,
           building: user.student.building,
           room: user.student.room,
-        };
-      } else if (user.role === 'STAFF' && user.staff) {
-        return {
-          ...user,
-          status: user.staff.status,
         };
       } else {
         return user;
@@ -81,14 +75,12 @@ export class UsersService {
       await this.prismaService.student.create({
         data: {
           user: { connect: { id } },
-          status: UserStatus.OFFLINE,
         },
       });
     } else if (newRole === UserRole.STAFF) {
       await this.prismaService.staff.create({
         data: {
           user: { connect: { id } },
-          status: UserStatus.OFFLINE,
         },
       });
     } else if (newRole === UserRole.ADMIN) {
@@ -98,6 +90,25 @@ export class UsersService {
         },
       });
     }
+
+    return updatedUser;
+  }
+
+  async updateUserStatus(userId: string, status: UserStatus): Promise<UserEntity> {
+    const userToUpdate = await this.prismaService.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!userToUpdate) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updatedUser = await this.prismaService.user.update({
+      where: { id: userId },
+      data: {
+        status,
+      },
+    });
 
     return updatedUser;
   }

@@ -17,7 +17,7 @@ import { memoryStorage } from 'multer';
 import { Auth, GetUser } from 'src/auth';
 import { GetUserType } from 'src/types';
 
-import { UpdatePasswordDto, UpdateRoleDto, UpdateStudentDto } from './dto';
+import { UpdatePasswordDto, UpdateRoleDto, UpdateStatusDto, UpdateStudentDto } from './dto';
 import { UserEntity } from './entities';
 import { UsersService } from './users.service';
 
@@ -59,6 +59,14 @@ export class UsersController {
     avatar?: Express.Multer.File
   ) {
     return this.usersService.updateStudentById(user.id, updateStudentDto, avatar);
+  }
+
+  @Patch('/:id/status')
+  @Auth('ADMIN')
+  @ApiOperation({ summary: 'Update status of user' })
+  @ApiResponse({ status: 200, description: 'OK.', type: UserEntity })
+  async updateStatus(@Param('id') id: string, @Body() updateStatusDto: UpdateStatusDto) {
+    return this.usersService.updateUserStatus(id, updateStatusDto.status);
   }
 
   @Put('/password')

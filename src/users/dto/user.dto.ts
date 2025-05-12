@@ -1,5 +1,6 @@
 import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { UserStatus } from '@prisma/client';
+import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { SignUpDto } from 'src/auth/dto';
 
 export class UpdateStudentDto extends PartialType(OmitType(SignUpDto, ['token', 'password'])) {
@@ -33,4 +34,11 @@ export class UpdateRoleDto {
   @IsNotEmpty()
   @ApiProperty({ example: 'ADMIN', description: 'New role of user' })
   readonly role: string;
+}
+
+export class UpdateStatusDto {
+  @IsString()
+  @IsIn(Object.values(UserStatus))
+  @ApiProperty({ example: UserStatus.DEACTIVATED, description: 'New status of user' })
+  readonly status: UserStatus;
 }
