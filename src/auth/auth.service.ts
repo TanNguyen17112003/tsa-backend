@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
+import { User, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as admin from 'firebase-admin';
 import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier';
@@ -169,14 +169,20 @@ export class AuthService {
       where: { email },
     });
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      this.logger.error(`User not found with email: ${email}`);
+      this.throwInvalidEmailOrPassword();
     }
     if (!user.verified) {
-      throw new UnauthorizedException('Email not verified');
+      this.logger.error(`User not verified with email: ${email}`);
+      this.throwInvalidEmailOrPassword();
     }
-
+    if (user.status === UserStatus.BANNED || user.status === UserStatus.DEACTIVATED) {
+      this.logger.error(`User is banned or deactivated with email: ${email}`);
+      this.throwInvalidEmailOrPassword();
+    }
     if (!(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('Invalid email or password');
+      this.logger.error(`Invalid password for user with email: ${email}`);
+      this.throwInvalidEmailOrPassword();
     }
     return user;
   }
@@ -368,5 +374,9 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  private throwInvalidEmailOrPassword() {
+    throw new UnauthorizedException('Invalid email or password');
   }
 }
