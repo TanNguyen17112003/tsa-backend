@@ -1,5 +1,6 @@
+import { BullModule } from '@nestjs/bullmq';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerMiddleware } from 'src/common';
 
 import { AppController } from './app.controller';
@@ -24,6 +25,17 @@ import { UsersModule } from './users';
   imports: [
     PrismaModule,
     ConfigModule.forRoot({ isGlobal: true }),
+    BullModule.forRootAsync({
+      useFactory: async (configService: ConfigService) => ({
+        connection: {
+          host: configService.get<string>('REDIS_HOST'),
+          port: configService.get<number>('REDIS_PORT'),
+          username: configService.get<string>('REDIS_USERNAME'),
+          password: configService.get<string>('REDIS_PASSWORD'),
+        },
+      }),
+      inject: [ConfigService],
+    }),
     DateModule,
     EmailModule,
     AuthModule,
