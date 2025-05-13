@@ -13,6 +13,17 @@ export class StaffOrdersStatsDto {
     count: number;
     percentage: number;
   }[];
+
+  @ApiProperty({
+    description: 'List of stats grouped by day including orders and deliveries',
+    type: [Object],
+  })
+  resultByDay: {
+    period: string;
+    orderCount: number;
+    totalShippingFee: number;
+    deliveryCount: number;
+  }[];
 }
 
 export class StudentOrdersStatsDto {

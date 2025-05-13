@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
+import { DateService } from 'src/date';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
 import { PythonApiService } from 'src/python-api/python-api.service';
@@ -43,7 +44,8 @@ export class OrderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationsService,
-    private readonly pythonApi: PythonApiService
+    private readonly pythonApi: PythonApiService,
+    private readonly dateService: DateService
   ) {}
 
   async getOrders(
@@ -498,56 +500,74 @@ export class OrderService {
         throw new BadRequestException('Invalid type');
     }
 
-    const stats = await this.prisma.order.aggregate({
-      _count: true,
-      _sum: {
-        shippingFee: true,
-      },
-      where: {
-        shipperId: user.id,
-        deliveryDate: {
-          gte: startTime.toString(),
-        },
-      },
-    });
-    console.log('Stats: ', stats);
-
-    const totalOrders = await this.prisma.order.count({
-      where: {
-        shipperId: user.id,
-        deliveryDate: {
-          gte: startTime.toString(),
-        },
-      },
-    });
-    let brandPercentages = [];
-    if (totalOrders > 0) {
-      // Group orders by brand and calculate counts
-      const ordersByBrand = await this.prisma.order.groupBy({
-        by: ['brand'],
-        _count: {
-          brand: true,
-        },
+    const [orders, deliveries] = await Promise.all([
+      // Lấy danh sách các đơn hàng 'DELIVERED' trong phạm vi thời gian
+      this.prisma.order.findMany({
         where: {
           shipperId: user.id,
           deliveryDate: {
-            gte: startTime.toString(),
+            gte: startTime.toString(), // Chuyển startTime thành string
+          },
+          latestStatus: 'DELIVERED',
+        },
+      }),
+
+      // Lấy danh sách các deliveries 'FINISHED' trong phạm vi thời gian
+      this.prisma.delivery.findMany({
+        where: {
+          staffId: user.id,
+          latestStatus: 'FINISHED',
+          createdAt: {
+            gte: startTime.toString(), // Chuyển startTime thành string
           },
         },
-      });
+      }),
+    ]);
 
-      // Calculate percentage for each brand
-      brandPercentages = ordersByBrand.map((entry) => ({
-        brand: entry.brand || 'Unknown',
-        count: entry._count.brand,
-        percentage: ((entry._count.brand / totalOrders) * 100).toFixed(2),
+    // Tính tổng số đơn hàng và tổng shipping fee từ mảng orders
+    const totalOrders = orders.length;
+    const totalShippingFee = orders.reduce((sum, order) => sum + (order.shippingFee || 0), 0);
+
+    // Sử dụng reduce để nhóm các đơn hàng theo ngày
+    const groupedByDay = orders.reduce((acc, order) => {
+      const day = this.dateService.getDateFromUnixTimestamp(Number(order.deliveryDate)); // Chuyển timestamp thành ngày 'YYYY-MM-DD'
+      if (!acc[day]) {
+        acc[day] = { orderCount: 0, totalShippingFee: 0, deliveryCount: 0 }; // Thêm deliveryCount vào mỗi ngày
+      }
+      acc[day].orderCount += 1;
+      acc[day].totalShippingFee += order.shippingFee || 0;
+
+      return acc;
+    }, {});
+
+    // Thêm deliveries vào kết quả nhóm theo ngày
+    deliveries.forEach((delivery) => {
+      const day = this.dateService.getDateFromUnixTimestamp(Number(delivery.createdAt)); // Chuyển timestamp thành ngày 'YYYY-MM-DD'
+      if (!groupedByDay[day]) {
+        groupedByDay[day] = { orderCount: 0, totalShippingFee: 0, deliveryCount: 0 }; // Nếu ngày chưa có, khởi tạo
+      }
+      groupedByDay[day].deliveryCount += 1; // Tăng delivery count cho ngày đó
+    });
+
+    // Chuyển đổi kết quả nhóm thành mảng
+    const resultByDay = Object.keys(groupedByDay)
+      .sort((a, b) => {
+        const [da, ma, ya] = a.split('/').map(Number);
+        const [db, mb, yb] = b.split('/').map(Number);
+        const dateA = new Date(2000 + ya, ma - 1, da); // Chuyển về Date (lưu ý năm)
+        const dateB = new Date(2000 + yb, mb - 1, db);
+        return dateA.getTime() - dateB.getTime(); // tăng dần: xa → gần
+      })
+      .map((period) => ({
+        period,
+        ...groupedByDay[period],
       }));
-    }
 
     return {
-      totalOrders: stats._count || 0,
-      totalShippingFee: stats._sum.shippingFee || 0,
-      brandPercentages,
+      totalOrders,
+      totalShippingFee,
+      brandPercentages: [],
+      resultByDay,
     };
   }
 
