@@ -36,6 +36,7 @@ describe('ReportsService', () => {
 
   const mockNotifications = {
     sendNotification: jest.fn(),
+    sendFullNotification: jest.fn(),
   };
 
   beforeEach(async () => {
