@@ -10,6 +10,13 @@ import { EmailService } from './email.service';
   imports: [
     BullModule.registerQueue({
       name: EMAIL_QUEUE_NAME,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+      },
     }),
   ],
   providers: [EmailService, EmailProcessor],
