@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { User, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import * as admin from 'firebase-admin';
 import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier';
 import { EmailService } from 'src/email';
+import { FirebaseService } from 'src/firebase';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
@@ -22,7 +22,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
     private readonly notificationsService: NotificationsService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly firebaseService: FirebaseService
   ) {}
 
   /**
@@ -239,7 +240,7 @@ export class AuthService {
   async signInWithGoogle(dto: GoogleSignInDto): Promise<SignInResultDto> {
     let decodedToken: DecodedIdToken;
     try {
-      decodedToken = await admin.auth().verifyIdToken(dto.idToken);
+      decodedToken = await this.firebaseService.getAuth().verifyIdToken(dto.idToken);
     } catch (error) {
       this.logger.error('Error verifying Google ID token:', error);
       throw new UnauthorizedException('Invalid Google ID token');
