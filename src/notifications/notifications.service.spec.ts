@@ -240,9 +240,8 @@ describe('NotificationsService', () => {
       ];
 
       mockPrismaService.deviceToken.findMany.mockResolvedValue(foundDevices);
-      jest.spyOn(service, 'getAccessTokenAsync').mockResolvedValue('mockAccessToken');
 
-      await service.sendPushNotification({ userId, message });
+      await service.sendPushNotification(userId, message);
 
       expect(prisma.deviceToken.findMany).toHaveBeenCalledWith({
         where: {
@@ -251,7 +250,6 @@ describe('NotificationsService', () => {
           platform: 'ANDROID',
         },
       });
-      expect(service.getAccessTokenAsync).toHaveBeenCalled();
       expect(axios.post).toHaveBeenCalledTimes(foundDevices.length);
     });
 
@@ -266,11 +264,10 @@ describe('NotificationsService', () => {
       ];
 
       mockPrismaService.deviceToken.findMany.mockResolvedValue(foundDevices);
-      jest.spyOn(service, 'getAccessTokenAsync').mockResolvedValue('mockAccessToken');
       jest.spyOn(axios, 'post').mockRejectedValue(new Error('Failed to send notification'));
       mockPrismaService.deviceToken.update.mockResolvedValue({});
 
-      await service.sendPushNotification({ userId, message });
+      await service.sendPushNotification(userId, message);
 
       expect(prisma.deviceToken.findMany).toHaveBeenCalledWith({
         where: {
@@ -279,7 +276,6 @@ describe('NotificationsService', () => {
           platform: 'ANDROID',
         },
       });
-      expect(service.getAccessTokenAsync).toHaveBeenCalled();
       expect(axios.post).toHaveBeenCalledTimes(foundDevices.length);
       expect(prisma.deviceToken.update).toHaveBeenCalledWith({
         where: {
@@ -300,9 +296,8 @@ describe('NotificationsService', () => {
       };
 
       mockPrismaService.deviceToken.findMany.mockResolvedValue([]);
-      jest.spyOn(service, 'getAccessTokenAsync');
 
-      await service.sendPushNotification({ userId, message });
+      await service.sendPushNotification(userId, message);
 
       expect(prisma.deviceToken.findMany).toHaveBeenCalledWith({
         where: {
@@ -311,7 +306,6 @@ describe('NotificationsService', () => {
           platform: 'ANDROID',
         },
       });
-      expect(service.getAccessTokenAsync).not.toHaveBeenCalled();
       expect(axios.post).not.toHaveBeenCalled();
     });
   });

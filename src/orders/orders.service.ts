@@ -235,12 +235,9 @@ export class OrderService {
       });
       await createOrderStatusHistory(this.prisma, newOrder.id, 'PENDING');
       const historyTime = await getHistoryTimee(this.prisma, newOrder.id);
-      await this.notificationService.sendPushNotification({
-        userId: user.id,
-        message: {
-          title: 'Tạo đơn hàng thành công',
-          message: `Đơn hàng ${shortenUUID(newOrder.checkCode, 'ORDER')} của bạn đã được tạo thành công. Vui lòng chờ admin xác nhận`,
-        },
+      await this.notificationService.sendPushNotification(user.id, {
+        title: 'Tạo đơn hàng thành công',
+        message: `Đơn hàng ${shortenUUID(newOrder.checkCode, 'ORDER')} của bạn đã được tạo thành công. Vui lòng chờ admin xác nhận`,
       });
       return {
         message: 'Order created and status set to PENDING',

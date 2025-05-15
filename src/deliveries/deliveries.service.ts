@@ -105,7 +105,7 @@ export class DeliveriesService {
       await this.notificationService.sendFullNotification({
         type: 'DELIVERY',
         title: 'Chuyến đi mới vừa được tạo',
-        message: `Chuyến đi ${shortenUUID(newDelivery.id, 'DELIVERY')} đã được tạo`,
+        message: `Chuyến đi ${newDelivery.displayId} đã được tạo`,
         deliveryId: newDelivery.id,
         orderId: undefined,
         reportId: undefined,
