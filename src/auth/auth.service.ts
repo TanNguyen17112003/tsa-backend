@@ -297,11 +297,12 @@ export class AuthService {
     };
     const { accessToken, refreshToken } = await this.generateTokens(payload);
 
+    const { password, ...userInfo } = user;
     return {
       accessToken,
       refreshToken,
       userInfo: {
-        ...user,
+        ...userInfo,
         ...studentAdditionalInfo,
       },
     };
