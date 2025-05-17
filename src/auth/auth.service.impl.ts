@@ -193,6 +193,28 @@ export class AuthServiceImpl extends AuthService {
   }
 
   /**
+   * Validates a user's JWT token.
+   * Used in Passport JWT strategy
+   * @param jwtPayload The payload of the JWT token
+   * @returns The user associated with the JWT token
+   * @throws `UnauthorizedException` if the user is not found or is banned/deactivated
+   */
+  override async validateUserForJwt(jwtPayload: GetUserType): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: jwtPayload.id },
+    });
+    if (!user) {
+      this.logger.error(`User not found with ID: ${jwtPayload.id}`);
+      throw new UnauthorizedException('Invalid token');
+    }
+    if (user.status === UserStatus.BANNED || user.status === UserStatus.DEACTIVATED) {
+      this.logger.error(`User is banned or deactivated with ID: ${jwtPayload.id}`);
+      throw new UnauthorizedException('Invalid token');
+    }
+    return user;
+  }
+
+  /**
    * Logs in a user and generates access and refresh tokens.
    * Used after passing the local strategy.
    * @param user The user to log in
