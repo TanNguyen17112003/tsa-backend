@@ -1,17 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import moment from 'moment';
 
-import { DateService } from './date.service';
+import { DateServiceImpl } from './date.service.impl';
 
-describe('DateService', () => {
-  let service: DateService;
+describe('DateServiceImpl', () => {
+  let service: DateServiceImpl;
 
   const mockMoment = jest.fn((inp?: moment.MomentInput) => moment(inp));
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        DateService,
+        DateServiceImpl,
         {
           provide: 'MomentWrapper',
           useValue: mockMoment,
@@ -19,7 +19,7 @@ describe('DateService', () => {
       ],
     }).compile();
 
-    service = module.get<DateService>(DateService);
+    service = module.get<DateServiceImpl>(DateServiceImpl);
   });
 
   afterEach(() => {

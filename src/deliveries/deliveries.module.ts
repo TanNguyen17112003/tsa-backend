@@ -3,10 +3,16 @@ import { NotificationsModule } from 'src/notifications/notifications.module';
 
 import { DeliveriesController } from './deliveries.controller';
 import { DeliveriesService } from './deliveries.service';
+import { DeliveriesServiceImpl } from './deliveries.service.impl';
 
 @Module({
   imports: [NotificationsModule],
   controllers: [DeliveriesController],
-  providers: [DeliveriesService],
+  providers: [
+    {
+      provide: DeliveriesService,
+      useClass: DeliveriesServiceImpl,
+    },
+  ],
 })
 export class DeliveriesModule {}

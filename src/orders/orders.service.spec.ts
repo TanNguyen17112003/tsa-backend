@@ -6,7 +6,7 @@ import { GetUserType } from 'src/types';
 
 import { CreateStudentOrderDto, OrderQueryDto } from './dtos';
 import { ShippingFeeDto } from './dtos/shippingFee.dto';
-import { OrderService } from './orders.service';
+import { OrderServiceImpl } from './orders.service.impl';
 import { getHistoryTimee, getLatestOrderStatus } from './utils/order.util';
 
 jest.mock('./utils/order.util', () => ({
@@ -22,8 +22,8 @@ jest.mock('./utils/order.util', () => ({
   validateUserForOrder: jest.fn(),
 }));
 
-describe('OrderService', () => {
-  let orderService: OrderService;
+describe('OrderServiceImpl', () => {
+  let orderService: OrderServiceImpl;
 
   const mockPrismaService = {
     order: {
@@ -58,7 +58,7 @@ describe('OrderService', () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       providers: [
-        OrderService,
+        OrderServiceImpl,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -74,7 +74,7 @@ describe('OrderService', () => {
       ],
     }).compile();
 
-    orderService = module.get<OrderService>(OrderService);
+    orderService = module.get<OrderServiceImpl>(OrderServiceImpl);
   });
 
   afterEach(() => {

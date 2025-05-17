@@ -6,10 +6,10 @@ import { IdGeneratorService } from 'src/id-generator';
 import { NotificationsService } from 'src/notifications';
 import { PrismaService } from 'src/prisma';
 
-import { DeliveriesService } from './deliveries.service';
+import { DeliveriesServiceImpl } from './deliveries.service.impl';
 
-describe('DeliveriesService', () => {
-  let service: DeliveriesService;
+describe('DeliveriesServiceImpl', () => {
+  let service: DeliveriesServiceImpl;
   let prismaService: PrismaService;
   let dateService: DateService;
   let notificationService: NotificationsService;
@@ -50,7 +50,7 @@ describe('DeliveriesService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        DeliveriesService,
+        DeliveriesServiceImpl,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -70,7 +70,7 @@ describe('DeliveriesService', () => {
       ],
     }).compile();
 
-    service = module.get<DeliveriesService>(DeliveriesService);
+    service = module.get<DeliveriesServiceImpl>(DeliveriesServiceImpl);
     prismaService = module.get<PrismaService>(PrismaService);
     dateService = module.get<DateService>(DateService);
     notificationService = module.get<NotificationsService>(NotificationsService);

@@ -21,6 +21,7 @@ export class SignInResultDto {
   @ApiProperty({ example: 'valid-refresh-token', description: 'Refresh Token' })
   readonly refreshToken: string;
 
+  @ApiProperty({ type: UserEntity })
   readonly userInfo: UserEntity;
 }
 

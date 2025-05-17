@@ -2,19 +2,15 @@ import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import * as admin from 'firebase-admin';
 import { EmailService } from 'src/email';
+import { FirebaseService } from 'src/firebase';
 import { NotificationsService } from 'src/notifications';
 import { PrismaService } from 'src/prisma';
 
-import { AuthService } from './auth.service';
+import { AuthServiceImpl } from './auth.service.impl';
 
-jest.mock('firebase-admin', () => ({
-  auth: jest.fn(),
-}));
-
-describe('AuthService', () => {
-  let authService: AuthService;
+describe('AuthServiceImpl', () => {
+  let authService: AuthServiceImpl;
   let prisma: PrismaService;
   let jwtService: JwtService;
   let emailService: EmailService;
@@ -69,10 +65,20 @@ describe('AuthService', () => {
     }),
   };
 
+  const mockFirebaseService = {
+    getAuth: jest.fn(() => ({
+      verifyIdToken: jest.fn().mockResolvedValue({
+        email: 'test@example.com',
+        name: 'Test User',
+        picture: 'http://test.com/picture.jpg',
+      }),
+    })),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        AuthService,
+        AuthServiceImpl,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -93,10 +99,14 @@ describe('AuthService', () => {
           provide: ConfigService,
           useValue: mockConfigService,
         },
+        {
+          provide: FirebaseService,
+          useValue: mockFirebaseService,
+        },
       ],
     }).compile();
 
-    authService = module.get<AuthService>(AuthService);
+    authService = module.get<AuthServiceImpl>(AuthServiceImpl);
     prisma = module.get<PrismaService>(PrismaService);
     jwtService = module.get<JwtService>(JwtService);
     emailService = module.get<EmailService>(EmailService);
@@ -198,48 +208,98 @@ describe('AuthService', () => {
   });
 
   describe('signin', () => {
-    it('should sign in successfully', async () => {
+    it('should sign in successfully on desktop', async () => {
       mockPrismaService.student.findUnique.mockResolvedValueOnce({
-        dormitory: 'Dorm',
-        building: 'Building',
-        room: 'Room',
+        dormitory: 'A',
+        building: 'A1',
+        room: 'A101',
       });
-      authService['generateTokens'] = jest
-        .fn()
-        .mockResolvedValueOnce({ accessToken: 'access', refreshToken: 'refresh' });
+      mockJwtService.sign.mockReturnValue('token');
 
-      const user = { id: 'id', email: 'test', password: '', role: 'STUDENT' } as any;
-      const result = await authService.signin(user);
+      const user = {
+        id: 'id',
+        email: 'test@example.com',
+        password: 'test-password',
+        role: 'STUDENT',
+      } as any;
+      const result = await authService.signin(user, false);
 
-      expect(result).toHaveProperty('accessToken', 'access');
+      expect(result).toEqual({
+        accessToken: 'token',
+        refreshToken: 'token',
+        userInfo: {
+          id: 'id',
+          email: 'test@example.com',
+          role: 'STUDENT',
+          dormitory: 'A',
+          building: 'A1',
+          room: 'A101',
+        },
+      });
+      expect(notificationsService.sendPushNotification).not.toHaveBeenCalled();
+    });
+
+    it('should sign in successfully on mobile', async () => {
+      mockPrismaService.student.findUnique.mockResolvedValueOnce({
+        dormitory: 'A',
+        building: 'A1',
+        room: 'A101',
+      });
+      mockJwtService.sign.mockReturnValue('token');
+
+      const user = {
+        id: 'id',
+        email: 'test@example.com',
+        password: 'test-password',
+        role: 'STUDENT',
+      } as any;
+      const result = await authService.signin(user, true);
+
+      expect(result).toEqual({
+        accessToken: 'token',
+        refreshToken: 'token',
+        userInfo: {
+          id: 'id',
+          email: 'test@example.com',
+          role: 'STUDENT',
+          dormitory: 'A',
+          building: 'A1',
+          room: 'A101',
+        },
+      });
       expect(notificationsService.sendPushNotification).toHaveBeenCalled();
     });
   });
 
   describe('signInWithGoogle', () => {
     it('should sign in with Google', async () => {
-      (admin.auth as jest.Mock).mockReturnValue({
-        verifyIdToken: jest
-          .fn()
-          .mockResolvedValueOnce({ email: 'email', name: 'Test User', picture: 'pic' }),
-      });
       mockPrismaService.user.findUnique.mockResolvedValueOnce({
         id: 'id',
+        email: 'test@example.com',
+        password: 'test-password',
         role: 'STUDENT',
-        email: 'email',
       });
       mockPrismaService.student.findUnique.mockResolvedValueOnce({
-        dormitory: '',
-        building: '',
-        room: '',
+        dormitory: 'A',
+        building: 'A1',
+        room: 'A101',
       });
-      authService['generateTokens'] = jest
-        .fn()
-        .mockResolvedValueOnce({ accessToken: 'access', refreshToken: 'refresh' });
+      mockJwtService.sign.mockReturnValue('token');
 
-      const result = await authService.signInWithGoogle({ idToken: 'idToken' });
+      const result = await authService.signInWithGoogle({ idToken: 'idToken' }, false);
 
-      expect(result).toHaveProperty('accessToken');
+      expect(result).toEqual({
+        accessToken: 'token',
+        refreshToken: 'token',
+        userInfo: {
+          id: 'id',
+          email: 'test@example.com',
+          role: 'STUDENT',
+          dormitory: 'A',
+          building: 'A1',
+          room: 'A101',
+        },
+      });
     });
   });
 

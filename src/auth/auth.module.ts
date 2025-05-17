@@ -7,6 +7,7 @@ import { NotificationsModule } from 'src/notifications';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthServiceImpl } from './auth.service.impl';
 import { JwtStrategy, LocalStrategy } from './strategies';
 
 @Module({
@@ -24,7 +25,14 @@ import { JwtStrategy, LocalStrategy } from './strategies';
     FirebaseModule,
     NotificationsModule,
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [
+    {
+      provide: AuthService,
+      useClass: AuthServiceImpl,
+    },
+    LocalStrategy,
+    JwtStrategy,
+  ],
   controllers: [AuthController],
   exports: [AuthService],
 })

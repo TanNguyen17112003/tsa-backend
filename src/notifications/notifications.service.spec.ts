@@ -10,7 +10,7 @@ import { CheckPushNotificationDto } from './dto/check-pushNoti.dto';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { RegisterPushNotificationDto } from './dto/register-pushNoti.dto';
 import { UnregisterPushNotificationDto } from './dto/unregister-pushNoti.dto';
-import { NotificationsService } from './notifications.service';
+import { NotificationsServiceImpl } from './notifications.service.impl';
 
 jest.mock('google-auth-library', () => ({
   JWT: jest.fn(() => ({
@@ -21,8 +21,8 @@ jest.mock('axios', () => ({
   post: jest.fn(),
 }));
 
-describe('NotificationsService', () => {
-  let service: NotificationsService;
+describe('NotificationsServiceImpl', () => {
+  let service: NotificationsServiceImpl;
   let prisma: PrismaService;
   let dateService: DateService;
   let emailService: EmailService;
@@ -59,7 +59,7 @@ describe('NotificationsService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        NotificationsService,
+        NotificationsServiceImpl,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -75,7 +75,7 @@ describe('NotificationsService', () => {
       ],
     }).compile();
 
-    service = module.get<NotificationsService>(NotificationsService);
+    service = module.get<NotificationsServiceImpl>(NotificationsServiceImpl);
     prisma = module.get<PrismaService>(PrismaService);
     dateService = module.get<DateService>(DateService);
     emailService = module.get<EmailService>(EmailService);

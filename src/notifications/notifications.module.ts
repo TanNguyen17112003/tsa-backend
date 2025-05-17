@@ -5,6 +5,7 @@ import { FirebaseModule } from 'src/firebase';
 import { PUSH_NOTIFICATIONS_QUEUE_NAME } from './notifications.constant';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
+import { NotificationsServiceImpl } from './notifications.service.impl';
 import { PushNotificationsProcessor } from './push-notifications.processor';
 
 @Module({
@@ -22,7 +23,13 @@ import { PushNotificationsProcessor } from './push-notifications.processor';
     FirebaseModule,
   ],
   controllers: [NotificationsController],
-  providers: [NotificationsService, PushNotificationsProcessor],
+  providers: [
+    {
+      provide: NotificationsService,
+      useClass: NotificationsServiceImpl,
+    },
+    PushNotificationsProcessor,
+  ],
   exports: [NotificationsService],
 })
 export class NotificationsModule {}
