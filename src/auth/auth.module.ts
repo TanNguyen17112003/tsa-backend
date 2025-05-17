@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { FirebaseModule } from 'src/firebase';
 import { NotificationsModule } from 'src/notifications';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { firebaseProvider } from './firebase.provider';
 import { JwtStrategy, LocalStrategy } from './strategies';
 
 @Module({
@@ -21,9 +21,10 @@ import { JwtStrategy, LocalStrategy } from './strategies';
       inject: [ConfigService],
       global: true,
     }),
+    FirebaseModule,
     NotificationsModule,
   ],
-  providers: [firebaseProvider, AuthService, LocalStrategy, JwtStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy],
   controllers: [AuthController],
   exports: [AuthService],
 })

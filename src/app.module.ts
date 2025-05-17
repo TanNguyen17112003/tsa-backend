@@ -10,6 +10,7 @@ import { CloudinaryModule } from './cloudinary';
 import { DateModule } from './date/date.module';
 import { DeliveriesModule } from './deliveries';
 import { EmailModule } from './email';
+import { FirebaseModule } from './firebase';
 import { GeolocationModule } from './geolocation';
 import { IdGeneratorModule } from './id-generator';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -38,6 +39,7 @@ import { UsersModule } from './users';
     }),
     DateModule,
     EmailModule,
+    FirebaseModule,
     AuthModule,
     UsersModule,
     OrdersModule,
