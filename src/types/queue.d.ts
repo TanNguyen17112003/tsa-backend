@@ -3,3 +3,9 @@ export type EmailJobData = {
   subject: string;
   html: string;
 };
+
+export type PushNotificationJobData = {
+  userId: string;
+  token: string;
+  message: PushNotificationMessage;
+};

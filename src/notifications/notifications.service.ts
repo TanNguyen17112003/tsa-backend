@@ -1,8 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import axios from 'axios';
-import { JWT } from 'google-auth-library';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { DeviceToken } from '@prisma/client';
+import { Queue } from 'bullmq';
 import { DateService } from 'src/date';
 import { EmailService } from 'src/email';
+import { FirebaseService } from 'src/firebase';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
@@ -10,14 +13,23 @@ import { CheckPushNotificationDto } from './dto/check-pushNoti.dto';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { RegisterPushNotificationDto } from './dto/register-pushNoti.dto';
 import { UnregisterPushNotificationDto } from './dto/unregister-pushNoti.dto';
+import { PUSH_NOTIFICATIONS_QUEUE_NAME } from './notifications.constant';
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+  private readonly expoInfo: string;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly dateService: DateService,
-    private readonly emailService: EmailService
-  ) {}
+    private readonly emailService: EmailService,
+    private readonly firebaseService: FirebaseService,
+    private readonly configService: ConfigService,
+    @InjectQueue(PUSH_NOTIFICATIONS_QUEUE_NAME) private readonly pushNotificationQueue: Queue
+  ) {
+    this.expoInfo = `${configService.get('EXPO_USERNAME')}/${configService.get('EXPO_SLUG')}`;
+  }
 
   async sendNotification(createNotificationDto: CreateNotificationDto) {
     const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
@@ -71,13 +83,11 @@ export class NotificationsService {
     const notification = await this.prisma.notification.findUnique({
       where: {
         id,
+        userId: user.id,
       },
     });
     if (!notification) {
-      throw new Error('Không tìm thấy thông báo');
-    }
-    if (notification.userId !== user.id) {
-      throw new Error('Bạn không có quyền thay đổi trạng thái thông báo này');
+      throw new NotFoundException('Không tìm thấy thông báo');
     }
     return this.prisma.notification.update({
       where: {
@@ -100,32 +110,27 @@ export class NotificationsService {
     });
   }
 
-  getAccessTokenAsync(key: FCMKey) {
-    console.log(key);
-    return new Promise(function (resolve, reject) {
-      const jwtClient = new JWT(
-        key.client_email,
-        null,
-        key.private_key,
-        ['https://www.googleapis.com/auth/cloud-platform'],
-        null
-      );
-      jwtClient.authorize(function (err, tokens) {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(tokens.access_token);
-      });
-    });
-  }
-  async sendPushNotification({
-    userId,
-    message,
-  }: {
-    userId: string;
-    message: PushNotificationMessage;
-  }) {
+  // getAccessTokenAsync(key: FCMKey) {
+  //   console.log(key);
+  //   return new Promise(function (resolve, reject) {
+  //     const jwtClient = new JWT(
+  //       key.client_email,
+  //       null,
+  //       key.private_key,
+  //       ['https://www.googleapis.com/auth/cloud-platform'],
+  //       null
+  //     );
+  //     jwtClient.authorize(function (err, tokens) {
+  //       if (err) {
+  //         reject(err);
+  //         return;
+  //       }
+  //       resolve(tokens.access_token);
+  //     });
+  //   });
+  // }
+
+  async sendPushNotification(userId: string, message: PushNotificationMessage) {
     const foundDevices = await this.prisma.deviceToken.findMany({
       where: {
         userId,
@@ -137,57 +142,12 @@ export class NotificationsService {
       return;
     }
 
-    const key: FCMKey = {
-      client_email: process.env.FIREBASE_CLIENT_EMAIL,
-      private_key: process.env.PUSH_NOTI_PRIVATE_KEY,
-    };
-    const expoInfo = `${process.env.EXPO_USERNAME}/${process.env.EXPO_SLUG}`;
-    // Get the access token
-    const firebaseAccessToken = await this.getAccessTokenAsync(key);
-    // Send notification to each device token concurrently
-    const notificationPromises = foundDevices.map((device) =>
-      axios.post(
-        `https://fcm.googleapis.com/v1/projects/${process.env.FIREBASE_PROJECT_ID}/messages:send`,
-        {
-          message: {
-            token: device.token,
-            data: {
-              ...message,
-              channelId: 'default',
-              scopeKey: expoInfo,
-              experienceId: expoInfo,
-            },
-          },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${firebaseAccessToken}`,
-            Accept: 'application/json',
-            'Accept-Encoding': 'gzip, deflate',
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-    );
-
-    const notificationResults = await Promise.allSettled(notificationPromises);
-    notificationResults.forEach((result, index) => {
-      if (result.status === 'fulfilled') {
-        console.log(`Notification sent to ${foundDevices[index].token}`);
-      } else {
-        console.log(`Failed to send notification to ${foundDevices[index].token}`);
-        this.prisma.deviceToken.update({
-          where: {
-            userId: userId,
-            token: foundDevices[index].token,
-          },
-          data: {
-            pushNotiType: 'DISABLED',
-          },
-        });
-      }
+    // Send notification to each device token
+    foundDevices.forEach((device) => {
+      this.addPushNotificationForDeviceToQueue(device, message);
     });
   }
+
   async registerPushNotification(registerPushNotificationDto: RegisterPushNotificationDto) {
     const { userId, token, platform } = registerPushNotificationDto;
     await this.prisma.deviceToken.upsert({
@@ -230,18 +190,12 @@ export class NotificationsService {
         token,
       },
     });
-    // await this.sendPushNotification({
-    //   userId,
-    //   message: {
-    //     title: 'Chào mừng bạn đến với TSA',
-    //     message:
-    //       'Cảm ơn bạn đã đăng ký nhận thông báo từ TSA. Bạn sẽ nhận được thông báo khi có thông tin mới từ TSA.',
-    //   },
-    // });
+
     return {
       pusNotiType: foundDevices?.pushNotiType || null,
     };
   }
+
   async sendFullNotification({
     userId,
     type,
@@ -269,13 +223,53 @@ export class NotificationsService {
         deliveryId,
         reportId,
       }),
-      this.sendPushNotification({
-        userId,
-        message: {
-          title,
-          message,
-        },
+      this.sendPushNotification(userId, {
+        title,
+        message,
       }),
     ]);
+  }
+
+  async sendPushNotificationForDevice(
+    deviceToken: string,
+    message: PushNotificationMessage,
+    _userId: string
+  ) {
+    try {
+      await this.firebaseService.getMessaging().send({
+        token: deviceToken,
+        data: {
+          ...message,
+          channelId: 'default',
+          scopeKey: this.expoInfo,
+          experienceId: this.expoInfo,
+        },
+      });
+      this.logger.log(`Push notification sent successfully to token: ${deviceToken}`);
+    } catch (error) {
+      this.logger.error(`Failed to send push notification to token: ${deviceToken}`, error);
+      // Do not disable, as we can retry later
+      // await this.prisma.deviceToken.update({
+      //   where: {
+      //     userId: userId,
+      //     token: deviceToken,
+      //   },
+      //   data: {
+      //     pushNotiType: 'DISABLED',
+      //   },
+      // });
+      throw new Error(`Failed to send push notification: ${error}`);
+    }
+  }
+
+  private async addPushNotificationForDeviceToQueue(
+    device: DeviceToken,
+    message: PushNotificationMessage
+  ) {
+    await this.pushNotificationQueue.add('sendPushNotification', {
+      token: device.token,
+      message,
+      userId: device.userId,
+    });
   }
 }

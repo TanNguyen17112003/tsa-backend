@@ -212,13 +212,10 @@ export class AuthService {
     };
 
     const { accessToken, refreshToken } = await this.generateTokens(payload);
-    await this.notificationsService.sendPushNotification({
-      userId: user.id,
-      message: {
-        title: 'Chào mừng bạn đến với TSA',
-        message:
-          'Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của chúng tôi. Chúc bạn một ngày tốt lành!',
-      },
+    await this.notificationsService.sendPushNotification(user.id, {
+      title: 'Chào mừng bạn đến với TSA',
+      message:
+        'Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của chúng tôi. Chúc bạn một ngày tốt lành!',
     });
 
     const { password, ...userInfo } = user;
