@@ -7,12 +7,12 @@ import { CloudinaryService } from 'src/cloudinary';
 import { PrismaService } from 'src/prisma';
 
 import { UpdateStudentDto } from './dto';
-import { UsersService } from './users.service';
+import { UsersServiceImpl } from './users.service.impl';
 
 jest.mock('bcrypt');
 
-describe('UsersService', () => {
-  let userService: UsersService;
+describe('UsersServiceImpl', () => {
+  let userService: UsersServiceImpl;
   let prismaService: PrismaService;
   let configService: ConfigService;
   let cloudinaryService: CloudinaryService;
@@ -71,7 +71,7 @@ describe('UsersService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        UsersService,
+        UsersServiceImpl,
         {
           provide: PrismaService,
           useValue: {
@@ -112,7 +112,7 @@ describe('UsersService', () => {
       ],
     }).compile();
 
-    userService = module.get<UsersService>(UsersService);
+    userService = module.get<UsersServiceImpl>(UsersServiceImpl);
     prismaService = module.get<PrismaService>(PrismaService);
     configService = module.get<ConfigService>(ConfigService);
     cloudinaryService = module.get<CloudinaryService>(CloudinaryService);
