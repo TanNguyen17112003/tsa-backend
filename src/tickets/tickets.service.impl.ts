@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { TicketCategory } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { TicketCategory, TicketStatus } from '@prisma/client';
 import { omit } from 'lodash';
 import { CloudinaryService } from 'src/cloudinary';
 import { IdGeneratorService } from 'src/id-generator';
@@ -248,51 +248,73 @@ export class TicketsServiceImpl extends TicketsService {
     dto: ReplyTicketDto,
     user: GetUserType
   ): Promise<ReplyResponseDto> {
-    if (!(await this.prisma.ticket.findUnique({ where: { id } }))) {
-      throw new NotFoundException('Ticket not found');
-    }
+    return this.prisma.$transaction(async (tx) => {
+      const ticket = await tx.ticket.findUnique({
+        where: { id },
+      });
 
-    const savedAttachments = await this.saveTicketAttachments(attachments);
-    const foundUser = await this.prisma.user.findUnique({
-      where: {
-        id: user.id,
-      },
+      if (ticket === null || (user.role === 'STUDENT' && ticket.studentId !== user.id)) {
+        throw new NotFoundException('Yêu cầu không tồn tại');
+      }
+
+      if (ticket.status === TicketStatus.CLOSED) {
+        throw new BadRequestException('Yêu cầu đã được đóng');
+      }
+
+      if (ticket.status === TicketStatus.PENDING && user.role === 'ADMIN') {
+        await tx.ticket.update({
+          where: { id },
+          data: {
+            status: TicketStatus.PROCESSING,
+          },
+        });
+      }
+
+      const savedAttachments = await this.saveTicketAttachments(attachments);
+
+      const reply = await tx.ticketReply.create({
+        data: {
+          content: dto.content,
+          attachments: {
+            create: savedAttachments.map((result) => ({
+              fileUrl: result.secure_url,
+            })),
+          },
+          ticket: {
+            connect: {
+              id,
+            },
+          },
+          user: {
+            connect: {
+              id: user.id,
+            },
+          },
+        },
+        include: {
+          attachments: {
+            select: {
+              fileUrl: true,
+              uploadedAt: true,
+            },
+          },
+          user: {
+            select: {
+              photoUrl: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      return {
+        ...reply,
+        userName: reply.user.lastName + ' ' + reply.user.firstName,
+        photoUrl: reply.user.photoUrl,
+        user: undefined,
+      };
     });
-
-    const reply = await this.prisma.ticketReply.create({
-      data: {
-        content: dto.content,
-        attachments: {
-          create: savedAttachments.map((result) => ({
-            fileUrl: result.secure_url,
-          })),
-        },
-        ticket: {
-          connect: {
-            id,
-          },
-        },
-        user: {
-          connect: {
-            id: user.id,
-          },
-        },
-      },
-      include: {
-        attachments: {
-          select: {
-            fileUrl: true,
-            uploadedAt: true,
-          },
-        },
-      },
-    });
-
-    return {
-      ...reply,
-      userName: foundUser.lastName + ' ' + foundUser.firstName,
-      photoUrl: foundUser.photoUrl,
-    };
   }
 
   override async updateTicketStatus(

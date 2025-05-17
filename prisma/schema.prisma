@@ -325,6 +325,5 @@ enum Platform {
 enum TicketStatus {
   PENDING
   PROCESSING
-  REPLIED
   CLOSED
 }
