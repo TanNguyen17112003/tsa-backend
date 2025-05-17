@@ -273,6 +273,7 @@ enum OrderStatus {
   DELIVERED
   CANCELED
   IN_TRANSPORT
+  RECEIVED_EXTERNAL
 }
 
 enum DeliveryStatus {

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   NotImplementedException,
@@ -35,6 +36,7 @@ import {
   convertToUnixTimestamp,
   createOrderStatusHistory,
   findExistingOrder,
+  getCancelPermission,
   getHistoryTimee,
   getLatestOrderStatus,
   getShippingFee,
@@ -330,10 +332,6 @@ export class OrderServiceImpl extends OrderService {
 
     validateUserForOrder(user, order, user.role);
 
-    // if (latestOrderStatus.status !== 'PENDING') {
-    //   throw new UnauthorizedException('You can only update orders that are pending');
-    // }
-
     await this.prisma.order.update({
       where: { id },
       data: {
@@ -357,22 +355,19 @@ export class OrderServiceImpl extends OrderService {
     if (!order) {
       throw new BadRequestException('Order not found');
     }
-    const { status, canceledImage, reason, finishedImage, distance, cancelReasonType } =
-      updateStatusDto;
-    // Check if staff already in the acceptable zone of finish order
-    if (status === 'DELIVERED' && distance && distance > 150) {
-      throw new BadRequestException(
-        'Bạn cần phải ở trong vùng hoàn thành đơn hàng, tối thiểu 150m'
-      );
-    }
+    const { status, canceledImage, reason, finishedImage, cancelReasonType } = updateStatusDto;
+
     // Check if staff has already captured the image of the order when delivering
     if (status === 'DELIVERED' && !finishedImage) {
       throw new BadRequestException('Cần phải có hình ảnh khi giao hàng');
     }
 
     if (status === 'CANCELED') {
+      if (!getCancelPermission(user.role, order.latestStatus)) {
+        throw new ForbiddenException('Bạn không có quyền huỷ đơn hàng ở trạng thái này');
+      }
       if (!cancelReasonType || !reason) {
-        throw new BadRequestException('Cần phải có lý do khi hủy chuyến đi');
+        throw new BadRequestException('Cần phải có lý do khi hủy đơn hangf');
       }
       if (!canceledImage) {
         throw new BadRequestException('Cần phải có ảnh minh chứng khi huỷ đơn hàng');
