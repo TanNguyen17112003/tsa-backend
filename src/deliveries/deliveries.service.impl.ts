@@ -53,10 +53,11 @@ export class DeliveriesServiceImpl extends DeliveriesService {
     // Check if there exists an order that is put into some delivery but is not canceled
     if (
       orders.some(
-        (order) => order.deliveries.length > 0 && order.latestStatus !== OrderStatus.CANCELED
+        (order) =>
+          order.deliveries.length > 0 && order.latestStatus !== OrderStatus.RECEIVED_EXTERNAL
       )
     ) {
-      throw new BadRequestException('One or more orders are already in a delivery');
+      throw new BadRequestException('One or more orders have not received from external first');
     }
 
     const createdAt = this.dateService.getCurrentUnixTimestamp().toString();
