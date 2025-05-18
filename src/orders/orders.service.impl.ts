@@ -390,7 +390,14 @@ export class OrderServiceImpl extends OrderService {
         const oldFailedCount = student.numberFault;
         const newFailedCount = oldFailedCount + 1;
 
-        const bannedThreshold = Number(process.env.BANNED_STUDENT_NUMBER);
+        const regulation = await this.prisma.dormitoryRegulation.findFirst({
+          where: {
+            name: student.dormitory,
+          },
+        });
+
+        const bannedThreshold =
+          regulation?.banThreshold || Number(process.env.BANNED_STUDENT_NUMBER);
         const shouldBan = newFailedCount === bannedThreshold;
 
         await this.prisma.$transaction([

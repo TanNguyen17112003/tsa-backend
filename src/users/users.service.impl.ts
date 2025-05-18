@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { UserRole, UserStatus } from '@prisma/client';
+import { Prisma, UserRole, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { CloudinaryService } from 'src/cloudinary';
 import { PrismaService } from 'src/prisma';
@@ -100,17 +100,52 @@ export class UsersServiceImpl extends UsersService {
   override async updateUserStatus(userId: string, status: UserStatus): Promise<UserEntity> {
     const userToUpdate = await this.prismaService.user.findUnique({
       where: { id: userId },
+      include: {
+        student: true,
+      },
     });
 
     if (!userToUpdate) {
       throw new NotFoundException('User not found');
     }
 
+    const isUnBanned =
+      userToUpdate.role === UserRole.STUDENT &&
+      userToUpdate.status === UserStatus.BANNED &&
+      status === UserStatus.AVAILABLE;
+
+    const data: Prisma.UserUpdateInput = {
+      status,
+    };
+
+    // TH ban student
+    if (status === UserStatus.BANNED && userToUpdate.role === UserRole.STUDENT) {
+      const regulation = await this.prismaService.dormitoryRegulation.findFirst({
+        where: {
+          name: userToUpdate.student?.dormitory,
+        },
+      });
+
+      const bannedThreshold = regulation?.banThreshold || Number(process.env.BANNED_STUDENT_NUMBER);
+      data.student = {
+        update: {
+          numberFault: bannedThreshold,
+        },
+      };
+      // TH unban student
+    } else if (isUnBanned) {
+      const oldNumberFault = userToUpdate.student?.numberFault || 0;
+      data.student = {
+        update: {
+          numberFault: Math.max(oldNumberFault - 1, 0),
+        },
+      };
+    }
+
+    // Các TH còn lại không liên quan đến student
     const updatedUser = await this.prismaService.user.update({
       where: { id: userId },
-      data: {
-        status,
-      },
+      data,
     });
 
     return updatedUser;
