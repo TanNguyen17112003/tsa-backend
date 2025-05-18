@@ -39,4 +39,6 @@ export class OrderEntity implements RestrictProperties<OrderEntity, Order> {
 
   @IsOptional()
   finishedImage: string;
+  @IsOptional()
+  receivedImage: string;
 }
