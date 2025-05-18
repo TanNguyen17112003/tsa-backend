@@ -1,5 +1,6 @@
 import { User } from '@prisma/client';
 import { MessageResponseDto } from 'src/common/dtos/message-response.dto';
+import { GetUserType } from 'src/types';
 
 import { GoogleSignInDto, SignInResultDto, SignUpDto } from './dto';
 
@@ -8,6 +9,7 @@ export abstract class AuthService {
   abstract verifyEmail(token: string, mobile: boolean): Promise<string>;
   abstract completeRegistration(dto: SignUpDto): Promise<MessageResponseDto>;
   abstract validateUser(email: string, password: string): Promise<User>;
+  abstract validateUserForJwt(jwtPayload: GetUserType): Promise<User>;
   abstract signin(user: User, mobile: boolean): Promise<SignInResultDto>;
   abstract signInWithGoogle(dto: GoogleSignInDto, mobile: boolean): Promise<SignInResultDto>;
   abstract refreshTokens(refreshToken: string): Promise<{
