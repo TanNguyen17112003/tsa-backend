@@ -105,6 +105,7 @@ model Order {
   deliveries         OrdersOnDeliveries[]
   payment            Payment[]
   report             Report[]
+  receivedImage      String?
 }
 
 model OrderStatusHistory {

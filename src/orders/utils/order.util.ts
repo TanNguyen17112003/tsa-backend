@@ -21,7 +21,8 @@ export const createOrderStatusHistory = async (
   status: $Enums.OrderStatus,
   reason?: string,
   canceledImage?: string,
-  finishedImage?: string
+  finishedImage?: string,
+  receivedImage?: string
 ) => {
   await prisma.$transaction([
     prisma.orderStatusHistory.create({
@@ -38,6 +39,7 @@ export const createOrderStatusHistory = async (
       data: {
         latestStatus: status,
         finishedImage,
+        receivedImage,
       },
     }),
   ]);

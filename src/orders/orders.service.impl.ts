@@ -355,9 +355,14 @@ export class OrderServiceImpl extends OrderService {
     if (!order) {
       throw new BadRequestException('Order not found');
     }
-    const { status, canceledImage, reason, finishedImage, cancelReasonType } = updateStatusDto;
+    const { status, canceledImage, reason, finishedImage, cancelReasonType, receivedImage } =
+      updateStatusDto;
 
     // Check if staff has already captured the image of the order when delivering
+    if (status === 'RECEIVED_EXTERNAL' && !receivedImage) {
+      throw new BadRequestException('Cần phải có hình ảnh khi nhận hàng từ bên ngoài');
+    }
+
     if (status === 'DELIVERED' && !finishedImage) {
       throw new BadRequestException('Cần phải có hình ảnh khi giao hàng');
     }
@@ -430,7 +435,8 @@ export class OrderServiceImpl extends OrderService {
       status,
       mapReason(cancelReasonType, reason),
       canceledImage,
-      finishedImage
+      finishedImage,
+      receivedImage
     );
     return { message: 'Order status updated' };
   }

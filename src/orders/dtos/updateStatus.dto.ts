@@ -29,4 +29,8 @@ export class UpdateStatusDto {
   @IsEnum(OrderCancelType)
   @IsOptional()
   cancelReasonType?: OrderCancelType;
+
+  @IsString()
+  @IsOptional()
+  receivedImage?: string;
 }
