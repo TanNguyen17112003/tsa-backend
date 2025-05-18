@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { User } from '@prisma/client';
 
 import { EMAIL_QUEUE_NAME } from './email.constant';
-import { EmailService } from './email.service';
+import { EmailServiceImpl } from './email.service.impl';
 
 const mockTransporter = {
   sendMail: jest.fn(),
@@ -28,13 +28,13 @@ jest.mock('nodemailer', () => ({
   createTransport: jest.fn(() => mockTransporter),
 }));
 
-describe('EmailService', () => {
-  let service: EmailService;
+describe('EmailServiceImpl', () => {
+  let service: EmailServiceImpl;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        EmailService,
+        EmailServiceImpl,
         {
           provide: ConfigService,
           useValue: mockConfigService,
@@ -46,7 +46,7 @@ describe('EmailService', () => {
       ],
     }).compile();
 
-    service = module.get<EmailService>(EmailService);
+    service = module.get<EmailServiceImpl>(EmailServiceImpl);
   });
 
   afterEach(() => {

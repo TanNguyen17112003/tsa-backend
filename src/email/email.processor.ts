@@ -14,7 +14,7 @@ export class EmailProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<EmailJobData, any, string>): Promise<any> {
+  override async process(job: Job<EmailJobData, any, string>): Promise<any> {
     this.logger.log(`Processing email job: ${job.name} - ${job.id}`);
 
     const { to, subject, html } = job.data;

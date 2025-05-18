@@ -3,12 +3,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as tesseract from 'node-tesseract-ocr';
 import { PrismaService } from 'src/prisma';
 
-import { RecognitionService } from './recognition.service';
+import { RecognitionServiceImpl } from './recognition.service.impl';
 
 jest.mock('node-tesseract-ocr');
 
-describe('RecognitionService', () => {
-  let service: RecognitionService;
+describe('RecognitionServiceImpl', () => {
+  let service: RecognitionServiceImpl;
 
   const mockPrisma = {
     recognition: {
@@ -21,7 +21,7 @@ describe('RecognitionService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        RecognitionService,
+        RecognitionServiceImpl,
         {
           provide: PrismaService,
           useValue: mockPrisma,
@@ -29,7 +29,7 @@ describe('RecognitionService', () => {
       ],
     }).compile();
 
-    service = module.get<RecognitionService>(RecognitionService);
+    service = module.get<RecognitionServiceImpl>(RecognitionServiceImpl);
   });
 
   afterEach(() => {

@@ -105,6 +105,7 @@ model Order {
   deliveries         OrdersOnDeliveries[]
   payment            Payment[]
   report             Report[]
+  receivedImage      String?
 }
 
 model OrderStatusHistory {
@@ -273,6 +274,7 @@ enum OrderStatus {
   DELIVERED
   CANCELED
   IN_TRANSPORT
+  RECEIVED_EXTERNAL
 }
 
 enum DeliveryStatus {
@@ -324,6 +326,5 @@ enum Platform {
 enum TicketStatus {
   PENDING
   PROCESSING
-  REPLIED
   CLOSED
 }

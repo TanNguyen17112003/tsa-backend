@@ -4,7 +4,7 @@ import { NotificationsService } from 'src/notifications';
 import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
-import { ReportsService } from './reports.service';
+import { ReportsServiceImpl } from './reports.service.impl';
 
 jest.mock('src/auth', () => ({
   checkRowLevelPermission: jest.fn(),
@@ -15,8 +15,8 @@ jest.mock('src/orders/utils/order.util', () => ({
   shortenUUID: jest.fn((uuid) => `short-${uuid}`),
 }));
 
-describe('ReportsService', () => {
-  let service: ReportsService;
+describe('ReportsServiceImpl', () => {
+  let service: ReportsServiceImpl;
 
   const mockPrisma = {
     $transaction: jest.fn(),
@@ -42,7 +42,7 @@ describe('ReportsService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        ReportsService,
+        ReportsServiceImpl,
         {
           provide: PrismaService,
           useValue: mockPrisma,
@@ -54,7 +54,7 @@ describe('ReportsService', () => {
       ],
     }).compile();
 
-    service = module.get<ReportsService>(ReportsService);
+    service = module.get<ReportsServiceImpl>(ReportsServiceImpl);
   });
 
   afterEach(() => {

@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import moment from 'moment';
 
 import { DateService } from './date.service';
+import { DateServiceImpl } from './date.service.impl';
 
 const MomentWrapper = {
   provide: 'MomentWrapper',
@@ -10,7 +11,13 @@ const MomentWrapper = {
 
 @Global()
 @Module({
-  providers: [DateService, MomentWrapper],
+  providers: [
+    {
+      provide: DateService,
+      useValue: DateServiceImpl,
+    },
+    MomentWrapper,
+  ],
   exports: [DateService],
 })
 export class DateModule {}

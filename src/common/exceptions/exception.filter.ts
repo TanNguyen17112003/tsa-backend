@@ -5,7 +5,7 @@ import { BaseExceptionFilter } from '@nestjs/core';
 export class AllExceptionFilter extends BaseExceptionFilter {
   private readonly logger = new Logger(AllExceptionFilter.name);
 
-  catch(exception: unknown, host: ArgumentsHost): void {
+  override catch(exception: unknown, host: ArgumentsHost): void {
     this.logger.error(exception);
     super.catch(exception, host);
   }

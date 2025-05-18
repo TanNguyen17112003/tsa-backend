@@ -1,5 +1,5 @@
 import { UnauthorizedException } from '@nestjs/common';
-import { $Enums } from '@prisma/client';
+import { $Enums, OrderStatus, UserRole } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GetUserType } from 'src/types';
 
@@ -21,7 +21,8 @@ export const createOrderStatusHistory = async (
   status: $Enums.OrderStatus,
   reason?: string,
   canceledImage?: string,
-  finishedImage?: string
+  finishedImage?: string,
+  receivedImage?: string
 ) => {
   await prisma.$transaction([
     prisma.orderStatusHistory.create({
@@ -38,6 +39,7 @@ export const createOrderStatusHistory = async (
       data: {
         latestStatus: status,
         finishedImage,
+        receivedImage,
       },
     }),
   ]);
@@ -204,5 +206,18 @@ export const mapReason = (type?: OrderCancelType, reason?: string) => {
     return `Lí do xuất phát từ nhân viên: ${reason}`;
   } else {
     return `Lí do xuất phát từ sinh viên: ${reason}`;
+  }
+};
+
+export const getCancelPermission = (role: UserRole, orderStatus: OrderStatus) => {
+  switch (orderStatus) {
+    case OrderStatus.IN_TRANSPORT:
+      return role === UserRole.ADMIN || role === UserRole.STAFF;
+    case OrderStatus.RECEIVED_EXTERNAL:
+    case OrderStatus.ACCEPTED:
+    case OrderStatus.PENDING:
+      return role === UserRole.ADMIN || role === UserRole.STUDENT;
+    default:
+      return false;
   }
 };
