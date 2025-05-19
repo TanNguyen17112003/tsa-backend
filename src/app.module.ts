@@ -18,6 +18,7 @@ import { OrdersModule } from './orders/orders.module';
 import { PaymentModule } from './payment/payment.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RecognitionModule } from './recognition/recognition.module';
+import { RegulationModule } from './regulation/regulation.module';
 import { ReportsModule } from './reports';
 import { TicketsModule } from './tickets';
 import { UsersModule } from './users';
@@ -52,6 +53,7 @@ import { UsersModule } from './users';
     TicketsModule,
     RecognitionModule,
     IdGeneratorModule,
+    RegulationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

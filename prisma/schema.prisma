@@ -256,6 +256,23 @@ model TicketCategory {
   tickets Ticket[]
 }
 
+model DormitoryRegulation {
+  id            String                @id @default(cuid())
+  name          Dormitory             @unique
+  banThreshold  Int
+  deliverySlots AllowedDeliverySlot[]
+  updateAt      DateTime              @updatedAt
+}
+
+model AllowedDeliverySlot {
+  id           String              @id @default(cuid())
+  regulation   DormitoryRegulation @relation(fields: [regulationId], references: [id])
+  regulationId String
+  startTime    String
+  endTime      String
+  updateAt     DateTime            @updatedAt
+}
+
 enum UserRole {
   ADMIN
   STUDENT
