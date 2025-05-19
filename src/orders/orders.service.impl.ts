@@ -426,15 +426,17 @@ export class OrderServiceImpl extends OrderService {
       });
     }
 
-    await this.notificationService.sendFullNotification({
-      type: 'ORDER',
-      title: 'Thay đổi trạng thái đơn hàng',
-      message: `Đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
-      userId: order.studentId,
-      orderId: order.id,
-      deliveryId: undefined,
-      reportId: undefined,
-    });
+    if (order.studentId) {
+      await this.notificationService.sendFullNotification({
+        type: 'ORDER',
+        title: 'Thay đổi trạng thái đơn hàng',
+        message: `Đơn hàng ${shortenUUID(order.checkCode, 'ORDER')} của bạn đã chuyển sang trạng thái ${status === 'CANCELED' ? 'Bị Hủy' : status === 'DELIVERED' ? 'Đã Giao' : status === 'REJECTED' ? 'Bị Từ Chối' : status === 'ACCEPTED' ? 'Xác nhận' : status === 'PENDING' ? 'Đang chờ xử lý' : 'Đang vận chuyển'}`,
+        userId: order.studentId,
+        orderId: order.id,
+        deliveryId: undefined,
+        reportId: undefined,
+      });
+    }
 
     await createOrderStatusHistory(
       this.prisma,
