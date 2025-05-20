@@ -229,7 +229,7 @@ const validTransitions: Record<OrderStatus, OrderStatus[]> = {
   IN_TRANSPORT: ['DELIVERED', 'CANCELED'],
   DELIVERED: [],
   REJECTED: ['PENDING', 'ACCEPTED'],
-  CANCELED: ['PENDING', 'ACCEPTED', 'RECEIVED_EXTERNAL', 'IN_TRANSPORT'],
+  CANCELED: ['PENDING', 'ACCEPTED', 'RECEIVED_EXTERNAL'],
 };
 
 export function isValidTransition(from: OrderStatus, to: OrderStatus): boolean {

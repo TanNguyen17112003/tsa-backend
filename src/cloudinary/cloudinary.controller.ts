@@ -19,7 +19,7 @@ import { CloudinaryService } from './cloudinary.service';
 export class CloudinaryController {
   constructor(private readonly cloudinaryService: CloudinaryService) {}
 
-  @Auth('STUDENT', 'STAFF')
+  @Auth()
   @ApiOperation({ summary: 'Upload image to Cloudinary' })
   @Post('')
   @UseInterceptors(FileInterceptor('image', { storage: memoryStorage() }))

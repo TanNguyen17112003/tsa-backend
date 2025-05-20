@@ -14,7 +14,7 @@ const MomentWrapper = {
   providers: [
     {
       provide: DateService,
-      useValue: DateServiceImpl,
+      useClass: DateServiceImpl,
     },
     MomentWrapper,
   ],

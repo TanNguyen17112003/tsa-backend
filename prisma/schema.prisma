@@ -261,7 +261,7 @@ model DormitoryRegulation {
   name          Dormitory             @unique
   banThreshold  Int
   deliverySlots AllowedDeliverySlot[]
-  updateAt      DateTime              @updatedAt
+  updateAt      DateTime              @updatedAt @db.Timestamptz(3)
 }
 
 model AllowedDeliverySlot {
@@ -270,7 +270,7 @@ model AllowedDeliverySlot {
   regulationId String
   startTime    String
   endTime      String
-  updateAt     DateTime            @updatedAt
+  updateAt     DateTime            @updatedAt @db.Timestamptz(3)
 }
 
 enum UserRole {
