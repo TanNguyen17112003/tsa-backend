@@ -2,10 +2,10 @@ import { InternalServerErrorException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from 'src/prisma';
 
-import { IdGeneratorService } from './id-generator.service';
+import { IdGeneratorServiceImpl } from './id-generator.service.impl';
 
-describe('IdGeneratorService', () => {
-  let service: IdGeneratorService;
+describe('IdGeneratorServiceImpl', () => {
+  let service: IdGeneratorServiceImpl;
   let prismaService: PrismaService;
 
   const mockPrismaService = {
@@ -17,7 +17,7 @@ describe('IdGeneratorService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        IdGeneratorService,
+        IdGeneratorServiceImpl,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -25,7 +25,7 @@ describe('IdGeneratorService', () => {
       ],
     }).compile();
 
-    service = module.get<IdGeneratorService>(IdGeneratorService);
+    service = module.get<IdGeneratorServiceImpl>(IdGeneratorServiceImpl);
     prismaService = module.get<PrismaService>(PrismaService);
   });
 

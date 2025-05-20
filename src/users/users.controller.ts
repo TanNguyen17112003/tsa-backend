@@ -12,12 +12,12 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { UserRole, UserStatus } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { memoryStorage } from 'multer';
 import { Auth, GetUser } from 'src/auth';
 import { GetUserType } from 'src/types';
 
-import { UpdatePasswordDto, UpdateRoleDto, UpdateStudentDto } from './dto';
+import { UpdatePasswordDto, UpdateRoleDto, UpdateStatusDto, UpdateStudentDto } from './dto';
 import { UserEntity } from './entities';
 import { UsersService } from './users.service';
 
@@ -61,16 +61,12 @@ export class UsersController {
     return this.usersService.updateStudentById(user.id, updateStudentDto, avatar);
   }
 
-  @Patch('/status/:id/:status')
-  @Auth()
-  @ApiOperation({ summary: 'Update status of current logged in user' })
+  @Patch('/:id/status')
+  @Auth('ADMIN')
+  @ApiOperation({ summary: 'Update status of user' })
   @ApiResponse({ status: 200, description: 'OK.', type: UserEntity })
-  async updateStatus(
-    @GetUser() user: GetUserType,
-    @Param('id') id: string,
-    @Param('status') status: UserStatus
-  ) {
-    return this.usersService.updateUserStatus(user, status, id);
+  async updateStatus(@Param('id') id: string, @Body() updateStatusDto: UpdateStatusDto) {
+    return this.usersService.updateUserStatus(id, updateStatusDto.status);
   }
 
   @Put('/password')

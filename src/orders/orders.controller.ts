@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import {
+  ApiBody,
   ApiCreatedResponse,
   ApiExtraModels,
   ApiOkResponse,
@@ -112,7 +113,8 @@ export class OrdersController {
   }
 
   @Patch('status/:id')
-  @Auth('ADMIN', 'STAFF')
+  @Auth('ADMIN', 'STAFF', 'STUDENT')
+  @ApiBody({ type: UpdateStatusDto })
   @ApiOkResponse({ type: OrderEntity })
   async updateStatus(
     @Param('id') id: string,

@@ -6,10 +6,10 @@ import { PrismaService } from 'src/prisma';
 import { GetUserType } from 'src/types';
 
 import { CreateTicketDto, UpdateTicketStatusDto } from './dto';
-import { TicketsService } from './tickets.service';
+import { TicketsServiceImpl } from './tickets.service.impl';
 
-describe('TicketsService', () => {
-  let service: TicketsService;
+describe('TicketsServiceImpl', () => {
+  let service: TicketsServiceImpl;
 
   const mockPrismaService = {
     ticketCategory: {
@@ -44,7 +44,7 @@ describe('TicketsService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        TicketsService,
+        TicketsServiceImpl,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -60,7 +60,7 @@ describe('TicketsService', () => {
       ],
     }).compile();
 
-    service = module.get<TicketsService>(TicketsService);
+    service = module.get<TicketsServiceImpl>(TicketsServiceImpl);
   });
 
   afterEach(() => {

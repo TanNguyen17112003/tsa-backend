@@ -6,11 +6,10 @@ import { IdGeneratorService } from 'src/id-generator';
 import { NotificationsService } from 'src/notifications';
 import { PrismaService } from 'src/prisma';
 
-import { DeliveriesService } from './deliveries.service';
-import { DeliveryCancelReason } from './dtos';
+import { DeliveriesServiceImpl } from './deliveries.service.impl';
 
-describe('DeliveriesService', () => {
-  let service: DeliveriesService;
+describe('DeliveriesServiceImpl', () => {
+  let service: DeliveriesServiceImpl;
   let prismaService: PrismaService;
   let dateService: DateService;
   let notificationService: NotificationsService;
@@ -42,6 +41,7 @@ describe('DeliveriesService', () => {
   };
   const mockNotificationsService = {
     sendNotification: jest.fn(),
+    sendFullNotification: jest.fn(),
   };
   const mockIdGeneratorService = {
     generateUniqueId: jest.fn(() => 'uniqueId'),
@@ -50,7 +50,7 @@ describe('DeliveriesService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        DeliveriesService,
+        DeliveriesServiceImpl,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -70,7 +70,7 @@ describe('DeliveriesService', () => {
       ],
     }).compile();
 
-    service = module.get<DeliveriesService>(DeliveriesService);
+    service = module.get<DeliveriesServiceImpl>(DeliveriesServiceImpl);
     prismaService = module.get<PrismaService>(PrismaService);
     dateService = module.get<DateService>(DateService);
     notificationService = module.get<NotificationsService>(NotificationsService);
@@ -125,7 +125,7 @@ describe('DeliveriesService', () => {
 
       expect(result).toEqual({ id: 'delivery1' });
       expect(prismaService.delivery.create).toHaveBeenCalled();
-      expect(notificationService.sendNotification).toHaveBeenCalled();
+      expect(notificationService.sendFullNotification).toHaveBeenCalled();
       expect(dateService.getCurrentUnixTimestamp).toHaveBeenCalled();
       expect(idGeneratorService.generateUniqueId).toHaveBeenCalled();
     });
@@ -289,7 +289,12 @@ describe('DeliveriesService', () => {
       await expect(
         service.updateDeliveryStatus(
           'delivery1',
-          { status: 'CANCELED', cancelReasonType: DeliveryCancelReason.PERSONAL_REASON },
+          {
+            status: 'CANCELED',
+            canceledImage:
+              'http://res.cloudinary.com/diceqlufb/image/upload/v1746938054/tsa_image/ukbbpfdgrrkiwhunbapc.jpg',
+            reason: 'Hư xe',
+          },
           { id: 'staffId', role: 'STAFF', email: 'test@example.com' }
         )
       ).rejects.toThrow(BadRequestException);
@@ -340,7 +345,12 @@ describe('DeliveriesService', () => {
 
       const result = await service.updateDeliveryStatus(
         'delivery1',
-        { status: 'CANCELED', cancelReasonType: DeliveryCancelReason.PERSONAL_REASON },
+        {
+          status: 'CANCELED',
+          canceledImage:
+            'http://res.cloudinary.com/diceqlufb/image/upload/v1746938054/tsa_image/ukbbpfdgrrkiwhunbapc.jpg',
+          reason: 'Hư xe',
+        },
         { id: 'staffId', role: 'STAFF', email: 'test@example.com' }
       );
 

@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { MomoRequestDto } from './dto/momo-request.dto';
 import { PaymentGateway } from './payment.gateway';
-import { PaymentService } from './payment.service';
+import { PaymentServiceImpl } from './payment.service.impl';
 
 jest.mock('axios');
 jest.mock('uuid', () => ({ v4: jest.fn(() => 'mock-request-id') }));
@@ -20,8 +20,8 @@ jest.mock('@payos/node', () => {
   return jest.fn().mockImplementation(() => mockPayOS);
 });
 
-describe('PaymentService', () => {
-  let service: PaymentService;
+describe('PaymentServiceImpl', () => {
+  let service: PaymentServiceImpl;
   let prisma: PrismaService;
 
   const mockPrismaService = {
@@ -49,7 +49,7 @@ describe('PaymentService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        PaymentService,
+        PaymentServiceImpl,
         {
           provide: ConfigService,
           useValue: {
@@ -71,7 +71,7 @@ describe('PaymentService', () => {
       ],
     }).compile();
 
-    service = module.get<PaymentService>(PaymentService);
+    service = module.get<PaymentServiceImpl>(PaymentServiceImpl);
     prisma = module.get<PrismaService>(PrismaService);
   });
 

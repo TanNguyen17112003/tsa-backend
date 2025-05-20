@@ -7,12 +7,12 @@ import { CloudinaryService } from 'src/cloudinary';
 import { PrismaService } from 'src/prisma';
 
 import { UpdateStudentDto } from './dto';
-import { UsersService } from './users.service';
+import { UsersServiceImpl } from './users.service.impl';
 
 jest.mock('bcrypt');
 
-describe('UsersService', () => {
-  let userService: UsersService;
+describe('UsersServiceImpl', () => {
+  let userService: UsersServiceImpl;
   let prismaService: PrismaService;
   let configService: ConfigService;
   let cloudinaryService: CloudinaryService;
@@ -28,6 +28,7 @@ describe('UsersService', () => {
       photoUrl: 'http://example.com/photo1.jpg',
       verified: true,
       createdAt: new Date(),
+      status: UserStatus.AVAILABLE,
     },
     {
       id: '2',
@@ -40,6 +41,7 @@ describe('UsersService', () => {
       photoUrl: 'http://example.com/photo2.jpg',
       verified: true,
       createdAt: new Date(),
+      status: UserStatus.AVAILABLE,
     },
     {
       id: '3',
@@ -52,24 +54,24 @@ describe('UsersService', () => {
       photoUrl: 'http://example.com/photo3.jpg',
       verified: true,
       createdAt: new Date(),
+      status: UserStatus.AVAILABLE,
     },
   ];
   const mockStudentInfo: Student = {
     studentId: '1',
-    status: UserStatus.AVAILABLE,
     dormitory: 'A',
     building: '1',
     room: '101',
+    numberFault: 0,
   };
   const mockStaffInfo: Staff = {
     staffId: '2',
-    status: UserStatus.AVAILABLE,
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        UsersService,
+        UsersServiceImpl,
         {
           provide: PrismaService,
           useValue: {
@@ -110,7 +112,7 @@ describe('UsersService', () => {
       ],
     }).compile();
 
-    userService = module.get<UsersService>(UsersService);
+    userService = module.get<UsersServiceImpl>(UsersServiceImpl);
     prismaService = module.get<PrismaService>(PrismaService);
     configService = module.get<ConfigService>(ConfigService);
     cloudinaryService = module.get<CloudinaryService>(CloudinaryService);
@@ -141,7 +143,6 @@ describe('UsersService', () => {
         {
           ...mockUsers[0],
           student: mockStudentInfo,
-          status: mockStudentInfo.status,
           dormitory: mockStudentInfo.dormitory,
           building: mockStudentInfo.building,
           room: mockStudentInfo.room,
@@ -149,7 +150,6 @@ describe('UsersService', () => {
         {
           ...mockUsers[1],
           staff: mockStaffInfo,
-          status: mockStaffInfo.status,
         },
         {
           ...mockUsers[2],
@@ -178,6 +178,7 @@ describe('UsersService', () => {
         photoUrl: 'http://example.com/photo.jpg',
         verified: true,
         createdAt: new Date(),
+        status: UserStatus.AVAILABLE,
       };
       const mockStudent = { dormitory: 'A', building: '1', room: '101' };
 
@@ -209,6 +210,7 @@ describe('UsersService', () => {
         photoUrl: 'http://example.com/photo.jpg',
         verified: true,
         createdAt: new Date(),
+        status: UserStatus.AVAILABLE,
       };
 
       (prismaService.user.findUnique as jest.Mock).mockResolvedValueOnce(mockUser);

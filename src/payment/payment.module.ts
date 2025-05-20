@@ -1,16 +1,21 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { NotificationsService } from 'src/notifications/notifications.service';
-import { PrismaService } from 'src/prisma';
+import { NotificationsModule } from 'src/notifications';
 
 import { PaymentController } from './payment.controller';
 import { PaymentGateway } from './payment.gateway';
 import { PaymentService } from './payment.service';
+import { PaymentServiceImpl } from './payment.service.impl';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [NotificationsModule],
   controllers: [PaymentController],
-  providers: [PaymentService, PrismaService, NotificationsService, PaymentGateway],
+  providers: [
+    {
+      provide: PaymentService,
+      useClass: PaymentServiceImpl,
+    },
+    PaymentGateway,
+  ],
   exports: [PaymentService],
 })
 export class PaymentModule {}
