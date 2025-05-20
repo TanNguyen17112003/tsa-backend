@@ -40,6 +40,7 @@ import {
   getHistoryTimee,
   getLatestOrderStatus,
   getShippingFee,
+  isValidTransition,
   mapReason,
   shortenUUID,
   validateUserForOrder,
@@ -415,6 +416,11 @@ export class OrderServiceImpl extends OrderService {
             : []),
         ]);
       }
+    }
+    if (!isValidTransition(order.latestStatus, status)) {
+      throw new BadRequestException(
+        `Không được phép chuyển trạng thái từ ${order.latestStatus} sang ${status}`
+      );
     }
     // For staff update status of order to DELIVERED and payment method is CASH
     if (user.role === 'STAFF' && status === 'DELIVERED' && order.paymentMethod === 'CASH') {

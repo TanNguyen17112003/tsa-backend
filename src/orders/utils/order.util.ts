@@ -221,3 +221,17 @@ export const getCancelPermission = (role: UserRole, orderStatus: OrderStatus) =>
       return false;
   }
 };
+
+const validTransitions: Record<OrderStatus, OrderStatus[]> = {
+  PENDING: ['ACCEPTED', 'REJECTED', 'CANCELED'],
+  ACCEPTED: ['RECEIVED_EXTERNAL', 'REJECTED', 'CANCELED'],
+  RECEIVED_EXTERNAL: ['IN_TRANSPORT', 'CANCELED'],
+  IN_TRANSPORT: ['DELIVERED', 'CANCELED'],
+  DELIVERED: [],
+  REJECTED: ['PENDING', 'ACCEPTED'],
+  CANCELED: ['PENDING', 'ACCEPTED', 'RECEIVED_EXTERNAL'],
+};
+
+export function isValidTransition(from: OrderStatus, to: OrderStatus): boolean {
+  return validTransitions[from]?.includes(to);
+}
