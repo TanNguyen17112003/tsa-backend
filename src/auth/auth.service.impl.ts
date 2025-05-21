@@ -181,7 +181,7 @@ export class AuthServiceImpl extends AuthService {
       this.logger.error(`User not verified with email: ${email}`);
       this.throwInvalidEmailOrPassword();
     }
-    if (user.status === UserStatus.BANNED || user.status === UserStatus.DEACTIVATED) {
+    if (user.status === UserStatus.DEACTIVATED) {
       this.logger.error(`User is banned or deactivated with email: ${email}`);
       this.throwInvalidEmailOrPassword();
     }
