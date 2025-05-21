@@ -24,7 +24,7 @@ export class RegulationController {
   constructor(private readonly regulationService: RegulationService) {}
 
   @Get('/all')
-  @Auth('ADMIN')
+  @Auth('ADMIN', 'STUDENT')
   @ApiOkResponse({ description: 'Lấy quy định ký túc xá thành công', type: GetRegulationDto })
   async getAll(): Promise<GetRegulationDto[]> {
     return this.regulationService.getAllRegulations();
