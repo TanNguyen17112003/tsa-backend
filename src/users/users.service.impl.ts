@@ -134,7 +134,12 @@ export class UsersServiceImpl extends UsersService {
       };
       // TH unban student
     } else if (isUnBanned) {
-      const oldNumberFault = userToUpdate.student?.numberFault || 0;
+      const regulation = await this.prismaService.dormitoryRegulation.findFirst({
+        where: {
+          name: userToUpdate.student?.dormitory,
+        },
+      });
+      const oldNumberFault = regulation?.banThreshold || userToUpdate.student?.numberFault || 0;
       data.student = {
         update: {
           numberFault: Math.max(oldNumberFault - 1, 0),

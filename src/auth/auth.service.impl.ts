@@ -207,7 +207,7 @@ export class AuthServiceImpl extends AuthService {
       this.logger.error(`User not found with ID: ${jwtPayload.id}`);
       throw new UnauthorizedException('Invalid token');
     }
-    if (user.status === UserStatus.BANNED || user.status === UserStatus.DEACTIVATED) {
+    if (user.status === UserStatus.DEACTIVATED) {
       this.logger.error(`User is banned or deactivated with ID: ${jwtPayload.id}`);
       throw new UnauthorizedException('Invalid token');
     }
