@@ -6,7 +6,7 @@ import {
   NotImplementedException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Order, OrderStatus } from '@prisma/client';
+import { Order, OrderStatus, UserStatus } from '@prisma/client';
 import { MessageResponseDto } from 'src/common/dtos/message-response.dto';
 import { PageResponseDto } from 'src/common/dtos/page-response.dto';
 import { DateService } from 'src/date';
@@ -164,6 +164,17 @@ export class OrderServiceImpl extends OrderService {
 
     if (user.role === 'STUDENT') {
       validateUserForOrder(user, createOrderDto, 'STUDENT');
+      const fullUser = await this.prisma.user.findUnique({
+        where: { id: user.id },
+        select: { status: true },
+      });
+      if (fullUser.status === UserStatus.BANNED) {
+        throw new BadRequestException('Tài khoản của bạn đã bị khóa, không thể tạo đơn hàng');
+      }
+      const today = new Date().toISOString().split('T')[0];
+      if ((createOrderDto as CreateStudentOrderDto).deliveryDate === today) {
+        throw new BadRequestException('Ngày giao hàng không được là ngày hôm nay');
+      }
 
       const existingOrder = await findExistingOrder(this.prisma, checkCode, brand);
       if (existingOrder) {
